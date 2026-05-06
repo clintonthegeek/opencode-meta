@@ -391,7 +391,7 @@ CMakeFiles/opencode-meta-qt.dir/src/main.cpp.o: \
  /usr/include/qt6/QtCore/qdatetime.h /usr/include/qt6/QtCore/qcalendar.h \
  /usr/include/qt6/QtCore/qfile.h /usr/include/qt6/QtCore/qfileinfo.h \
  /usr/include/qt6/QtCore/qtimezone.h /usr/include/qt6/QtCore/QList \
- /usr/include/qt6/QtCore/QString \
+ /usr/include/qt6/QtCore/QString /usr/include/qt6/QtCore/QSet \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h \
  /usr/include/qt6/QtCore/QMap /usr/include/qt6/QtCore/QJsonObject \
  /usr/include/qt6/QtCore/qjsonobject.h \
@@ -405,6 +405,6 @@ CMakeFiles/opencode-meta-qt.dir/src/main.cpp.o: \
  /usr/include/qt6/QtCore/QJsonValue \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.h \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/ModelInfo.h \
- /usr/include/qt6/QtCore/QSet /usr/include/qt6/QtCore/QDateTime \
- /usr/include/qt6/QtCore/QJsonArray /usr/include/qt6/QtCore/qjsonarray.h \
+ /usr/include/qt6/QtCore/QDateTime /usr/include/qt6/QtCore/QJsonArray \
+ /usr/include/qt6/QtCore/qjsonarray.h \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/ProjectRecord.h

@@ -299,6 +299,30 @@ src/storage/StorageManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.s
 .PHONY : src/storage/StorageManager.cpp.s
 
+src/ui/ModelsBrowserWidget.o: src/ui/ModelsBrowserWidget.cpp.o
+.PHONY : src/ui/ModelsBrowserWidget.o
+
+# target to build an object file
+src/ui/ModelsBrowserWidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.o
+.PHONY : src/ui/ModelsBrowserWidget.cpp.o
+
+src/ui/ModelsBrowserWidget.i: src/ui/ModelsBrowserWidget.cpp.i
+.PHONY : src/ui/ModelsBrowserWidget.i
+
+# target to preprocess a source file
+src/ui/ModelsBrowserWidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.i
+.PHONY : src/ui/ModelsBrowserWidget.cpp.i
+
+src/ui/ModelsBrowserWidget.s: src/ui/ModelsBrowserWidget.cpp.s
+.PHONY : src/ui/ModelsBrowserWidget.s
+
+# target to generate assembly for a file
+src/ui/ModelsBrowserWidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.s
+.PHONY : src/ui/ModelsBrowserWidget.cpp.s
+
 src/ui/ProfileEditorDialog.o: src/ui/ProfileEditorDialog.cpp.o
 .PHONY : src/ui/ProfileEditorDialog.o
 
@@ -346,6 +370,30 @@ src/ui/ProfilesWidget.s: src/ui/ProfilesWidget.cpp.s
 src/ui/ProfilesWidget.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s
 .PHONY : src/ui/ProfilesWidget.cpp.s
+
+src/ui/ProjectsWidget.o: src/ui/ProjectsWidget.cpp.o
+.PHONY : src/ui/ProjectsWidget.o
+
+# target to build an object file
+src/ui/ProjectsWidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProjectsWidget.cpp.o
+.PHONY : src/ui/ProjectsWidget.cpp.o
+
+src/ui/ProjectsWidget.i: src/ui/ProjectsWidget.cpp.i
+.PHONY : src/ui/ProjectsWidget.i
+
+# target to preprocess a source file
+src/ui/ProjectsWidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProjectsWidget.cpp.i
+.PHONY : src/ui/ProjectsWidget.cpp.i
+
+src/ui/ProjectsWidget.s: src/ui/ProjectsWidget.cpp.s
+.PHONY : src/ui/ProjectsWidget.s
+
+# target to generate assembly for a file
+src/ui/ProjectsWidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProjectsWidget.cpp.s
+.PHONY : src/ui/ProjectsWidget.cpp.s
 
 src/ui/TemplateEditorDialog.o: src/ui/TemplateEditorDialog.cpp.o
 .PHONY : src/ui/TemplateEditorDialog.o
@@ -424,12 +472,18 @@ help:
 	@echo "... src/storage/StorageManager.o"
 	@echo "... src/storage/StorageManager.i"
 	@echo "... src/storage/StorageManager.s"
+	@echo "... src/ui/ModelsBrowserWidget.o"
+	@echo "... src/ui/ModelsBrowserWidget.i"
+	@echo "... src/ui/ModelsBrowserWidget.s"
 	@echo "... src/ui/ProfileEditorDialog.o"
 	@echo "... src/ui/ProfileEditorDialog.i"
 	@echo "... src/ui/ProfileEditorDialog.s"
 	@echo "... src/ui/ProfilesWidget.o"
 	@echo "... src/ui/ProfilesWidget.i"
 	@echo "... src/ui/ProfilesWidget.s"
+	@echo "... src/ui/ProjectsWidget.o"
+	@echo "... src/ui/ProjectsWidget.i"
+	@echo "... src/ui/ProjectsWidget.s"
 	@echo "... src/ui/TemplateEditorDialog.o"
 	@echo "... src/ui/TemplateEditorDialog.i"
 	@echo "... src/ui/TemplateEditorDialog.s"

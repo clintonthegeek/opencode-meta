@@ -15,6 +15,7 @@ set(SOURCES
 	src/main.cpp
 	src/MainWindow.cpp
 	src/ui/ModelsBrowserWidget.cpp
+	src/ui/ProviderSubscriptionDialog.cpp
 	src/ui/TemplatesWidget.cpp
 	src/ui/TemplateEditorDialog.cpp
 	src/ui/ProfilesWidget.cpp
@@ -27,6 +28,7 @@ set(SOURCES
 set(HEADERS
 	src/MainWindow.h
 	src/ui/ModelsBrowserWidget.h
+	src/ui/ProviderSubscriptionDialog.h
 	src/ui/TemplatesWidget.h
 	src/ui/TemplateEditorDialog.h
 	src/ui/ProfilesWidget.h

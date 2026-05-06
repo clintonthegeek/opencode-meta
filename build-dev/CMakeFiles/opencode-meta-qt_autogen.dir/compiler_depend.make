@@ -16,10 +16,14 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.h \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.cpp \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.h \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProjectsWidget.cpp \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProjectsWidget.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp \
@@ -291,9 +295,17 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/linux/types.h \
   /usr/include/locale.h \
   /usr/include/pthread.h \
+  /usr/include/qt6/QtCore/QDateTime \
   /usr/include/qt6/QtCore/QDir \
+  /usr/include/qt6/QtCore/QJsonArray \
+  /usr/include/qt6/QtCore/QJsonObject \
+  /usr/include/qt6/QtCore/QJsonValue \
   /usr/include/qt6/QtCore/QList \
+  /usr/include/qt6/QtCore/QMap \
+  /usr/include/qt6/QtCore/QSet \
+  /usr/include/qt6/QtCore/QSortFilterProxyModel \
   /usr/include/qt6/QtCore/QString \
+  /usr/include/qt6/QtCore/QStringList \
   /usr/include/qt6/QtCore/q17memory.h \
   /usr/include/qt6/QtCore/q20bit.h \
   /usr/include/qt6/QtCore/q20functional.h \
@@ -303,6 +315,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/q20utility.h \
   /usr/include/qt6/QtCore/q23type_traits.h \
   /usr/include/qt6/QtCore/q23utility.h \
+  /usr/include/qt6/QtCore/qabstractitemmodel.h \
+  /usr/include/qt6/QtCore/qabstractproxymodel.h \
   /usr/include/qt6/QtCore/qalgorithms.h \
   /usr/include/qt6/QtCore/qalloc.h \
   /usr/include/qt6/QtCore/qanystringview.h \
@@ -319,6 +333,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/qbytearraylist.h \
   /usr/include/qt6/QtCore/qbytearrayview.h \
   /usr/include/qt6/QtCore/qcalendar.h \
+  /usr/include/qt6/QtCore/qcborcommon.h \
+  /usr/include/qt6/QtCore/qcborvalue.h \
   /usr/include/qt6/QtCore/qchar.h \
   /usr/include/qt6/QtCore/qcheckedint_impl.h \
   /usr/include/qt6/QtCore/qcompare.h \
@@ -356,6 +372,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/qiodevicebase.h \
   /usr/include/qt6/QtCore/qiterable.h \
   /usr/include/qt6/QtCore/qiterator.h \
+  /usr/include/qt6/QtCore/qjsonarray.h \
+  /usr/include/qt6/QtCore/qjsondocument.h \
+  /usr/include/qt6/QtCore/qjsonobject.h \
+  /usr/include/qt6/QtCore/qjsonparseerror.h \
+  /usr/include/qt6/QtCore/qjsonvalue.h \
   /usr/include/qt6/QtCore/qlatin1stringview.h \
   /usr/include/qt6/QtCore/qline.h \
   /usr/include/qt6/QtCore/qlist.h \
@@ -380,6 +401,7 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/qprocessordetection.h \
   /usr/include/qt6/QtCore/qrect.h \
   /usr/include/qt6/QtCore/qrefcount.h \
+  /usr/include/qt6/QtCore/qregularexpression.h \
   /usr/include/qt6/QtCore/qscopedpointer.h \
   /usr/include/qt6/QtCore/qscopeguard.h \
   /usr/include/qt6/QtCore/qset.h \
@@ -388,6 +410,7 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/qsharedpointer.h \
   /usr/include/qt6/QtCore/qsharedpointer_impl.h \
   /usr/include/qt6/QtCore/qsize.h \
+  /usr/include/qt6/QtCore/qsortfilterproxymodel.h \
   /usr/include/qt6/QtCore/qspan.h \
   /usr/include/qt6/QtCore/qstdlibdetection.h \
   /usr/include/qt6/QtCore/qstring.h \
@@ -426,7 +449,9 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtCore/qtversionchecks.h \
   /usr/include/qt6/QtCore/qtypeinfo.h \
   /usr/include/qt6/QtCore/qtypes.h \
+  /usr/include/qt6/QtCore/qurl.h \
   /usr/include/qt6/QtCore/qutf8stringview.h \
+  /usr/include/qt6/QtCore/quuid.h \
   /usr/include/qt6/QtCore/qvariant.h \
   /usr/include/qt6/QtCore/qvarlengtharray.h \
   /usr/include/qt6/QtCore/qversiontagging.h \
@@ -846,6 +871,41 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/lib/cmake/Qt6GuiTools/Qt6GuiToolsTargets.cmake \
   /usr/lib/cmake/Qt6GuiTools/Qt6GuiToolsTargetsPrecheck.cmake \
   /usr/lib/cmake/Qt6GuiTools/Qt6GuiToolsVersionlessTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkConfigVersion.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkConfigVersionImpl.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkDependencies.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkPlugins.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkTargetsPrecheck.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6NetworkVersionlessAliasTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargetsPrecheck.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargetsPrecheck.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargetsPrecheck.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargetsPrecheck.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginAdditionalTargetInfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginConfig.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargets-relwithdebinfo.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargets.cmake \
+  /usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargetsPrecheck.cmake \
   /usr/lib/cmake/Qt6Widgets/Qt6WidgetsAdditionalTargetInfo.cmake \
   /usr/lib/cmake/Qt6Widgets/Qt6WidgetsConfig.cmake \
   /usr/lib/cmake/Qt6Widgets/Qt6WidgetsConfigVersion.cmake \
@@ -869,81 +929,22 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdbool.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h \
-  /usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in \
-  /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp \
   /usr/share/cmake/Modules/CMakeCXXInformation.cmake \
   /usr/share/cmake/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake \
   /usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake \
-  /usr/share/cmake/Modules/CMakeCompilerIdDetection.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineCompiler.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineCompilerSupport.cmake \
-  /usr/share/cmake/Modules/CMakeDetermineSystem.cmake \
-  /usr/share/cmake/Modules/CMakeFindBinUtils.cmake \
   /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake \
   /usr/share/cmake/Modules/CMakeGenericSystem.cmake \
   /usr/share/cmake/Modules/CMakeInitializeConfigs.cmake \
   /usr/share/cmake/Modules/CMakeLanguageInformation.cmake \
-  /usr/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake \
-  /usr/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake \
-  /usr/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake \
-  /usr/share/cmake/Modules/CMakeSystem.cmake.in \
   /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake \
   /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake \
-  /usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake \
-  /usr/share/cmake/Modules/CMakeTestCompilerCommon.cmake \
-  /usr/share/cmake/Modules/CMakeUnixFindMake.cmake \
   /usr/share/cmake/Modules/CheckCXXCompilerFlag.cmake \
   /usr/share/cmake/Modules/CheckCXXSourceCompiles.cmake \
   /usr/share/cmake/Modules/CheckIncludeFileCXX.cmake \
   /usr/share/cmake/Modules/CheckLibraryExists.cmake \
-  /usr/share/cmake/Modules/Compiler/ADSP-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/ARMCC-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/ARMClang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/AppleClang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Borland-DetermineCompiler.cmake \
   /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake \
-  /usr/share/cmake/Modules/Compiler/Clang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Clang-DetermineCompilerInternal.cmake \
-  /usr/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/GHS-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake \
   /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake \
-  /usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake \
   /usr/share/cmake/Modules/Compiler/GNU.cmake \
-  /usr/share/cmake/Modules/Compiler/HP-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/IAR-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake \
-  /usr/share/cmake/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Intel-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/MSVC-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/NVHPC-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/NVIDIA-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/TI-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/TIClang-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Tasking-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/Watcom-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/XL-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake \
-  /usr/share/cmake/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake \
   /usr/share/cmake/Modules/FindOpenGL.cmake \
   /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake \
   /usr/share/cmake/Modules/FindPackageMessage.cmake \
@@ -952,19 +953,15 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/share/cmake/Modules/GNUInstallDirs.cmake \
   /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake \
   /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake \
-  /usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake \
-  /usr/share/cmake/Modules/Internal/CMakeInspectCXXLinker.cmake \
   /usr/share/cmake/Modules/Internal/CheckCompilerFlag.cmake \
   /usr/share/cmake/Modules/Internal/CheckFlagCommonConfig.cmake \
   /usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake \
-  /usr/share/cmake/Modules/Internal/FeatureTesting.cmake \
   /usr/share/cmake/Modules/Linker/GNU-CXX.cmake \
   /usr/share/cmake/Modules/Linker/GNU.cmake \
   /usr/share/cmake/Modules/MacroAddFileDependencies.cmake \
   /usr/share/cmake/Modules/Platform/Linker/GNU.cmake \
   /usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake \
   /usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake \
-  /usr/share/cmake/Modules/Platform/Linux-Determine-CXX.cmake \
   /usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake \
   /usr/share/cmake/Modules/Platform/Linux-GNU.cmake \
   /usr/share/cmake/Modules/Platform/Linux-Initialize.cmake \
@@ -978,13 +975,7 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/share/cmake/Modules/Linker/GNU-CXX.cmake:
 
-/usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake:
-
-/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:
-
 /usr/share/cmake/Modules/Internal/CheckFlagCommonConfig.cmake:
-
-/usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake:
 
 /usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake:
 
@@ -994,47 +985,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:
 
-/usr/share/cmake/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Tasking-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/TI-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/NVIDIA-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/HP-CXX-DetermineCompiler.cmake:
-
 /usr/share/cmake/Modules/Compiler/GNU.cmake:
 
 /usr/share/cmake/Modules/Compiler/GNU-CXX.cmake:
 
-/usr/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/IAR-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Clang-DetermineCompiler.cmake:
-
 /usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake:
-
-/usr/share/cmake/Modules/Compiler/ADSP-DetermineCompiler.cmake:
 
 /usr/share/cmake/Modules/CheckLibraryExists.cmake:
 
@@ -1042,25 +997,7 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/share/cmake/Modules/CheckCXXCompilerFlag.cmake:
 
-/usr/share/cmake/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake:
-
-/usr/share/cmake/Modules/Compiler/AppleClang-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/CMakeUnixFindMake.cmake:
-
-/usr/share/cmake/Modules/CMakeTestCompilerCommon.cmake:
-
 /usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake:
-
-/usr/share/cmake/Modules/Compiler/Intel-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/CMakeSystem.cmake.in:
-
-/usr/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake:
-
-/usr/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake:
-
-/usr/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake:
 
 /usr/share/cmake/Modules/CMakeLanguageInformation.cmake:
 
@@ -1068,25 +1005,13 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake:
 
-/usr/share/cmake/Modules/CMakeDetermineCompilerSupport.cmake:
-
-/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:
-
-/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:
-
-/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp:
-
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h:
 
 /usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsVersionlessTargets.cmake:
 
-/usr/share/cmake/Modules/Compiler/GHS-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsTargets.cmake:
-
-/usr/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake:
 
 /usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsDependencies.cmake:
 
@@ -1104,9 +1029,45 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Widgets/Qt6WidgetsMacros.cmake:
 
-/usr/lib/cmake/Qt6Widgets/Qt6WidgetsConfig.cmake:
-
 /usr/lib/cmake/Qt6Widgets/Qt6WidgetsAdditionalTargetInfo.cmake:
+
+/usr/share/cmake/Modules/Platform/Linker/Linux-GNU-CXX.cmake:
+
+/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargets.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargets.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginAdditionalTargetInfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargets.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginAdditionalTargetInfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkPlugins.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkConfigVersion.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkAdditionalTargetInfo.cmake:
 
 /usr/share/cmake/Modules/FindPackageMessage.cmake:
 
@@ -1141,6 +1102,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/lib/cmake/Qt6Gui/Qt6QXcbGlxIntegrationPluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QXcbGlxIntegrationPluginAdditionalTargetInfo.cmake:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkTargets-relwithdebinfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QXcbEglIntegrationPluginTargets.cmake:
 
@@ -1228,8 +1191,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QTuioTouchPluginAdditionalTargetInfo.cmake:
 
-/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QTsLibPluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QTsLibPluginConfig.cmake:
@@ -1237,8 +1198,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/lib/cmake/Qt6Gui/Qt6QTiffPluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QTiffPluginTargets.cmake:
-
-/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QTiffPluginTargets-relwithdebinfo.cmake:
 
@@ -1288,15 +1247,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QMinimalEglIntegrationPluginTargets-relwithdebinfo.cmake:
 
-/usr/share/cmake/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QMinimalEglIntegrationPluginAdditionalTargetInfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginTargets-relwithdebinfo.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QLibInputPluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QLibInputPluginTargets-relwithdebinfo.cmake:
 
@@ -1308,6 +1263,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QJpegPluginTargets.cmake:
 
+/usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginConfig.cmake:
+
 /usr/lib/cmake/Qt6Gui/Qt6QJpegPluginTargets-relwithdebinfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QJpegPluginConfig.cmake:
@@ -1318,9 +1275,9 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QJp2PluginTargets-relwithdebinfo.cmake:
 
-/usr/lib/cmake/Qt6Gui/Qt6QJp2PluginConfig.cmake:
+/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginAdditionalTargetInfo.cmake:
 
-/usr/lib/cmake/Qt6Gui/Qt6QIbusPlatformInputContextPluginTargets-relwithdebinfo.cmake:
+/usr/lib/cmake/Qt6Gui/Qt6QJp2PluginConfig.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QICOPluginTargetsPrecheck.cmake:
 
@@ -1386,6 +1343,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSX11IntegrationPluginAdditionalTargetInfo.cmake:
 
+/usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginTargets-relwithdebinfo.cmake:
+
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSKmsEglDeviceIntegrationPluginTargetsPrecheck.cmake:
 
 /usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake:
@@ -1411,8 +1370,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginAdditionalTargetInfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QComposePlatformInputContextPluginTargets-relwithdebinfo.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QComposePlatformInputContextPluginConfig.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QComposePlatformInputContextPluginAdditionalTargetInfo.cmake:
 
@@ -1446,6 +1403,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6DmaBufServerBufferPluginAdditionalTargetInfo.cmake:
 
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginConfig.cmake:
+
 /usr/lib/cmake/Qt6DBusTools/Qt6DBusToolsTargets.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QXcbEglIntegrationPluginTargets-relwithdebinfo.cmake:
@@ -1478,8 +1437,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6DBus/Qt6DBusAdditionalTargetInfo.cmake:
 
-/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargetsPrecheck.cmake:
-
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargets.cmake:
 
 /usr/lib/cmake/Qt6DBus/Qt6DBusDependencies.cmake:
@@ -1490,13 +1447,41 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfigVersionImpl.cmake:
 
-/usr/include/c++/15.2.1/tr1/riemann_zeta.tcc:
+/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsAdditionalTargetInfo.cmake:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreVersionlessAliasTargets.cmake:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QEglFSKmsGbmIntegrationPluginTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreConfigExtras.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QVkKhrDisplayIntegrationPluginTargets.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicWindowsHelpers.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicWalkLibsHelpers.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicSbomSystemDepHelpers.cmake:
+
+/usr/lib/cmake/Qt6Widgets/Qt6WidgetsVersionlessAliasTargets.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6GuiVersionlessAliasTargets.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicSbomQtEntityHelpers.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicSbomPurlHelpers.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicSbomOpsHelpers.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QGtk3ThemePluginTargets.cmake:
 
 /usr/include/c++/15.2.1/tr1/poly_hermite.tcc:
-
-/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:
 
 /usr/include/bits/types/timer_t.h:
 
@@ -1524,17 +1509,13 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/optional:
 
-/usr/include/c++/15.2.1/bits/atomic_lockfree_defines.h:
-
-/usr/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/Compiler/Clang-DetermineCompilerInternal.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QWaylandWlShellIntegrationPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/functional:
 
-/usr/share/cmake/Modules/Compiler/Watcom-DetermineCompiler.cmake:
+/usr/lib/cmake/Qt6Core/Qt6CoreConfigVersion.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicExternalProjectHelpers.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QSvgIconPluginConfig.cmake:
 
@@ -1543,6 +1524,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/bits/types/struct_FILE.h:
 
 /usr/include/c++/15.2.1/ext/type_traits.h:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkTargets.cmake:
 
 /usr/include/c++/15.2.1/bits/cxxabi_forced.h:
 
@@ -1578,8 +1561,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/qt6/QtCore/qcheckedint_impl.h:
 
-/usr/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevTabletPluginTargetsPrecheck.cmake:
 
 /usr/include/c++/15.2.1/concepts:
@@ -1606,19 +1587,15 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/qt6/QtCore/qtmetamacros.h:
 
-/usr/lib/cmake/Qt6/QtPublicSbomSystemDepHelpers.cmake:
-
-/usr/include/c++/15.2.1/bits/utility.h:
-
 /usr/include/bits/types/FILE.h:
 
 /usr/include/qt6/QtCore/q23utility.h:
 
-/usr/share/cmake/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QVkKhrDisplayIntegrationPluginTargets-relwithdebinfo.cmake:
 
 /usr/include/c++/15.2.1/bits/stl_relops.h:
+
+/usr/include/qt6/QtCore/qjsonarray.h:
 
 /usr/lib/cmake/Qt6Widgets/Qt6WidgetsTargets-relwithdebinfo.cmake:
 
@@ -1640,10 +1617,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/bits/unordered_map.h:
 
-/usr/include/bits/types/__fpos_t.h:
-
-/usr/include/c++/15.2.1/bits/string_view.tcc:
-
 /usr/include/bits/typesizes.h:
 
 /usr/include/c++/15.2.1/exception:
@@ -1656,7 +1629,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/asm-generic/bitsperlong.h:
 
+/usr/include/qt6/QtCore/qjsonobject.h:
+
 /usr/include/c++/15.2.1/bits/stl_uninitialized.h:
+
+/usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginTargets.cmake:
 
 /usr/include/c++/15.2.1/bits/stl_algo.h:
 
@@ -1672,8 +1649,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/clocale:
 
-/usr/share/cmake/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QOffscreenIntegrationPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/bits/stl_list.h:
@@ -1686,9 +1661,9 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/bits/std_function.h:
 
-/usr/include/c++/15.2.1/tr1/bessel_function.tcc:
+/usr/include/qt6/QtCore/QMap:
 
-/usr/lib/cmake/Qt6/QtPublicSbomOpsHelpers.cmake:
+/usr/include/c++/15.2.1/tr1/bessel_function.tcc:
 
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevTouchScreenPluginConfig.cmake:
 
@@ -1704,21 +1679,13 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++allocator.h:
 
-/usr/lib/cmake/Qt6/QtPublicWalkLibsHelpers.cmake:
-
 /usr/include/c++/15.2.1/bits/stl_construct.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6DmaBufServerBufferPluginTargetsPrecheck.cmake:
 
 /usr/include/bits/struct_mutex.h:
 
-/usr/include/linux/types.h:
-
-/usr/include/c++/15.2.1/ext/string_conversions.h:
-
 /usr/include/c++/15.2.1/bits/predefined_ops.h:
-
-/usr/include/bits/types/struct_itimerspec.h:
 
 /usr/include/qt6/QtCore/q20type_traits.h:
 
@@ -1731,6 +1698,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/bits/cpu-set.h:
 
 /usr/include/c++/15.2.1/bits/refwrap.h:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkConfigVersionImpl.cmake:
 
 /usr/include/bits/types/struct_timeval.h:
 
@@ -1749,8 +1718,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/c++/15.2.1/cmath:
 
 /usr/include/c++/15.2.1/bits/stringfwd.h:
-
-/usr/lib/cmake/Qt6/QtPublicSbomPurlHelpers.cmake:
 
 /usr/include/c++/15.2.1/bits/nested_exception.h:
 
@@ -1773,6 +1740,8 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/qt6/QtCore/qtaggedpointer.h:
 
 /usr/include/c++/15.2.1/bits/memory_resource.h:
+
+/usr/include/qt6/QtCore/qcborvalue.h:
 
 /usr/lib/cmake/Qt6GuiTools/Qt6GuiToolsVersionlessTargets.cmake:
 
@@ -1804,8 +1773,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/cctype:
 
-/usr/share/cmake/Modules/CMakeDetermineCompiler.cmake:
-
 /usr/include/c++/15.2.1/backward/binders.h:
 
 /usr/include/c++/15.2.1/bits/hash_bytes.h:
@@ -1828,11 +1795,15 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/vector:
 
-/usr/lib/cmake/Qt6Gui/Qt6QTsLibPluginTargets-relwithdebinfo.cmake:
+/usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginConfig.cmake:
 
-/usr/lib/cmake/Qt6Gui/Qt6QMngPluginConfig.cmake:
+/usr/include/c++/15.2.1/stdexcept:
 
-/usr/include/bits/select.h:
+/usr/include/c++/15.2.1/bits/cxxabi_init_exception.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QVkKhrDisplayIntegrationPluginTargetsPrecheck.cmake:
+
+/usr/include/qt6/QtWidgets/QMainWindow:
 
 /usr/lib/cmake/Qt6Gui/Qt6DrmEglServerBufferPluginAdditionalTargetInfo.cmake:
 
@@ -1864,11 +1835,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/bits/pthreadtypes.h:
 
-/usr/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QTiffPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/tr1/beta_function.tcc:
+
+/usr/include/qt6/QtCore/qjsonparseerror.h:
 
 /usr/include/c++/15.2.1/bits/atomic_base.h:
 
@@ -1900,10 +1871,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/bits/endian.h:
 
-/usr/include/c++/15.2.1/bits/std_abs.h:
-
-/usr/include/c++/15.2.1/tr1/special_function_util.h:
-
 /usr/include/c++/15.2.1/bits/stl_map.h:
 
 /usr/include/asm-generic/posix_types.h:
@@ -1912,19 +1879,13 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/bits/byteswap.h:
 
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.h:
-
-/usr/include/qt6/QtCore/qbytearray.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreConfig.cmake:
-
-/usr/include/asm/types.h:
-
 /usr/lib/cmake/Qt6Gui/Qt6QGtk3ThemePluginTargets-relwithdebinfo.cmake:
 
 /usr/include/c++/15.2.1/bits/stl_vector.h:
 
 /usr/include/bits/time.h:
+
+/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargets-relwithdebinfo.cmake:
 
 /usr/include/c++/15.2.1/compare:
 
@@ -1942,8 +1903,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/initializer_list:
 
-/usr/share/cmake/Modules/Compiler/Borland-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6Widgets/Qt6WidgetsDependencies.cmake:
 
 /usr/include/c++/15.2.1/variant:
@@ -1958,14 +1917,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/stdio.h:
 
-/usr/include/c++/15.2.1/tr1/modified_bessel_func.tcc:
-
-/usr/include/c++/15.2.1/tr1/poly_laguerre.tcc:
-
-/usr/include/asm/posix_types.h:
-
-/usr/include/qt6/QtCore/qtdeprecationdefinitions.h:
-
 /usr/lib/cmake/Qt6Gui/Qt6QWaylandAdwaitaDecorationPluginAdditionalTargetInfo.cmake:
 
 /usr/include/c++/15.2.1/bits/shared_ptr_atomic.h:
@@ -1976,6 +1927,40 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++config.h:
 
+/usr/include/c++/15.2.1/streambuf:
+
+/usr/include/linux/posix_types.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.cpp:
+
+/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginAdditionalTargetInfo.cmake:
+
+/usr/include/c++/15.2.1/bits/functexcept.h:
+
+/usr/include/c++/15.2.1/bits/align.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicTargetHelpers.cmake:
+
+/usr/include/c++/15.2.1/debug/debug.h:
+
+/usr/include/c++/15.2.1/bits/stl_bvector.h:
+
+/usr/include/qt6/QtCore/qbytearray.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QTsLibPluginTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QMngPluginConfig.cmake:
+
+/usr/include/bits/select.h:
+
+/usr/include/c++/15.2.1/tr1/legendre_function.tcc:
+
+/usr/include/c++/15.2.1/memory:
+
 /usr/lib/cmake/Qt6Gui/Qt6QLibInputPluginConfig.cmake:
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.cpp:
@@ -1984,71 +1969,25 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/bits/vector.tcc:
 
-/usr/include/linux/posix_types.h:
+/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargetsPrecheck.cmake:
 
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.cpp:
+/usr/include/qt6/QtCore/QJsonValue:
 
-/usr/include/c++/15.2.1/streambuf:
+/usr/include/c++/15.2.1/ext/string_conversions.h:
+
+/usr/include/linux/types.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QLibInputPluginTargetsPrecheck.cmake:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProjectsWidget.cpp:
 
 /usr/include/bits/pthreadtypes-arch.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreTargetsPrecheck.cmake:
 
 /usr/include/c++/15.2.1/pstl/execution_defs.h:
 
 /usr/include/c++/15.2.1/bits/enable_special_members.h:
 
 /usr/include/bits/atomic_wide_counter.h:
-
-/usr/include/c++/15.2.1/tuple:
-
-/usr/include/errno.h:
-
-/usr/include/c++/15.2.1/bits/uniform_int_dist.h:
-
-/usr/share/cmake/Modules/Internal/CMakeInspectCXXLinker.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QXcbGlxIntegrationPluginTargets-relwithdebinfo.cmake:
-
-/usr/include/c++/15.2.1/cwchar:
-
-/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersion.cmake:
-
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QPdfPluginConfig.cmake:
-
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h:
-
-/usr/share/cmake/Modules/Compiler/NVHPC-DetermineCompiler.cmake:
-
-/usr/include/linux/sched/types.h:
-
-/usr/include/bits/types/__locale_t.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdbool.h:
-
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginTargetsPrecheck.cmake:
-
-/usr/include/bits/setjmp.h:
-
-/usr/share/cmake/Modules/FindOpenGL.cmake:
-
-/usr/include/bits/types/struct___jmp_buf_tag.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QEvdevKeyboardPluginTargetsPrecheck.cmake:
-
-/usr/include/bits/wchar.h:
-
-/usr/include/bits/waitstatus.h:
-
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/ModelInfo.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginConfig.cmake:
-
-/usr/include/c++/15.2.1/climits:
 
 /usr/lib/cmake/Qt6Gui/Qt6QTuioTouchPluginConfig.cmake:
 
@@ -2062,13 +2001,55 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/qt6/QtCore/qdatetime.h:
 
+/usr/lib/cmake/Qt6/QtPublicSbomLicenseHelpers.cmake:
+
+/usr/include/qt6/QtCore/qxptype_traits.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/ModelInfo.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginConfig.cmake:
+
+/usr/include/c++/15.2.1/climits:
+
+/usr/include/c++/15.2.1/bits/uniform_int_dist.h:
+
+/usr/lib/cmake/Qt6Network/Qt6NetworkConfig.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QXcbGlxIntegrationPluginTargets-relwithdebinfo.cmake:
+
+/usr/include/c++/15.2.1/cwchar:
+
+/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersion.cmake:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QPdfPluginConfig.cmake:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h:
+
+/usr/include/linux/sched/types.h:
+
+/usr/include/bits/types/__locale_t.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdbool.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreConfig.cmake:
+
+/usr/include/asm/types.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.h:
+
+/usr/include/qt6/QtCore/qmap.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QMngPluginAdditionalTargetInfo.cmake:
+
+/usr/include/c++/15.2.1/bits/erase_if.h:
+
 /usr/include/c++/15.2.1/pstl/pstl_config.h:
 
 /usr/include/qt6/QtCore/qpair.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginTargets.cmake:
-
-/usr/include/bits/pthread_stack_min-dynamic.h:
 
 /usr/include/qt6/QtCore/qpoint.h:
 
@@ -2078,6 +2059,10 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/map:
 
+/usr/lib/cmake/Qt6Core/Qt6CoreDependencies.cmake:
+
+/usr/include/bits/locale.h:
+
 /usr/include/qt6/QtCore/qsharedpointer_impl.h:
 
 /usr/share/cmake/Modules/GNUInstallDirs.cmake:
@@ -2086,9 +2071,19 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/bits/postypes.h:
 
+/usr/include/c++/15.2.1/bits/utility.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.cpp:
+
+/usr/include/bits/uio_lim.h:
+
 CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/qt6/QtCore/qcontainerinfo.h:
+
+/usr/include/qt6/QtCore/qmetacontainer.h:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp:
 
 /usr/include/bits/types/struct_sched_param.h:
 
@@ -2108,10 +2103,6 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/bits/local_lim.h:
 
-/usr/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake:
-
-/usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in:
-
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginTargets-relwithdebinfo.cmake:
 
 /usr/include/qt6/QtCore/qtcoreexports.h:
@@ -2126,9 +2117,9 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/qt6/QtCore/qcompare_impl.h:
 
-/usr/lib/cmake/Qt6/QtPublicExternalProjectHelpers.cmake:
+/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginTargets.cmake:
 
-/usr/lib/cmake/Qt6Core/Qt6CoreConfigVersion.cmake:
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProjectsWidget.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QPdfPluginTargets-relwithdebinfo.cmake:
 
@@ -2140,6 +2131,10 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/c++/15.2.1/tr1/ell_integral.tcc:
 
+/usr/lib/cmake/Qt6Gui/Qt6QIbusPlatformInputContextPluginTargets-relwithdebinfo.cmake:
+
+/usr/include/qt6/QtCore/qabstractproxymodel.h:
+
 /usr/include/bits/endianness.h:
 
 /usr/include/bits/uintn-identity.h:
@@ -2150,51 +2145,37 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/qt6/QtCore/qlist.h:
 
-/usr/share/cmake/Modules/Platform/Linux-Determine-CXX.cmake:
-
 /usr/include/c++/15.2.1/bit:
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/CMakeLists.txt:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr-default.h:
 
+/usr/include/qt6/QtCore/QJsonObject:
+
 /usr/lib/cmake/Qt6Gui/Qt6GuiTargets.cmake:
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp:
 
-/usr/include/bits/stdint-least.h:
-
 opencode-meta-qt_autogen/moc_predefs.h:
 
-/usr/include/c++/15.2.1/bits/stl_bvector.h:
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginTargetsPrecheck.cmake:
 
-/usr/lib/cmake/Qt6Widgets/Qt6WidgetsVersionlessAliasTargets.cmake:
+/usr/include/bits/setjmp.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6GuiVersionlessAliasTargets.cmake:
+/usr/share/cmake/Modules/FindOpenGL.cmake:
 
-/usr/lib/cmake/Qt6/QtPublicSbomQtEntityHelpers.cmake:
+/usr/include/bits/types/struct___jmp_buf_tag.h:
 
-/usr/include/c++/15.2.1/tr1/legendre_function.tcc:
+/usr/lib/cmake/Qt6Gui/Qt6QEvdevKeyboardPluginTargetsPrecheck.cmake:
 
-/usr/include/c++/15.2.1/memory:
+/usr/include/bits/wchar.h:
 
-/usr/include/qt6/QtCore/qmetacontainer.h:
+/usr/lib/cmake/Qt6Network/Qt6QGlibNetworkInformationPluginAdditionalTargetInfo.cmake:
 
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp:
+/usr/include/bits/waitstatus.h:
 
-/usr/share/cmake/Modules/Compiler/XL-CXX-DetermineCompiler.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginAdditionalTargetInfo.cmake:
-
-/usr/include/c++/15.2.1/bits/functexcept.h:
-
-/usr/include/c++/15.2.1/bits/align.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginConfig.cmake:
-
-/usr/lib/cmake/Qt6/QtPublicTargetHelpers.cmake:
-
-/usr/include/c++/15.2.1/debug/debug.h:
+/usr/include/bits/stdint-least.h:
 
 /usr/include/bits/types/__mbstate_t.h:
 
@@ -2210,17 +2191,27 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginConfig.cmake:
 
+/usr/include/qt6/QtCore/qcborcommon.h:
+
 /usr/include/qt6/QtGui/qtransform.h:
 
 /usr/include/bits/time64.h:
 
 /usr/include/bits/errno.h:
 
+/usr/lib/cmake/Qt6Network/Qt6NetworkDependencies.cmake:
+
 /usr/include/qt6/QtCore/qstdlibdetection.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6GuiConfigVersion.cmake:
 
 /usr/include/bits/types/__fpos64_t.h:
+
+/usr/include/c++/15.2.1/bits/string_view.tcc:
+
+/usr/include/bits/types/__fpos_t.h:
+
+/usr/include/c++/15.2.1/tr1/riemann_zeta.tcc:
 
 /usr/include/bits/types/clock_t.h:
 
@@ -2233,6 +2224,12 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/lib/cmake/Qt6Gui/Qt6QVncIntegrationPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/atomic_word.h:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreAdditionalTargetInfo.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicSbomPythonHelpers.cmake:
+
+/usr/include/bits/types/locale_t.h:
 
 /usr/include/bits/types/mbstate_t.h:
 
@@ -2252,6 +2249,8 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/bits/chrono.h:
 
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginTargetsPrecheck.cmake:
+
 /usr/include/c++/15.2.1/bits/stl_iterator_base_funcs.h:
 
 /usr/include/qt6/QtCore/qscopeguard.h:
@@ -2270,6 +2269,8 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/bits/stl_tempbuf.h:
 
+/usr/lib/cmake/Qt6Network/Qt6NetworkVersionlessAliasTargets.cmake:
+
 /usr/include/stdc-predef.h:
 
 /usr/lib/cmake/Qt6GuiTools/Qt6GuiToolsTargets-relwithdebinfo.cmake:
@@ -2277,14 +2278,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/c++/15.2.1/bits/char_traits.h:
 
 /usr/include/bits/types/wint_t.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginConfig.cmake:
-
-/usr/include/c++/15.2.1/stdexcept:
-
-/usr/share/cmake/Modules/Compiler/TIClang-DetermineCompiler.cmake:
-
-/usr/include/bits/uio_lim.h:
 
 /usr/include/bits/timesize.h:
 
@@ -2294,12 +2287,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/algorithm:
 
-/usr/lib/cmake/Qt6Gui/Qt6QMngPluginAdditionalTargetInfo.cmake:
-
-/usr/include/c++/15.2.1/bits/erase_if.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreVersionlessAliasTargets.cmake:
-
 /usr/include/c++/15.2.1/backward/auto_ptr.h:
 
 /usr/include/asm/bitsperlong.h:
@@ -2308,19 +2295,15 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtGui/qbitmap.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QMngPluginTargetsPrecheck.cmake:
-
-/usr/include/bits/types/clockid_t.h:
-
-/usr/lib/cmake/Qt6/QtInstallPaths.cmake:
-
 /usr/include/c++/15.2.1/bits/requires_hosted.h:
 
 /usr/include/bits/types/error_t.h:
 
 /usr/include/qt6/QtCore/qstringalgorithms.h:
 
-/usr/include/qt6/QtCore/qstringconverter.h:
+/usr/lib/cmake/Qt6Core/Qt6CoreConfigVersionImpl.cmake:
+
+/usr/include/qt6/QtGui/qfontinfo.h:
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h:
 
@@ -2328,13 +2311,21 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/bits/concept_check.h:
 
-/usr/include/c++/15.2.1/bits/cxxabi_init_exception.h:
+/usr/include/c++/15.2.1/tr1/modified_bessel_func.tcc:
 
-/usr/lib/cmake/Qt6Gui/Qt6QVkKhrDisplayIntegrationPluginTargetsPrecheck.cmake:
+/usr/include/c++/15.2.1/tr1/poly_laguerre.tcc:
 
-/usr/include/qt6/QtWidgets/QMainWindow:
+/usr/include/asm/posix_types.h:
 
-/usr/share/cmake/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake:
+/usr/include/qt6/QtCore/qtdeprecationdefinitions.h:
+
+/usr/include/c++/15.2.1/bits/std_abs.h:
+
+/usr/include/c++/15.2.1/tr1/special_function_util.h:
+
+/usr/include/c++/15.2.1/tuple:
+
+/usr/include/errno.h:
 
 /usr/include/c++/15.2.1/type_traits:
 
@@ -2354,13 +2345,13 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++locale.h:
 
-/usr/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake:
-
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/error_constants.h:
 
-/usr/lib/cmake/Qt6/QtPublicCMakeHelpers.cmake:
+/usr/include/c++/15.2.1/bits/atomic_lockfree_defines.h:
 
-/usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake:
+/usr/include/qt6/QtCore/QDateTime:
+
+/usr/lib/cmake/Qt6/QtPublicCMakeHelpers.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QGifPluginAdditionalTargetInfo.cmake:
 
@@ -2373,6 +2364,8 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/ctype.h:
 
 /usr/include/features-time64.h:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginAdditionalTargetInfo.cmake:
 
 /usr/include/qt6/QtCore/q17memory.h:
 
@@ -2392,17 +2385,25 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qatomic.h:
 
+/usr/include/qt6/QtCore/qsortfilterproxymodel.h:
+
 /usr/include/linux/errno.h:
 
 /usr/include/qt6/QtWidgets/qtwidgets-config.h:
 
-/usr/include/bits/locale.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreDependencies.cmake:
-
 /usr/include/linux/limits.h:
 
 /usr/include/linux/stddef.h:
+
+/usr/include/qt6/QtCore/QJsonArray:
+
+/usr/lib/cmake/Qt6Network/Qt6QConnManNetworkInformationPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginTargets.cmake:
+
+/usr/include/bits/posix2_lim.h:
+
+/usr/lib/cmake/Qt6/QtFeatureCommon.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QVirtualKeyboardPluginTargets-relwithdebinfo.cmake:
 
@@ -2410,9 +2411,27 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/QList:
 
+/usr/lib/cmake/Qt6Gui/Qt6QComposePlatformInputContextPluginConfig.cmake:
+
+/usr/include/qt6/QtCore/QSet:
+
+/usr/lib/cmake/Qt6Gui/Qt6QMngPluginTargetsPrecheck.cmake:
+
+/usr/include/bits/types/clockid_t.h:
+
+/usr/lib/cmake/Qt6/QtInstallPaths.cmake:
+
+/usr/include/qt6/QtCore/QSortFilterProxyModel:
+
 /usr/lib/cmake/Qt6Gui/Qt6QIbusPlatformInputContextPluginAdditionalTargetInfo.cmake:
 
 /usr/include/qt6/QtCore/QString:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginTargets.cmake:
+
+/usr/include/bits/pthread_stack_min-dynamic.h:
+
+/usr/include/qt6/QtCore/QStringList:
 
 /usr/include/qt6/QtCore/qfunctionpointer.h:
 
@@ -2450,6 +2469,16 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/q23type_traits.h:
 
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandQtShellIntegrationPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfigVersion.cmake:
+
+/usr/include/qt6/QtCore/qabstractitemmodel.h:
+
+/usr/include/qt6/QtWidgets/qwidget.h:
+
+/usr/lib/cmake/Qt6/Qt6VersionlessAliasTargets.cmake:
+
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSKmsGbmIntegrationPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/bits/cpp_type_traits.h:
@@ -2476,10 +2505,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qatomic_cxx11.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QVkKhrDisplayIntegrationPluginTargets.cmake:
-
-/usr/lib/cmake/Qt6/QtPublicWindowsHelpers.cmake:
-
 /usr/include/c++/15.2.1/bits/ostream_insert.h:
 
 /usr/include/qt6/QtCore/qbasicatomic.h:
@@ -2500,13 +2525,17 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qbytearrayview.h:
 
+/usr/lib/cmake/Qt6Widgets/Qt6WidgetsConfig.cmake:
+
+/usr/include/qt6/QtCore/qjsondocument.h:
+
 /usr/lib/cmake/Qt6/Qt6Targets.cmake:
 
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfig.cmake:
 
-/usr/include/c++/15.2.1/cstdio:
-
 /usr/include/qt6/QtCore/qrefcount.h:
+
+/usr/include/c++/15.2.1/cstdio:
 
 /usr/include/qt6/QtCore/qcalendar.h:
 
@@ -2520,11 +2549,9 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qcompare.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QEglFSKmsGbmIntegrationPluginTargetsPrecheck.cmake:
+/usr/lib/cmake/Qt6/QtPublicTestHelpers.cmake:
 
-/usr/lib/cmake/Qt6Core/Qt6CoreTargets-relwithdebinfo.cmake:
-
-/usr/share/cmake/Modules/CMakeCompilerIdDetection.cmake:
+/usr/include/qt6/QtCore/qdir.h:
 
 /usr/include/qt6/QtCore/qcomparehelpers.h:
 
@@ -2614,6 +2641,10 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qiterator.h:
 
+/usr/include/bits/types/struct_itimerspec.h:
+
+/usr/include/qt6/QtCore/qjsonvalue.h:
+
 /usr/include/qt6/QtCore/qline.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevTabletPluginTargets.cmake:
@@ -2625,8 +2656,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/qt6/QtCore/qmalloc.h:
 
 /usr/include/qt6/QtGui/qrgba64.h:
-
-/usr/include/qt6/QtCore/qmap.h:
 
 /usr/share/cmake/Modules/MacroAddFileDependencies.cmake:
 
@@ -2642,8 +2671,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtWidgets/QWidget:
 
-/usr/share/cmake/Modules/CMakeDetermineSystem.cmake:
-
 /usr/include/qt6/QtCore/qnamespace.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QIbusPlatformInputContextPluginTargets.cmake:
@@ -2655,6 +2682,10 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/qt6/QtCore/qobject.h:
 
 /usr/include/qt6/QtCore/qobject_impl.h:
+
+/usr/include/qt6/QtCore/qstringconverter.h:
+
+/usr/include/qt6/QtCore/qregularexpression.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QWaylandEglClientBufferPluginTargets-relwithdebinfo.cmake:
 
@@ -2702,10 +2733,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qsysinfo.h:
 
-/usr/include/qt6/QtCore/qdir.h:
-
-/usr/lib/cmake/Qt6/QtPublicTestHelpers.cmake:
-
 /usr/include/qt6/QtCore/qtclasshelpermacros.h:
 
 /usr/include/qt6/QtCore/qtcoreglobal.h:
@@ -2714,11 +2741,7 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qtdeprecationmarkers.h:
 
-/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsAdditionalTargetInfo.cmake:
-
 /usr/include/qt6/QtCore/qtenvironmentvariables.h:
-
-/usr/share/cmake/Modules/Compiler/MSVC-DetermineCompiler.cmake:
 
 /usr/include/qt6/QtCore/qtextstream.h:
 
@@ -2752,8 +2775,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qtversion.h:
 
-/usr/share/cmake/Modules/Compiler/ARMCC-DetermineCompiler.cmake:
-
 /usr/include/qt6/QtCore/qtconfiginclude.h:
 
 /usr/include/qt6/QtCore/qtypes.h:
@@ -2761,6 +2782,12 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/qt6/QtCore/qalgorithms.h:
 
 /usr/include/qt6/QtGui/qwindowdefs.h:
+
+/usr/lib/cmake/Qt6Network/Qt6QTlsBackendCertOnlyPluginTargetsPrecheck.cmake:
+
+/usr/include/qt6/QtCore/qurl.h:
+
+/usr/include/qt6/QtCore/quuid.h:
 
 /usr/include/c++/15.2.1/bits/ios_base.h:
 
@@ -2799,8 +2826,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/c++/15.2.1/bits/stream_iterator.h:
 
 /usr/include/qt6/QtGui/qtgui-config.h:
-
-/usr/share/cmake/Modules/Internal/FeatureTesting.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QXdgDesktopPortalThemePluginTargets-relwithdebinfo.cmake:
 
@@ -2848,16 +2873,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/lib/cmake/Qt6/Qt6Dependencies.cmake:
 
-/usr/include/qt6/QtWidgets/qwidget.h:
-
-/usr/lib/cmake/Qt6/Qt6VersionlessAliasTargets.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QLinuxFbIntegrationPluginTargets.cmake:
-
-/usr/include/bits/posix2_lim.h:
-
-/usr/lib/cmake/Qt6/QtFeatureCommon.cmake:
-
 /usr/include/strings.h:
 
 /usr/lib/cmake/Qt6/QtPublicAndroidHelpers.cmake:
@@ -2874,8 +2889,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/lib/cmake/Qt6/QtPublicFindPackageHelpers.cmake:
 
-/usr/share/cmake/Modules/Compiler/ARMClang-DetermineCompiler.cmake:
-
 /usr/lib/cmake/Qt6/QtPublicGitHelpers.cmake:
 
 /usr/lib/cmake/Qt6/QtPublicSbomCycloneDXHelpers.cmake:
@@ -2886,26 +2899,4 @@ CMakeFiles/4.3.2/CMakeSystem.cmake:
 
 /usr/lib/cmake/Qt6/QtPublicSbomDocumentNamespaceHelpers.cmake:
 
-/usr/include/qt6/QtGui/qfontinfo.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreConfigVersionImpl.cmake:
-
 /usr/lib/cmake/Qt6/QtPublicSbomHelpers.cmake:
-
-/usr/include/qt6/QtCore/qxptype_traits.h:
-
-/usr/lib/cmake/Qt6/QtPublicSbomLicenseHelpers.cmake:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreAdditionalTargetInfo.cmake:
-
-/usr/include/bits/types/locale_t.h:
-
-/usr/lib/cmake/Qt6/QtPublicSbomPythonHelpers.cmake:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreConfigExtras.cmake:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreMacros.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandQtShellIntegrationPluginConfig.cmake:
-
-/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfigVersion.cmake:

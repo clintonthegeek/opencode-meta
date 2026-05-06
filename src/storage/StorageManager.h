@@ -1,8 +1,16 @@
+/**
+ * \file StorageManager.h
+ * \brief Centralized storage manager for reading/writing JSON data models under ~/.opencode-meta/ as described in v1spec.md.
+ *
+ * This class handles persistence for templates, profiles, models cache, projects, and now preferred providers.
+ * All operations use Qt's JSON facilities and file I/O, with error logging via qDebug().
+ */
 #pragma once
 
 #include <QDir>
 #include <QList>
 #include <QString>
+#include <QSet>
 
 #include "models/Template.h"
 #include "models/Profile.h"
@@ -40,6 +48,10 @@ public:
     // Default profile handling
     bool setDefaultProfile(const QString &profileId) const; // default-profile.json copy
     QString getDefaultProfile() const;                      // returns profile id or empty
+
+    // Preferred providers for Models Browser (new)
+    bool savePreferredProviders(const QSet<QString> &providers) const; // preferred-providers.json
+    QSet<QString> loadPreferredProviders() const;                      // empty set on failure
 
 private:
     QString rootPath() const;

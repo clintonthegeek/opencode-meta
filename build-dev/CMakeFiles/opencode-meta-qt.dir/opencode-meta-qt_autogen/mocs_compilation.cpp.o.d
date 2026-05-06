@@ -400,12 +400,21 @@ CMakeFiles/opencode-meta-qt.dir/opencode-meta-qt_autogen/mocs_compilation.cpp.o:
  /usr/include/qt6/QtCore/qtmochelpers.h \
  /usr/include/qt6/QtCore/qtmocconstants.h \
  /usr/include/qt6/QtCore/q20algorithm.h \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_ModelsBrowserWidget.cpp \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/../../../src/ui/ModelsBrowserWidget.h \
+ /usr/include/qt6/QtWidgets/QWidget \
+ /usr/include/qt6/QtCore/QSortFilterProxyModel \
+ /usr/include/qt6/QtCore/qsortfilterproxymodel.h \
+ /usr/include/qt6/QtCore/qabstractproxymodel.h \
+ /usr/include/qt6/QtCore/qabstractitemmodel.h \
+ /usr/include/qt6/QtCore/QStringList \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_ProfileEditorDialog.cpp \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/../../../src/ui/ProfileEditorDialog.h \
  /usr/include/qt6/QtWidgets/QDialog /usr/include/qt6/QtWidgets/qdialog.h \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_ProfilesWidget.cpp \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/../../../src/ui/ProfilesWidget.h \
- /usr/include/qt6/QtWidgets/QWidget \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_ProjectsWidget.cpp \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/../../../src/ui/ProjectsWidget.h \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_TemplateEditorDialog.cpp \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/../../../src/ui/TemplateEditorDialog.h \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/opencode-meta-qt_autogen/YPKJ5OE7LN/moc_TemplatesWidget.cpp \

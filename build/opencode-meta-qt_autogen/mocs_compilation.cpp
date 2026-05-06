@@ -3,5 +3,6 @@
 #include "YPKJ5OE7LN/moc_ModelsBrowserWidget.cpp"
 #include "YPKJ5OE7LN/moc_ProfileEditorDialog.cpp"
 #include "YPKJ5OE7LN/moc_ProfilesWidget.cpp"
+#include "YPKJ5OE7LN/moc_ProviderSubscriptionDialog.cpp"
 #include "YPKJ5OE7LN/moc_TemplateEditorDialog.cpp"
 #include "YPKJ5OE7LN/moc_TemplatesWidget.cpp"

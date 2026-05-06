@@ -20,6 +20,8 @@ opencode-meta-qt_autogen/timestamp: \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.h \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.h \
+	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProviderSubscriptionDialog.cpp \
+	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProviderSubscriptionDialog.h \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h \
 	/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp \
@@ -452,6 +454,7 @@ opencode-meta-qt_autogen/timestamp: \
 	/usr/include/qt6/QtCore/qversiontagging.h \
 	/usr/include/qt6/QtCore/qxptype_traits.h \
 	/usr/include/qt6/QtCore/qyieldcpu.h \
+	/usr/include/qt6/QtGui/QStandardItemModel \
 	/usr/include/qt6/QtGui/qaction.h \
 	/usr/include/qt6/QtGui/qbitmap.h \
 	/usr/include/qt6/QtGui/qbrush.h \
@@ -472,6 +475,7 @@ opencode-meta-qt_autogen/timestamp: \
 	/usr/include/qt6/QtGui/qregion.h \
 	/usr/include/qt6/QtGui/qrgb.h \
 	/usr/include/qt6/QtGui/qrgba64.h \
+	/usr/include/qt6/QtGui/qstandarditemmodel.h \
 	/usr/include/qt6/QtGui/qtgui-config.h \
 	/usr/include/qt6/QtGui/qtguiexports.h \
 	/usr/include/qt6/QtGui/qtguiglobal.h \

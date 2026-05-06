@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSet>
 
 QString StorageManager::rootPath() const
 {
@@ -401,4 +402,64 @@ QString StorageManager::getDefaultProfile() const
     const QJsonObject obj = doc.object();
     const QString id = obj.value(QStringLiteral("id")).toString();
     return id;
+}
+
+// Preferred providers for Models Browser (new)
+bool StorageManager::savePreferredProviders(const QSet<QString> &providers) const
+{
+    ensureRoot();
+
+    QJsonArray array;
+    for (const QString &provider : providers) {
+        array.append(provider);
+    }
+
+    const QString filePath = rootPath() + QStringLiteral("/preferred-providers.json");
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qDebug() << "StorageManager: failed to open preferred-providers.json for writing" << filePath << file.errorString();
+        return false;
+    }
+
+    const QJsonDocument doc(array);
+    const QByteArray data = doc.toJson(QJsonDocument::Compact);  // Compact for small set
+    const qint64 written = file.write(data);
+    if (written != data.size()) {
+        qDebug() << "StorageManager: failed to write preferred-providers.json" << filePath;
+        return false;
+    }
+
+    return true;
+}
+
+QSet<QString> StorageManager::loadPreferredProviders() const
+{
+    QSet<QString> providers;
+
+    const QString filePath = rootPath() + QStringLiteral("/preferred-providers.json");
+    QFile file(filePath);
+    if (!file.exists()) {
+        return providers;  // Empty set is default
+    }
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "StorageManager: failed to open preferred-providers.json for reading" << filePath << file.errorString();
+        return providers;
+    }
+
+    const QByteArray data = file.readAll();
+    QJsonParseError parseError{};
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isArray()) {
+        qDebug() << "StorageManager: failed to parse preferred-providers.json" << filePath << parseError.errorString();
+        return providers;
+    }
+
+    const QJsonArray array = doc.array();
+    for (const QJsonValue &value : array) {
+        if (value.isString()) {
+            providers.insert(value.toString());
+        }
+    }
+
+    return providers;
 }

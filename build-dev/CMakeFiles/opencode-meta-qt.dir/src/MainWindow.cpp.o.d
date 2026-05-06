@@ -402,4 +402,11 @@ CMakeFiles/opencode-meta-qt.dir/src/MainWindow.cpp.o: \
  /usr/include/qt6/QtWidgets/QTabWidget \
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.h \
  /usr/include/qt6/QtWidgets/QWidget \
- /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.h
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.h \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.h \
+ /usr/include/qt6/QtCore/QSortFilterProxyModel \
+ /usr/include/qt6/QtCore/qsortfilterproxymodel.h \
+ /usr/include/qt6/QtCore/qabstractproxymodel.h \
+ /usr/include/qt6/QtCore/qabstractitemmodel.h \
+ /usr/include/qt6/QtCore/QStringList \
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProjectsWidget.h

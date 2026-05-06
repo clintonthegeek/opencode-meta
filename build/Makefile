@@ -371,6 +371,30 @@ src/ui/ProfilesWidget.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s
 .PHONY : src/ui/ProfilesWidget.cpp.s
 
+src/ui/ProviderSubscriptionDialog.o: src/ui/ProviderSubscriptionDialog.cpp.o
+.PHONY : src/ui/ProviderSubscriptionDialog.o
+
+# target to build an object file
+src/ui/ProviderSubscriptionDialog.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.o
+.PHONY : src/ui/ProviderSubscriptionDialog.cpp.o
+
+src/ui/ProviderSubscriptionDialog.i: src/ui/ProviderSubscriptionDialog.cpp.i
+.PHONY : src/ui/ProviderSubscriptionDialog.i
+
+# target to preprocess a source file
+src/ui/ProviderSubscriptionDialog.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.i
+.PHONY : src/ui/ProviderSubscriptionDialog.cpp.i
+
+src/ui/ProviderSubscriptionDialog.s: src/ui/ProviderSubscriptionDialog.cpp.s
+.PHONY : src/ui/ProviderSubscriptionDialog.s
+
+# target to generate assembly for a file
+src/ui/ProviderSubscriptionDialog.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.s
+.PHONY : src/ui/ProviderSubscriptionDialog.cpp.s
+
 src/ui/TemplateEditorDialog.o: src/ui/TemplateEditorDialog.cpp.o
 .PHONY : src/ui/TemplateEditorDialog.o
 
@@ -457,6 +481,9 @@ help:
 	@echo "... src/ui/ProfilesWidget.o"
 	@echo "... src/ui/ProfilesWidget.i"
 	@echo "... src/ui/ProfilesWidget.s"
+	@echo "... src/ui/ProviderSubscriptionDialog.o"
+	@echo "... src/ui/ProviderSubscriptionDialog.i"
+	@echo "... src/ui/ProviderSubscriptionDialog.s"
 	@echo "... src/ui/TemplateEditorDialog.o"
 	@echo "... src/ui/TemplateEditorDialog.i"
 	@echo "... src/ui/TemplateEditorDialog.s"

@@ -21,6 +21,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o"

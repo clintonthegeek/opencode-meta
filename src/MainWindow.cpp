@@ -6,6 +6,7 @@
 #include "ui/TemplatesWidget.h"
 #include "ui/ProfilesWidget.h"
 #include "ui/ModelsBrowserWidget.h"
+#include "ui/ProjectsWidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,6 +28,10 @@ MainWindow::MainWindow(QWidget *parent)
     // Profiles tab
     auto *profilesWidget = new ProfilesWidget(m_storageManager, this);
     m_tabWidget->addTab(profilesWidget, tr("Profiles"));
+
+    // Projects tab
+    auto *projectsWidget = new ProjectsWidget(m_storageManager, this);
+    m_tabWidget->addTab(projectsWidget, tr("Projects"));
 
     // Models tab
     auto *modelsWidget = new ModelsBrowserWidget(m_storageManager, this);

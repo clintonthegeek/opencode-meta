@@ -17,6 +17,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ModelsBrowserWidget.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o.d"
+  "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProviderSubscriptionDialog.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProviderSubscriptionDialog.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o.d"
   "" "opencode-meta-qt" "gcc" "CMakeFiles/opencode-meta-qt.dir/link.d"

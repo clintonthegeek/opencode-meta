@@ -710,6 +710,12 @@
 			null
 		],
 		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProviderSubscriptionDialog.h",
+			"MU",
+			"YPKJ5OE7LN/moc_ProviderSubscriptionDialog.cpp",
+			null
+		],
+		[
 			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h",
 			"MU",
 			"YPKJ5OE7LN/moc_TemplateEditorDialog.cpp",
@@ -820,6 +826,11 @@
 		],
 		[
 			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProviderSubscriptionDialog.cpp",
 			"MU",
 			null
 		],
