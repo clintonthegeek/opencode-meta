@@ -299,6 +299,54 @@ src/storage/StorageManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.s
 .PHONY : src/storage/StorageManager.cpp.s
 
+src/ui/TemplateEditorDialog.o: src/ui/TemplateEditorDialog.cpp.o
+.PHONY : src/ui/TemplateEditorDialog.o
+
+# target to build an object file
+src/ui/TemplateEditorDialog.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o
+.PHONY : src/ui/TemplateEditorDialog.cpp.o
+
+src/ui/TemplateEditorDialog.i: src/ui/TemplateEditorDialog.cpp.i
+.PHONY : src/ui/TemplateEditorDialog.i
+
+# target to preprocess a source file
+src/ui/TemplateEditorDialog.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.i
+.PHONY : src/ui/TemplateEditorDialog.cpp.i
+
+src/ui/TemplateEditorDialog.s: src/ui/TemplateEditorDialog.cpp.s
+.PHONY : src/ui/TemplateEditorDialog.s
+
+# target to generate assembly for a file
+src/ui/TemplateEditorDialog.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.s
+.PHONY : src/ui/TemplateEditorDialog.cpp.s
+
+src/ui/TemplatesWidget.o: src/ui/TemplatesWidget.cpp.o
+.PHONY : src/ui/TemplatesWidget.o
+
+# target to build an object file
+src/ui/TemplatesWidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o
+.PHONY : src/ui/TemplatesWidget.cpp.o
+
+src/ui/TemplatesWidget.i: src/ui/TemplatesWidget.cpp.i
+.PHONY : src/ui/TemplatesWidget.i
+
+# target to preprocess a source file
+src/ui/TemplatesWidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.i
+.PHONY : src/ui/TemplatesWidget.cpp.i
+
+src/ui/TemplatesWidget.s: src/ui/TemplatesWidget.cpp.s
+.PHONY : src/ui/TemplatesWidget.s
+
+# target to generate assembly for a file
+src/ui/TemplatesWidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.s
+.PHONY : src/ui/TemplatesWidget.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -328,6 +376,12 @@ help:
 	@echo "... src/storage/StorageManager.o"
 	@echo "... src/storage/StorageManager.i"
 	@echo "... src/storage/StorageManager.s"
+	@echo "... src/ui/TemplateEditorDialog.o"
+	@echo "... src/ui/TemplateEditorDialog.i"
+	@echo "... src/ui/TemplateEditorDialog.s"
+	@echo "... src/ui/TemplatesWidget.o"
+	@echo "... src/ui/TemplatesWidget.i"
+	@echo "... src/ui/TemplatesWidget.s"
 .PHONY : help
 
 

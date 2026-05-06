@@ -4,6 +4,8 @@
 
 #include "storage/StorageManager.h"
 
+class QTabWidget;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -14,4 +16,5 @@ public:
 
 private:
     StorageManager m_storageManager;
+    QTabWidget *m_tabWidget = nullptr;
 };

@@ -14,6 +14,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 set(SOURCES
 	src/main.cpp
 	src/MainWindow.cpp
+	src/ui/TemplatesWidget.cpp
+	src/ui/TemplateEditorDialog.cpp
 	src/models/Template.cpp
 	src/models/Profile.cpp
 	src/storage/StorageManager.cpp
@@ -21,6 +23,8 @@ set(SOURCES
 
 set(HEADERS
 	src/MainWindow.h
+	src/ui/TemplatesWidget.h
+	src/ui/TemplateEditorDialog.h
 	src/models/Template.h
 	src/models/Profile.h
 	src/models/ModelInfo.h

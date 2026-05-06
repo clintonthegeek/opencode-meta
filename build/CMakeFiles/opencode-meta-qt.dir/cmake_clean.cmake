@@ -15,6 +15,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o.d"
   "opencode-meta-qt"
   "opencode-meta-qt.pdb"
 )

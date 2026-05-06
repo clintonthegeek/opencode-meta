@@ -579,6 +579,18 @@
 			"MU",
 			"F2ESZRYZMC/moc_StorageManager.cpp",
 			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h",
+			"MU",
+			"YPKJ5OE7LN/moc_TemplateEditorDialog.cpp",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.h",
+			"MU",
+			"YPKJ5OE7LN/moc_TemplatesWidget.cpp",
+			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
@@ -662,6 +674,16 @@
 		],
 		[
 			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp",
 			"MU",
 			null
 		]
