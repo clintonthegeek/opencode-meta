@@ -23,6 +23,9 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QInputDialog>
+#include <QAbstractItemView>
+#include <QDateTime>
+#include <QSet>
 
 #include "storage/StorageManager.h"
 
@@ -98,11 +101,8 @@ bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
     // Provider filter
     if (!m_providerFilter.isEmpty()) {
         const QString provider = src->data(idIdx, ProviderRole).toString();
-        if (!provider.compare(m_providerFilter, Qt::CaseSensitive) == 0) {
-            // If there is any mismatch, row does not match provider filter.
-            if (provider != m_providerFilter) {
-                return false;
-            }
+        if (provider != m_providerFilter) {
+            return false;
         }
     }
 
@@ -271,7 +271,7 @@ void ModelsBrowserWidget::loadFromCacheOrFetch()
         const qint64 ageSecs = cache.timestamp.secsTo(now);
         if (ageSecs >= 0 && ageSecs < 24 * 60 * 60 && !cache.models.isEmpty()) {
             m_statusLabel->setText(tr("Loaded models from cache (updated %1)")
-                                       .arg(cache.timestamp.toLocalTime().toString(Qt::DefaultLocaleShortDate)));
+                                       .arg(cache.timestamp.toLocalTime().toString(Qt::ISODate)));
             clearModel();
             QSet<QString> providers;
             for (auto it = cache.models.constBegin(); it != cache.models.constEnd(); ++it) {
@@ -375,7 +375,8 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
 
     // The models.dev snapshot is a map of provider id -> provider object,
     // each containing a "models" object.
-    for (auto providerIt = root.begin(); providerIt != root.end(); ++providerIt) {
+    const QJsonObject providersObj = root.value(QStringLiteral("providers")).toObject();
+    for (auto providerIt = providersObj.begin(); providerIt != providersObj.end(); ++providerIt) {
         if (!providerIt.value().isObject()) {
             continue;
         }
@@ -394,24 +395,66 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
                 continue;
             }
 
+            const QString modelKey = modelIt.key();
             const QJsonObject modelObj = modelIt.value().toObject();
 
             ModelInfo info;
-            info.id = modelObj.value(QStringLiteral("id")).toString(modelIt.key());
-            info.displayName = modelObj.value(QStringLiteral("name")).toString(info.id);
 
-            const QJsonObject costObj = modelObj.value(QStringLiteral("cost")).toObject();
-            info.inputCost = costObj.value(QStringLiteral("input")).toDouble();
-            info.outputCost = costObj.value(QStringLiteral("output")).toDouble();
+            // Basic identifiers
+            info.id = modelObj.value(QStringLiteral("id")).toString(modelKey);
+            // Prefer display_name, fall back to name, then id.
+            info.displayName = modelObj.value(QStringLiteral("display_name"))
+                                   .toString(modelObj.value(QStringLiteral("name"))
+                                                 .toString(info.id));
 
-            const bool reasoning = modelObj.value(QStringLiteral("reasoning")).toBool(false);
-            const bool toolCall = modelObj.value(QStringLiteral("tool_call")).toBool(false);
+            // Pricing: best-effort mapping into input/output cost fields.
+            const QJsonObject pricingObj = modelObj.value(QStringLiteral("pricing")).toObject();
+            double inputCost = 0.0;
+            double outputCost = 0.0;
 
+            if (!pricingObj.isEmpty()) {
+                const QJsonValue in = pricingObj.value(QStringLiteral("input"));
+                const QJsonValue out = pricingObj.value(QStringLiteral("output"));
+                const QJsonValue prompt = pricingObj.value(QStringLiteral("prompt"));
+                const QJsonValue total = pricingObj.value(QStringLiteral("total"));
+                const QJsonValue cost = pricingObj.value(QStringLiteral("cost"));
+
+                if (in.isDouble()) {
+                    inputCost = in.toDouble();
+                } else if (prompt.isDouble()) {
+                    inputCost = prompt.toDouble();
+                } else if (total.isDouble()) {
+                    inputCost = total.toDouble();
+                } else if (cost.isDouble()) {
+                    inputCost = cost.toDouble();
+                }
+
+                if (out.isDouble()) {
+                    outputCost = out.toDouble();
+                } else {
+                    // Fall back to the single cost if no dedicated output price.
+                    outputCost = inputCost;
+                }
+            }
+
+            info.inputCost = inputCost;
+            info.outputCost = outputCost;
+
+            // Capabilities: map models.dev capability flags into simple tags.
+            const QJsonObject capsObj = modelObj.value(QStringLiteral("capabilities")).toObject();
+
+            const bool reasoning = capsObj.value(QStringLiteral("reasoning")).toBool(false);
             if (reasoning) {
                 info.capabilities.insert(QStringLiteral("reasoning"));
             }
-            if (toolCall) {
-                info.capabilities.insert(QStringLiteral("tool-use"));
+
+            const char *toolKeys[] = {"tools", "tool_use", "tool_call", "function_call"};
+            for (const char *key : toolKeys) {
+                const QJsonValue v = capsObj.value(QLatin1String(key));
+                if (v.isBool() && v.toBool()) {
+                    info.capabilities.insert(QStringLiteral("tool-use"));
+                    break;
+                }
             }
 
             // Preserve the raw model payload, augmented with provider metadata
@@ -421,9 +464,24 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
             data.insert(QStringLiteral("input_cost"), info.inputCost);
             data.insert(QStringLiteral("output_cost"), info.outputCost);
 
+            // Best-effort context window extraction from capabilities.
+            int contextWindow = 0;
+            const char *ctxKeys[] = {"max_context", "context", "context_length", "context_window"};
+            for (const char *key : ctxKeys) {
+                const QJsonValue v = capsObj.value(QLatin1String(key));
+                if (v.isDouble()) {
+                    contextWindow = v.toInt();
+                    break;
+                }
+            }
+            if (contextWindow > 0) {
+                data.insert(QStringLiteral("context_window"), contextWindow);
+            }
+
             if (!info.capabilities.isEmpty()) {
                 QJsonArray capsArray;
-                for (const QString &cap : info.capabilities) {
+                const QStringList capsList = info.capabilities.values();
+                for (const QString &cap : capsList) {
                     capsArray.append(cap);
                 }
                 data.insert(QStringLiteral("capabilities"), capsArray);
@@ -431,13 +489,7 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
 
             info.data = data;
 
-            int contextWindow = 0;
-            const QJsonObject limitObj = modelObj.value(QStringLiteral("limit")).toObject();
-            if (!limitObj.isEmpty()) {
-                contextWindow = limitObj.value(QStringLiteral("context")).toInt();
-            }
-
-            QStringList capsList = info.capabilities.values();
+            const QStringList capsList = info.capabilities.values();
 
             addModelRow(info.id,
                         info.displayName,

@@ -257,6 +257,7 @@ opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/build.make
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
 opencode-meta-qt: /usr/lib/libQt6Widgets.so.6.11.0
+opencode-meta-qt: /usr/lib/libQt6Network.so.6.11.0
 opencode-meta-qt: /usr/lib/libQt6Gui.so.6.11.0
 opencode-meta-qt: /usr/lib/libGLX.so
 opencode-meta-qt: /usr/lib/libOpenGL.so

@@ -51,6 +51,7 @@ target_include_directories(opencode-meta-qt PRIVATE
 target_link_libraries(opencode-meta-qt PRIVATE
     Qt6::Core
     Qt6::Widgets
+    Qt6::Network
 )
 
 qt_finalize_executable(opencode-meta-qt)

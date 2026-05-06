@@ -1,10 +1,13 @@
 #pragma once
 
 #include <QWidget>
+#include <QSortFilterProxyModel>
+#include <QJsonObject>
+#include <QSet>
+#include <QStringList>
 
 class QTableView;
 class QStandardItemModel;
-class QSortFilterProxyModel;
 class QLineEdit;
 class QComboBox;
 class QSpinBox;
@@ -12,6 +15,7 @@ class QCheckBox;
 class QPushButton;
 class QLabel;
 class QNetworkAccessManager;
+class QNetworkReply;
 
 class StorageManager;
 
@@ -89,7 +93,6 @@ private slots:
 private:
     void setupUi();
     void loadFromCacheOrFetch();
-    void populateFromCache();
     void populateFromRemoteJson(const QJsonObject &root);
     void clearModel();
 
