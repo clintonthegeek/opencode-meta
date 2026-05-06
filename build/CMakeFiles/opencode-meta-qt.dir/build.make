@@ -142,10 +142,38 @@ CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp -o CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.s
 
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o: CMakeFiles/opencode-meta-qt.dir/flags.make
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o: /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o -MF CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o.d -o CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o -c /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp
+
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp > CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.i
+
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp -o CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s
+
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o: CMakeFiles/opencode-meta-qt.dir/flags.make
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o: /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o -MF CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o.d -o CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o -c /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp
+
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp > CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.i
+
+CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp -o CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.s
+
 CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o: CMakeFiles/opencode-meta-qt.dir/flags.make
 CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o: /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.cpp
 CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o -MF CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o.d -o CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o -c /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.cpp
 
 CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.i: cmake_force
@@ -159,7 +187,7 @@ CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.s: cmake_force
 CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o: CMakeFiles/opencode-meta-qt.dir/flags.make
 CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o: /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.cpp
 CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o -MF CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o.d -o CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o -c /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.cpp
 
 CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.i: cmake_force
@@ -173,7 +201,7 @@ CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.s: cmake_force
 CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o: CMakeFiles/opencode-meta-qt.dir/flags.make
 CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o: /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp
 CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o: CMakeFiles/opencode-meta-qt.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o -MF CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o.d -o CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o -c /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp
 
 CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.i: cmake_force
@@ -191,6 +219,8 @@ opencode__meta__qt_OBJECTS = \
 "CMakeFiles/opencode-meta-qt.dir/src/MainWindow.cpp.o" \
 "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o" \
 "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o" \
+"CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o" \
+"CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o" \
 "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o" \
 "CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o" \
 "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
@@ -203,6 +233,8 @@ opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/main.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/MainWindow.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o
+opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o
+opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o
@@ -214,7 +246,7 @@ opencode-meta-qt: /usr/lib/libGLX.so
 opencode-meta-qt: /usr/lib/libOpenGL.so
 opencode-meta-qt: /usr/lib/libQt6Core.so.6.11.0
 opencode-meta-qt: CMakeFiles/opencode-meta-qt.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable opencode-meta-qt"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable opencode-meta-qt"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/opencode-meta-qt.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

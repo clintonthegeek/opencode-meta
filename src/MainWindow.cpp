@@ -4,6 +4,7 @@
 #include <QTabWidget>
 
 #include "ui/TemplatesWidget.h"
+#include "ui/ProfilesWidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,6 +22,10 @@ MainWindow::MainWindow(QWidget *parent)
     // Templates tab
     auto *templatesWidget = new TemplatesWidget(m_storageManager, this);
     m_tabWidget->addTab(templatesWidget, tr("Templates"));
+
+    // Profiles tab
+    auto *profilesWidget = new ProfilesWidget(m_storageManager, this);
+    m_tabWidget->addTab(profilesWidget, tr("Profiles"));
 
     setCentralWidget(m_tabWidget);
 

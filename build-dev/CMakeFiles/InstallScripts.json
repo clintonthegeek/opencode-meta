@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/clinton/dev/opencode-meta/opencode-meta-qt/build-dev/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -299,6 +299,54 @@ src/storage/StorageManager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.s
 .PHONY : src/storage/StorageManager.cpp.s
 
+src/ui/ProfileEditorDialog.o: src/ui/ProfileEditorDialog.cpp.o
+.PHONY : src/ui/ProfileEditorDialog.o
+
+# target to build an object file
+src/ui/ProfileEditorDialog.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o
+.PHONY : src/ui/ProfileEditorDialog.cpp.o
+
+src/ui/ProfileEditorDialog.i: src/ui/ProfileEditorDialog.cpp.i
+.PHONY : src/ui/ProfileEditorDialog.i
+
+# target to preprocess a source file
+src/ui/ProfileEditorDialog.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.i
+.PHONY : src/ui/ProfileEditorDialog.cpp.i
+
+src/ui/ProfileEditorDialog.s: src/ui/ProfileEditorDialog.cpp.s
+.PHONY : src/ui/ProfileEditorDialog.s
+
+# target to generate assembly for a file
+src/ui/ProfileEditorDialog.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.s
+.PHONY : src/ui/ProfileEditorDialog.cpp.s
+
+src/ui/ProfilesWidget.o: src/ui/ProfilesWidget.cpp.o
+.PHONY : src/ui/ProfilesWidget.o
+
+# target to build an object file
+src/ui/ProfilesWidget.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o
+.PHONY : src/ui/ProfilesWidget.cpp.o
+
+src/ui/ProfilesWidget.i: src/ui/ProfilesWidget.cpp.i
+.PHONY : src/ui/ProfilesWidget.i
+
+# target to preprocess a source file
+src/ui/ProfilesWidget.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.i
+.PHONY : src/ui/ProfilesWidget.cpp.i
+
+src/ui/ProfilesWidget.s: src/ui/ProfilesWidget.cpp.s
+.PHONY : src/ui/ProfilesWidget.s
+
+# target to generate assembly for a file
+src/ui/ProfilesWidget.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.s
+.PHONY : src/ui/ProfilesWidget.cpp.s
+
 src/ui/TemplateEditorDialog.o: src/ui/TemplateEditorDialog.cpp.o
 .PHONY : src/ui/TemplateEditorDialog.o
 
@@ -376,6 +424,12 @@ help:
 	@echo "... src/storage/StorageManager.o"
 	@echo "... src/storage/StorageManager.i"
 	@echo "... src/storage/StorageManager.s"
+	@echo "... src/ui/ProfileEditorDialog.o"
+	@echo "... src/ui/ProfileEditorDialog.i"
+	@echo "... src/ui/ProfileEditorDialog.s"
+	@echo "... src/ui/ProfilesWidget.o"
+	@echo "... src/ui/ProfilesWidget.i"
+	@echo "... src/ui/ProfilesWidget.s"
 	@echo "... src/ui/TemplateEditorDialog.o"
 	@echo "... src/ui/TemplateEditorDialog.i"
 	@echo "... src/ui/TemplateEditorDialog.s"

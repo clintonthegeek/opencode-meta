@@ -16,6 +16,8 @@ set(SOURCES
 	src/MainWindow.cpp
 	src/ui/TemplatesWidget.cpp
 	src/ui/TemplateEditorDialog.cpp
+	src/ui/ProfilesWidget.cpp
+	src/ui/ProfileEditorDialog.cpp
 	src/models/Template.cpp
 	src/models/Profile.cpp
 	src/storage/StorageManager.cpp
@@ -25,6 +27,8 @@ set(HEADERS
 	src/MainWindow.h
 	src/ui/TemplatesWidget.h
 	src/ui/TemplateEditorDialog.h
+	src/ui/ProfilesWidget.h
+	src/ui/ProfileEditorDialog.h
 	src/models/Template.h
 	src/models/Profile.h
 	src/models/ModelInfo.h
@@ -36,6 +40,10 @@ qt_add_executable(opencode-meta-qt
     MANUAL_FINALIZATION
     ${SOURCES}
     ${HEADERS}
+)
+
+target_include_directories(opencode-meta-qt PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(opencode-meta-qt PRIVATE

@@ -17,6 +17,10 @@
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp
  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.h
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp
+ /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.h
  /usr/bin/cmake
  /usr/include/alloca.h
  /usr/include/asm-generic/bitsperlong.h
@@ -450,7 +454,10 @@
  /usr/include/qt6/QtGui/qtguiglobal.h
  /usr/include/qt6/QtGui/qtransform.h
  /usr/include/qt6/QtGui/qwindowdefs.h
+ /usr/include/qt6/QtWidgets/QDialog
  /usr/include/qt6/QtWidgets/QMainWindow
+ /usr/include/qt6/QtWidgets/QWidget
+ /usr/include/qt6/QtWidgets/qdialog.h
  /usr/include/qt6/QtWidgets/qmainwindow.h
  /usr/include/qt6/QtWidgets/qsizepolicy.h
  /usr/include/qt6/QtWidgets/qtabwidget.h

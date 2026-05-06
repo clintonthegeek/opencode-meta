@@ -16,6 +16,10 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.h \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp \
   /home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.h \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp \
+  /home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.h \
   /usr/bin/cmake \
   /usr/include/alloca.h \
   /usr/include/asm-generic/bitsperlong.h \
@@ -449,7 +453,10 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
   /usr/include/qt6/QtGui/qtguiglobal.h \
   /usr/include/qt6/QtGui/qtransform.h \
   /usr/include/qt6/QtGui/qwindowdefs.h \
+  /usr/include/qt6/QtWidgets/QDialog \
   /usr/include/qt6/QtWidgets/QMainWindow \
+  /usr/include/qt6/QtWidgets/QWidget \
+  /usr/include/qt6/QtWidgets/qdialog.h \
   /usr/include/qt6/QtWidgets/qmainwindow.h \
   /usr/include/qt6/QtWidgets/qsizepolicy.h \
   /usr/include/qt6/QtWidgets/qtabwidget.h \
@@ -914,8 +921,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake:
 
-/usr/share/cmake/Modules/GNUInstallDirs.cmake:
-
 /usr/share/cmake/Modules/FindVulkan.cmake:
 
 /usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:
@@ -1226,8 +1231,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevTabletPluginConfig.cmake:
 
-/usr/lib/cmake/Qt6Gui/Qt6QEvdevTabletPluginAdditionalTargetInfo.cmake:
-
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevMousePluginTargetsPrecheck.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevMousePluginTargets.cmake:
@@ -1277,8 +1280,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/lib/cmake/Qt6Gui/Qt6QComposePlatformInputContextPluginAdditionalTargetInfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6GuiTargetsPrecheck.cmake:
-
-/usr/lib/cmake/Qt6Gui/Qt6GuiTargets.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6GuiTargets-relwithdebinfo.cmake:
 
@@ -1336,11 +1337,11 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/lib/cmake/Qt6DBus/Qt6DBusMacros.cmake:
 
-/usr/lib/cmake/Qt6Widgets/Qt6WidgetsDependencies.cmake:
+/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersionImpl.cmake:
 
-/usr/include/c++/15.2.1/variant:
+/usr/lib/cmake/Qt6DBus/Qt6DBusAdditionalTargetInfo.cmake:
 
-/usr/include/c++/15.2.1/initializer_list:
+/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargetsPrecheck.cmake:
 
 /usr/include/c++/15.2.1/unordered_set:
 
@@ -1361,12 +1362,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/c++/15.2.1/string_view:
 
 /usr/include/c++/15.2.1/ratio:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandFullScreenShellV1IntegrationPluginTargets.cmake:
-
-/usr/include/qt6/QtGui/qcursor.h:
-
-/usr/include/c++/15.2.1/tr1/exp_integral.tcc:
 
 /usr/lib/cmake/Qt6DBusTools/Qt6DBusToolsAdditionalTargetInfo.cmake:
 
@@ -1419,6 +1414,10 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/c++/15.2.1/bits/shared_ptr_base.h:
 
 /usr/lib/cmake/Qt6/QtPublicPluginHelpers.cmake:
+
+/usr/lib/cmake/Qt6DBus/Qt6DBusDependencies.cmake:
+
+/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargets-relwithdebinfo.cmake:
 
 /usr/lib/cmake/Qt6Gui/Qt6QEvdevMousePluginTargets-relwithdebinfo.cmake:
 
@@ -1494,10 +1493,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/c++/15.2.1/bits/unordered_map.h:
 
-/usr/include/c++/15.2.1/set:
-
-/usr/include/qt6/QtCore/qiodevicebase.h:
-
 /usr/include/bits/types/__fpos_t.h:
 
 /usr/include/c++/15.2.1/bits/string_view.tcc:
@@ -1545,10 +1540,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/c++/15.2.1/typeinfo:
 
 /usr/include/c++/15.2.1/bits/specfun.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandAdwaitaDecorationPluginAdditionalTargetInfo.cmake:
-
-/usr/include/c++/15.2.1/bits/shared_ptr_atomic.h:
 
 /usr/include/c++/15.2.1/tr1/bessel_function.tcc:
 
@@ -1658,13 +1649,27 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/bits/types/sigset_t.h:
 
-/usr/include/c++/15.2.1/type_traits:
+/usr/include/c++/15.2.1/bits/hashtable_policy.h:
 
-/usr/include/c++/15.2.1/bits/align.h:
+/usr/include/c++/15.2.1/bits/hashtable.h:
 
-/usr/include/bits/thread-shared-types.h:
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp:
 
-/usr/include/bits/types/time_t.h:
+/usr/lib/cmake/Qt6Gui/Qt6QVncIntegrationPluginTargets-relwithdebinfo.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QJp2PluginTargets.cmake:
+
+/usr/include/qt6/QtCore/qhashfunctions.h:
+
+/usr/include/c++/15.2.1/ext/concurrence.h:
+
+/usr/include/c++/15.2.1/cctype:
+
+/usr/include/c++/15.2.1/backward/binders.h:
+
+/usr/include/c++/15.2.1/bits/hash_bytes.h:
+
+/usr/include/qt6/QtCore/qtcore-config.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QWebpPluginTargetsPrecheck.cmake:
 
@@ -1738,31 +1743,33 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/qt6/QtCore/qsharedpointer.h:
 
-/usr/include/c++/15.2.1/bits/hashtable.h:
+/usr/include/qt6/QtCore/qscopedpointer.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QVncIntegrationPluginTargets-relwithdebinfo.cmake:
+/usr/include/qt6/QtCore/qanystringview.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QJp2PluginTargets.cmake:
+/usr/include/c++/15.2.1/bits/invoke.h:
 
-/usr/include/qt6/QtCore/qhashfunctions.h:
+/usr/include/bits/endian.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QTiffPluginConfig.cmake:
+/usr/include/c++/15.2.1/bits/std_abs.h:
 
-/usr/include/c++/15.2.1/tr1/beta_function.tcc:
+/usr/include/c++/15.2.1/tr1/special_function_util.h:
 
-/usr/include/bits/pthreadtypes.h:
+/usr/include/c++/15.2.1/bits/stl_map.h:
 
-/usr/include/qt6/QtCore/qsharedpointer_impl.h:
+/usr/include/asm-generic/posix_types.h:
 
-/usr/include/c++/15.2.1/bits/hashtable_policy.h:
+/usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsConfig.cmake:
 
-/usr/lib/cmake/Qt6Widgets/Qt6WidgetsTargetsPrecheck.cmake:
+/usr/include/bits/byteswap.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginConfig.cmake:
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.h:
 
-/usr/include/qt6/QtGui/qtransform.h:
+/usr/include/qt6/QtCore/qbytearray.h:
 
-/usr/include/bits/time64.h:
+/usr/lib/cmake/Qt6Core/Qt6CoreConfig.cmake:
+
+/usr/include/asm/types.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QGtk3ThemePluginTargets-relwithdebinfo.cmake:
 
@@ -1783,18 +1790,6 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 /usr/include/bits/posix1_lim.h:
 
 /usr/include/wchar.h:
-
-/usr/include/c++/15.2.1/bits/std_abs.h:
-
-/usr/include/c++/15.2.1/tr1/special_function_util.h:
-
-/usr/include/c++/15.2.1/bits/stl_map.h:
-
-/usr/include/asm-generic/posix_types.h:
-
-/usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsConfig.cmake:
-
-/usr/include/bits/byteswap.h:
 
 /usr/include/c++/15.2.1/bits/vector.tcc:
 
@@ -1822,11 +1817,17 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.cpp:
 
+/usr/include/qt6/QtWidgets/QDialog:
+
 /usr/include/c++/15.2.1/bits/uniform_int_dist.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QXcbGlxIntegrationPluginTargets-relwithdebinfo.cmake:
 
 /usr/include/c++/15.2.1/cwchar:
+
+/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersion.cmake:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QPdfPluginConfig.cmake:
 
@@ -1850,17 +1851,25 @@ opencode-meta-qt_autogen/timestamp: /home/clinton/dev/opencode-meta/opencode-met
 
 /usr/include/bits/waitstatus.h:
 
+/usr/include/c++/15.2.1/initializer_list:
+
+/usr/lib/cmake/Qt6Widgets/Qt6WidgetsDependencies.cmake:
+
+/usr/include/c++/15.2.1/variant:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandFullScreenShellV1IntegrationPluginTargets.cmake:
+
+/usr/include/c++/15.2.1/tr1/exp_integral.tcc:
+
+/usr/include/qt6/QtGui/qcursor.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/stdio.h:
+
 CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/qt6/QtCore/qcontainerinfo.h:
-
-/usr/include/qt6/QtCore/qscopedpointer.h:
-
-/usr/include/bits/endian.h:
-
-/usr/include/qt6/QtCore/qanystringview.h:
-
-/usr/include/c++/15.2.1/bits/invoke.h:
 
 /home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/ModelInfo.h:
 
@@ -1880,7 +1889,47 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/qt6/QtCore/qdatetime.h:
 
+/usr/include/c++/15.2.1/pstl/pstl_config.h:
+
+/usr/include/qt6/QtCore/qpair.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginTargets.cmake:
+
+/usr/include/bits/pthread_stack_min-dynamic.h:
+
+/usr/include/qt6/QtCore/qpoint.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QTiffPluginConfig.cmake:
+
+/usr/include/c++/15.2.1/tr1/beta_function.tcc:
+
+/usr/include/bits/pthreadtypes.h:
+
+/usr/include/qt6/QtCore/qsharedpointer_impl.h:
+
+/usr/share/cmake/Modules/GNUInstallDirs.cmake:
+
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.h:
+
+/usr/include/c++/15.2.1/bits/postypes.h:
+
+/usr/include/c++/15.2.1/ctime:
+
+/usr/include/qt6/QtGui/qtguiexports.h:
+
+/usr/include/bits/local_lim.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginTargets-relwithdebinfo.cmake:
+
+/usr/include/qt6/QtCore/qtcoreexports.h:
+
+/usr/include/bits/types/__mbstate_t.h:
+
 /usr/include/c++/15.2.1/tr1/ell_integral.tcc:
+
+/usr/include/c++/15.2.1/ext/numeric_traits.h:
+
+/usr/include/bits/xopen_lim.h:
 
 /usr/include/bits/endianness.h:
 
@@ -1898,45 +1947,17 @@ CMakeFiles/4.3.2/CMakeCXXCompiler.cmake:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr-default.h:
 
-/usr/include/c++/15.2.1/pstl/pstl_config.h:
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandAdwaitaDecorationPluginAdditionalTargetInfo.cmake:
 
-/usr/include/qt6/QtCore/qpair.h:
+/usr/include/c++/15.2.1/bits/shared_ptr_atomic.h:
 
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginTargets.cmake:
+/usr/lib/cmake/Qt6Gui/Qt6GuiTargets.cmake:
 
-/usr/include/bits/pthread_stack_min-dynamic.h:
-
-/usr/include/qt6/QtCore/qpoint.h:
-
-/usr/include/bits/xopen_lim.h:
-
-/usr/include/c++/15.2.1/ext/numeric_traits.h:
-
-/usr/include/c++/15.2.1/ctime:
-
-/usr/include/qt6/QtGui/qtguiexports.h:
-
-/usr/include/bits/local_lim.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginTargets-relwithdebinfo.cmake:
-
-/usr/include/qt6/QtCore/qtcoreexports.h:
-
-/usr/include/bits/types/__mbstate_t.h:
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp:
 
 /usr/include/bits/stdint-least.h:
 
 opencode-meta-qt_autogen/moc_predefs.h:
-
-/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginConfig.cmake:
-
-/usr/include/c++/15.2.1/debug/debug.h:
-
-/usr/lib/cmake/Qt6/QtPublicTargetHelpers.cmake:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreConfig.cmake:
-
-/usr/include/asm/types.h:
 
 /usr/include/c++/15.2.1/bits/stl_bvector.h:
 
@@ -1952,8 +1973,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qmetacontainer.h:
 
-/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersionImpl.cmake:
-
 /usr/include/c++/15.2.1/tr1/modified_bessel_func.tcc:
 
 /usr/include/c++/15.2.1/tr1/poly_laguerre.tcc:
@@ -1968,9 +1987,31 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++config.h:
 
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.h:
+/usr/include/bits/types/time_t.h:
 
-/usr/include/qt6/QtCore/qbytearray.h:
+/usr/include/c++/15.2.1/type_traits:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandXdgShellIntegrationPluginConfig.cmake:
+
+/usr/lib/cmake/Qt6/QtPublicTargetHelpers.cmake:
+
+/usr/include/c++/15.2.1/debug/debug.h:
+
+/usr/include/c++/15.2.1/bits/align.h:
+
+/usr/include/bits/thread-shared-types.h:
+
+/usr/lib/cmake/Qt6Core/Qt6CoreTargets.cmake:
+
+/usr/include/bits/stdlib-float.h:
+
+/usr/lib/cmake/Qt6Widgets/Qt6WidgetsTargetsPrecheck.cmake:
+
+/usr/lib/cmake/Qt6Gui/Qt6QWaylandIntegrationPluginConfig.cmake:
+
+/usr/include/qt6/QtGui/qtransform.h:
+
+/usr/include/bits/time64.h:
 
 /usr/include/bits/errno.h:
 
@@ -1994,13 +2035,7 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargets.cmake:
 
-/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargets-relwithdebinfo.cmake:
-
-/usr/lib/cmake/Qt6DBus/Qt6DBusDependencies.cmake:
-
 /usr/include/bits/types/mbstate_t.h:
-
-/usr/include/c++/15.2.1/version:
 
 /usr/include/qt6/QtCore/qshareddata_impl.h:
 
@@ -2066,12 +2101,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/bits/types/wint_t.h:
 
-/usr/include/c++/15.2.1/backward/binders.h:
-
-/usr/include/c++/15.2.1/ext/concurrence.h:
-
-/usr/include/c++/15.2.1/cctype:
-
 /usr/lib/cmake/Qt6Gui/Qt6QEglFSEmulatorIntegrationPluginConfig.cmake:
 
 /usr/include/c++/15.2.1/stdexcept:
@@ -2083,12 +2112,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/qt6/QtGui/qfontvariableaxis.h:
 
 /usr/include/c++/15.2.1/array:
-
-/usr/include/c++/15.2.1/bits/postypes.h:
-
-/usr/include/bits/stdlib-float.h:
-
-/usr/lib/cmake/Qt6Core/Qt6CoreTargets.cmake:
 
 /usr/include/c++/15.2.1/algorithm:
 
@@ -2120,6 +2143,8 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qstringconverter.h:
 
+/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h:
+
 /usr/include/c++/15.2.1/bits/charconv.h:
 
 /usr/include/c++/15.2.1/bits/concept_check.h:
@@ -2130,13 +2155,11 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtWidgets/QMainWindow:
 
-/usr/include/bits/wordsize.h:
+/usr/include/c++/15.2.1/set:
 
-/usr/include/stdio.h:
+/usr/include/qt6/QtCore/qiodevicebase.h:
 
-/usr/include/c++/15.2.1/bits/hash_bytes.h:
-
-/usr/include/qt6/QtCore/qtcore-config.h:
+/usr/include/c++/15.2.1/version:
 
 /usr/lib/cmake/Qt6Gui/Qt6QVirtualKeyboardPluginTargetsPrecheck.cmake:
 
@@ -2252,8 +2275,6 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qflags.h:
 
-/usr/lib/cmake/Qt6DBus/Qt6DBusAdditionalTargetInfo.cmake:
-
 /usr/include/qt6/QtCore/qarraydatapointer.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6DrmEglServerBufferPluginTargets-relwithdebinfo.cmake:
@@ -2290,11 +2311,11 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/lib/cmake/Qt6/Qt6Targets.cmake:
 
-/usr/include/qt6/QtCore/qrefcount.h:
-
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfig.cmake:
 
 /usr/include/c++/15.2.1/cstdio:
+
+/usr/include/qt6/QtCore/qrefcount.h:
 
 /usr/include/qt6/QtCore/qcalendar.h:
 
@@ -2426,6 +2447,8 @@ opencode-meta-qt_autogen/moc_predefs.h:
 
 /usr/include/qt6/QtCore/qmetatype.h:
 
+/usr/include/qt6/QtWidgets/QWidget:
+
 /usr/include/qt6/QtCore/qnamespace.h:
 
 /usr/lib/cmake/Qt6Gui/Qt6QIbusPlatformInputContextPluginTargets.cmake:
@@ -2471,6 +2494,10 @@ opencode-meta-qt_autogen/moc_predefs.h:
 /usr/include/assert.h:
 
 /usr/include/qt6/QtCore/qstringmatcher.h:
+
+/usr/lib/cmake/Qt6Gui/Qt6QEvdevTabletPluginAdditionalTargetInfo.cmake:
+
+/usr/include/qt6/QtWidgets/qdialog.h:
 
 /usr/include/qt6/QtCore/qstringtokenizer.h:
 
@@ -2681,9 +2708,3 @@ CMakeFiles/4.3.2/CMakeSystem.cmake:
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsConfigVersion.cmake:
 
 /usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsDependencies.cmake:
-
-/usr/lib/cmake/Qt6CoreTools/Qt6CoreToolsTargetsPrecheck.cmake:
-
-/home/clinton/dev/opencode-meta/opencode-meta-qt/src/MainWindow.h:
-
-/usr/lib/cmake/Qt6DBus/Qt6DBusConfigVersion.cmake:

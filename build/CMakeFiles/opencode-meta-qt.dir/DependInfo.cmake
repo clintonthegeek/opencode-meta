@@ -14,6 +14,8 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Profile.cpp" "CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/models/Template.cpp" "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp" "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o.d"
+  "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o.d"
+  "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplateEditorDialog.cpp.o.d"
   "/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplatesWidget.cpp" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o" "gcc" "CMakeFiles/opencode-meta-qt.dir/src/ui/TemplatesWidget.cpp.o.d"
   "" "opencode-meta-qt" "gcc" "CMakeFiles/opencode-meta-qt.dir/link.d"

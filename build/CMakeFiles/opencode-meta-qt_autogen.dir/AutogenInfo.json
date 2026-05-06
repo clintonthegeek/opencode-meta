@@ -581,6 +581,18 @@
 			null
 		],
 		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.h",
+			"MU",
+			"YPKJ5OE7LN/moc_ProfileEditorDialog.cpp",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.h",
+			"MU",
+			"YPKJ5OE7LN/moc_ProfilesWidget.cpp",
+			null
+		],
+		[
 			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/TemplateEditorDialog.h",
 			"MU",
 			"YPKJ5OE7LN/moc_TemplateEditorDialog.cpp",
@@ -606,6 +618,7 @@
 	],
 	"MOC_INCLUDES" : 
 	[
+		"/home/clinton/dev/opencode-meta/opencode-meta-qt/src",
 		"/usr/include/qt6/QtCore",
 		"/usr/include/qt6",
 		"/usr/lib/qt6/mkspecs/linux-g++",
@@ -674,6 +687,16 @@
 		],
 		[
 			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/storage/StorageManager.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfileEditorDialog.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/clinton/dev/opencode-meta/opencode-meta-qt/src/ui/ProfilesWidget.cpp",
 			"MU",
 			null
 		],
