@@ -15,6 +15,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/ui/ModelsBrowserWidget.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfileEditorDialog.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/ui/ProfilesWidget.cpp.o"

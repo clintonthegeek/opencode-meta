@@ -9,11 +9,12 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 set(SOURCES
 	src/main.cpp
 	src/MainWindow.cpp
+	src/ui/ModelsBrowserWidget.cpp
 	src/ui/TemplatesWidget.cpp
 	src/ui/TemplateEditorDialog.cpp
 	src/ui/ProfilesWidget.cpp
@@ -25,6 +26,7 @@ set(SOURCES
 
 set(HEADERS
 	src/MainWindow.h
+	src/ui/ModelsBrowserWidget.h
 	src/ui/TemplatesWidget.h
 	src/ui/TemplateEditorDialog.h
 	src/ui/ProfilesWidget.h
