@@ -12,4 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Simple central widget placeholder for now
     setCentralWidget(label);
+
+    // Ensure storage root directory exists on startup
+    m_storageManager.ensureRoot();
 }

@@ -12,12 +12,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
 set(SOURCES
-    src/main.cpp
-    src/MainWindow.cpp
+	src/main.cpp
+	src/MainWindow.cpp
+	src/models/Template.cpp
+	src/models/Profile.cpp
+	src/storage/StorageManager.cpp
 )
 
 set(HEADERS
-    src/MainWindow.h
+	src/MainWindow.h
+	src/models/Template.h
+	src/models/Profile.h
+	src/models/ModelInfo.h
+	src/models/ProjectRecord.h
+	src/storage/StorageManager.h
 )
 
 qt_add_executable(opencode-meta-qt

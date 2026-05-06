@@ -9,6 +9,12 @@ file(REMOVE_RECURSE
   "CMakeFiles/opencode-meta-qt.dir/src/MainWindow.cpp.o.d"
   "CMakeFiles/opencode-meta-qt.dir/src/main.cpp.o"
   "CMakeFiles/opencode-meta-qt.dir/src/main.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o.d"
+  "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o"
+  "CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o.d"
   "opencode-meta-qt"
   "opencode-meta-qt.pdb"
 )

@@ -227,6 +227,78 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/models/Profile.o: src/models/Profile.cpp.o
+.PHONY : src/models/Profile.o
+
+# target to build an object file
+src/models/Profile.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.o
+.PHONY : src/models/Profile.cpp.o
+
+src/models/Profile.i: src/models/Profile.cpp.i
+.PHONY : src/models/Profile.i
+
+# target to preprocess a source file
+src/models/Profile.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.i
+.PHONY : src/models/Profile.cpp.i
+
+src/models/Profile.s: src/models/Profile.cpp.s
+.PHONY : src/models/Profile.s
+
+# target to generate assembly for a file
+src/models/Profile.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Profile.cpp.s
+.PHONY : src/models/Profile.cpp.s
+
+src/models/Template.o: src/models/Template.cpp.o
+.PHONY : src/models/Template.o
+
+# target to build an object file
+src/models/Template.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.o
+.PHONY : src/models/Template.cpp.o
+
+src/models/Template.i: src/models/Template.cpp.i
+.PHONY : src/models/Template.i
+
+# target to preprocess a source file
+src/models/Template.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.i
+.PHONY : src/models/Template.cpp.i
+
+src/models/Template.s: src/models/Template.cpp.s
+.PHONY : src/models/Template.s
+
+# target to generate assembly for a file
+src/models/Template.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/models/Template.cpp.s
+.PHONY : src/models/Template.cpp.s
+
+src/storage/StorageManager.o: src/storage/StorageManager.cpp.o
+.PHONY : src/storage/StorageManager.o
+
+# target to build an object file
+src/storage/StorageManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.o
+.PHONY : src/storage/StorageManager.cpp.o
+
+src/storage/StorageManager.i: src/storage/StorageManager.cpp.i
+.PHONY : src/storage/StorageManager.i
+
+# target to preprocess a source file
+src/storage/StorageManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.i
+.PHONY : src/storage/StorageManager.cpp.i
+
+src/storage/StorageManager.s: src/storage/StorageManager.cpp.s
+.PHONY : src/storage/StorageManager.s
+
+# target to generate assembly for a file
+src/storage/StorageManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/opencode-meta-qt.dir/build.make CMakeFiles/opencode-meta-qt.dir/src/storage/StorageManager.cpp.s
+.PHONY : src/storage/StorageManager.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -247,6 +319,15 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/models/Profile.o"
+	@echo "... src/models/Profile.i"
+	@echo "... src/models/Profile.s"
+	@echo "... src/models/Template.o"
+	@echo "... src/models/Template.i"
+	@echo "... src/models/Template.s"
+	@echo "... src/storage/StorageManager.o"
+	@echo "... src/storage/StorageManager.i"
+	@echo "... src/storage/StorageManager.s"
 .PHONY : help
 
 
