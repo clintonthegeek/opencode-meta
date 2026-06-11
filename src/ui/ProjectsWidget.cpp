@@ -21,47 +21,12 @@
 #include <QVBoxLayout>
 #include <QDialog>
 
+ #include "generation.h"
  #include "models/Profile.h"
  #include "models/Template.h"
  #include "storage/StorageManager.h"
 
  namespace {
-
- // Render a minimal opencode.json-style config from a Template + Profile.
- QJsonObject renderProfileToConfig(const Template &t, const Profile &p)
- {
-     QJsonObject root;
-
-     root.insert(QStringLiteral("$schema"), QStringLiteral("https://opencode.ai/config.json"));
-
-     if (!t.defaultAgent.isEmpty()) {
-         root.insert(QStringLiteral("default_agent"), t.defaultAgent);
-     }
-
-     QJsonObject agentsObj;
-     for (auto it = t.agents.constBegin(); it != t.agents.constEnd(); ++it) {
-         const QString agentName = it.key();
-         const AgentDef &def = it.value();
-
-         QJsonObject agentObj = def.toJson();
-
-         const QString modelId = p.modelAssignments.value(agentName);
-         if (!modelId.isEmpty()) {
-             agentObj.insert(QStringLiteral("model"), modelId);
-         }
-
-         agentsObj.insert(agentName, agentObj);
-     }
-
-     root.insert(QStringLiteral("agents"), agentsObj);
-
-     // Apply any global overrides as top-level keys (e.g. "small_model").
-     for (auto it = p.globalOverrides.constBegin(); it != p.globalOverrides.constEnd(); ++it) {
-         root.insert(it.key(), it.value());
-     }
-
-     return root;
- }
 
  // Copy any prompt files referenced by the template into the project's
  // local prompts directory: <projectRoot>/prompts.
@@ -476,6 +441,18 @@
      }
 
      const QJsonObject config = renderProfileToConfig(t, p);
+
+     const QString configPath = QDir(record->path).filePath(QStringLiteral("opencode.json"));
+     if (QFileInfo::exists(configPath)) {
+         const auto result = QMessageBox::question(this,
+                                                   tr("Apply Profile"),
+                                                   tr("Overwrite %1?").arg(configPath),
+                                                   QMessageBox::Yes | QMessageBox::No,
+                                                   QMessageBox::No);
+         if (result != QMessageBox::Yes) {
+             return;
+         }
+     }
 
      QString error;
      if (!writeProjectConfig(record->path, config, t, &error)) {

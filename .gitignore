@@ -1,1 +1,7 @@
+build/
+build-*/
 compile_commands.json
+build.log
+Testing/
+.claude/
+cl.sh

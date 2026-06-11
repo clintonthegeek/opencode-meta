@@ -1,5 +1,0 @@
-/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles/opencode-meta-qt.dir
-/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles/edit_cache.dir
-/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles/rebuild_cache.dir
-/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles/opencode-meta-qt_autogen_timestamp_deps.dir
-/home/clinton/dev/opencode-meta/opencode-meta-qt/build/CMakeFiles/opencode-meta-qt_autogen.dir

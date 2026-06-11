@@ -15,6 +15,9 @@ class ProfilesWidget : public QWidget
 public:
     explicit ProfilesWidget(StorageManager &storageManager, QWidget *parent = nullptr);
 
+signals:
+    void requestNavigateToModels();
+
 private slots:
     void refreshProfiles();
     void createProfile();
@@ -36,5 +39,6 @@ private:
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
     QPushButton *m_applyButton = nullptr;
+    QPushButton *m_browseModelsButton = nullptr;
     QTextEdit *m_previewEdit = nullptr;
 };

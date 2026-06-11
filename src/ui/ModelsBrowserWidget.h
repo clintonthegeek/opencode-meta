@@ -6,6 +6,31 @@
 #include <QSet>
 #include <QStringList>
 
+// Column indices for the models table.
+namespace ModelsBrowserColumns {
+enum Column {
+    Id = 0,
+    DisplayName,
+    InputCost,
+    OutputCost,
+    Capabilities,
+    Provider,
+    ColumnCount
+};
+}
+
+// Custom item roles used by the proxy filter.
+namespace ModelsBrowserRoles {
+enum Role {
+    ModelIdRole = Qt::UserRole + 1,
+    ProviderRole,
+    OutputCostRole,
+    ContextWindowRole,
+    CapabilitiesRole,
+    PreferredProvidersRole
+};
+}
+
 class QTableView;
 class QStandardItemModel;
 class QLineEdit;
@@ -18,6 +43,7 @@ class QNetworkAccessManager;
 class QNetworkReply;
 
 class StorageManager;
+class ModelsProxyModel;
 
 /**
  * Models Browser tab: Fetches and displays searchable/filterable list of AI models from models.dev.
@@ -61,9 +87,6 @@ private:
                      int contextWindow); ///< Add row to model with filtering data.
 
     QString currentProviderFilter() const; ///< Get active provider filter string.
-
-    // Classifies a cost into low/medium/high tiers for filtering.
-    static int classifyCostTier(double outputCost);
 
     // Update proxy with subscription filter if enabled.
     void updateSubscriptionFilter();

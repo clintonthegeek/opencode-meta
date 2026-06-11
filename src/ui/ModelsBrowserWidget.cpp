@@ -1,5 +1,4 @@
 #include "ui/ModelsBrowserWidget.h"
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
@@ -26,15 +25,12 @@
 #include <QAbstractItemView>
 #include <QDateTime>
 #include <QSet>
-
+#include <QDebug>
 #include "storage/StorageManager.h"
 #include "ui/ProviderSubscriptionDialog.h"
-
 using namespace ModelsBrowserColumns;
 using namespace ModelsBrowserRoles;
-
 // ===== ModelsProxyModel =====================================================
-
 ModelsProxyModel::ModelsProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
@@ -42,76 +38,71 @@ ModelsProxyModel::ModelsProxyModel(QObject *parent)
     setFilterCaseSensitivity(Qt::CaseInsensitive);
     setSortCaseSensitivity(Qt::CaseInsensitive);
 }
-
 void ModelsProxyModel::setPreferredProviders(const QSet<QString> &providers)
 {
     m_preferredProviders = providers;
     invalidateFilter();
 }
-
 void ModelsProxyModel::setSubscribedOnly(bool enabled)
 {
     m_subscribedOnly = enabled;
     invalidateFilter();
 }
-
 void ModelsProxyModel::setSearchText(const QString &text)
 {
     m_searchText = text.trimmed().toLower();
     invalidateFilter();
 }
-
 void ModelsProxyModel::setProviderFilter(const QString &provider)
 {
     m_providerFilter = provider.trimmed();
     invalidateFilter();
 }
-
 void ModelsProxyModel::setCostTier(int tier)
 {
     m_costTier = tier;
     invalidateFilter();
 }
-
 void ModelsProxyModel::setMinContextWindow(int tokens)
 {
     m_minContextWindow = tokens;
     invalidateFilter();
 }
-
 void ModelsProxyModel::setRequireReasoning(bool enabled)
 {
     m_requireReasoning = enabled;
     invalidateFilter();
 }
-
 void ModelsProxyModel::setRequireToolUse(bool enabled)
 {
     m_requireToolUse = enabled;
     invalidateFilter();
 }
-
+// Helper: classify output cost into low/medium/high tiers for filtering.
+static int classifyCostTier(double outputCost)
+{
+    if (outputCost <= 0.0) return 0;
+    if (outputCost < 1.0) return 1;  // low
+    if (outputCost < 10.0) return 2; // medium
+    return 3; // high
+}
 bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     const QAbstractItemModel *src = sourceModel();
     if (!src) {
         return true;
     }
-
     const QModelIndex idIdx = src->index(sourceRow, Id, sourceParent);
     const QModelIndex nameIdx = src->index(sourceRow, DisplayName, sourceParent);
-
     const QString id = src->data(idIdx, Qt::DisplayRole).toString();
     const QString name = src->data(nameIdx, Qt::DisplayRole).toString();
     const QString provider = src->data(idIdx, ProviderRole).toString();
-
     // Subscription filter (new)
     if (m_subscribedOnly && !m_preferredProviders.isEmpty()) {
         if (!m_preferredProviders.contains(provider)) {
             return false;
         }
     }
-
     // Text search (id + display name)
     if (!m_searchText.isEmpty()) {
         const QString haystack = (id + QLatin1Char(' ') + name).toLower();
@@ -119,14 +110,12 @@ bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
             return false;
         }
     }
-
     // Provider filter
     if (!m_providerFilter.isEmpty()) {
         if (provider != m_providerFilter) {
             return false;
         }
     }
-
     // Cost tier filter
     if (m_costTier != 0) {
         const double outputCost = src->data(idIdx, OutputCostRole).toDouble();
@@ -135,7 +124,6 @@ bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
             return false;
         }
     }
-
     // Context window filter
     if (m_minContextWindow > 0) {
         const int contextWindow = src->data(idIdx, ContextWindowRole).toInt();
@@ -143,23 +131,18 @@ bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
             return false;
         }
     }
-
     // Capabilities filter
     const QVariant capsVar = src->data(idIdx, CapabilitiesRole);
     const QStringList caps = capsVar.toStringList();
-
     if (m_requireReasoning && !caps.contains("reasoning", Qt::CaseInsensitive)) {
         return false;
     }
     if (m_requireToolUse && !caps.contains("tool-use", Qt::CaseInsensitive)) {
         return false;
     }
-
     return true;
 }
-
 // ===== ModelsBrowserWidget ==================================================
-
 ModelsBrowserWidget::ModelsBrowserWidget(StorageManager &storageManager, QWidget *parent)
     : QWidget(parent)
     , m_storageManager(storageManager)
@@ -169,45 +152,35 @@ ModelsBrowserWidget::ModelsBrowserWidget(StorageManager &storageManager, QWidget
     setupUi();
     loadFromCacheOrFetch();
 }
-
 void ModelsBrowserWidget::setupUi()
 {
     auto *layout = new QVBoxLayout(this);
-
     // Top row: search + filters + buttons
     auto *controlsLayout = new QHBoxLayout();
-
     m_searchEdit = new QLineEdit(this);
     m_searchEdit->setPlaceholderText(tr("Search by id or name"));
-
     m_providerCombo = new QComboBox(this);
     m_providerCombo->setEditable(false);
     m_providerCombo->addItem(tr("All Providers"), QString());
-
     m_costTierCombo = new QComboBox(this);
     m_costTierCombo->addItem(tr("All Cost Tiers"), 0);
     m_costTierCombo->addItem(tr("Low"), 1);
     m_costTierCombo->addItem(tr("Medium"), 2);
     m_costTierCombo->addItem(tr("High"), 3);
-
     m_contextWindowSpin = new QSpinBox(this);
     m_contextWindowSpin->setRange(0, 10'000'000);
     m_contextWindowSpin->setSingleStep(100'000);
     m_contextWindowSpin->setPrefix(tr(">= "));
     m_contextWindowSpin->setSuffix(tr(" tokens"));
     m_contextWindowSpin->setToolTip(tr("Minimum context window (0 = any)"));
-
     m_reasoningCheck = new QCheckBox(tr("Reasoning"), this);
     m_toolUseCheck = new QCheckBox(tr("Tool use"), this);
-
     m_subscribedOnlyCheck = new QCheckBox(tr("Subscribed Only"), this);
     m_subscribedOnlyCheck->setChecked(true);  // Default to filtering subscribed
     connect(m_subscribedOnlyCheck, &QCheckBox::toggled, this, &ModelsBrowserWidget::toggleSubscribedFilter);
-
     m_fetchButton = new QPushButton(tr("Fetch"), this);
     m_manageSubsButton = new QPushButton(tr("Manage Subscriptions"), this);
     m_testConnectionButton = new QPushButton(tr("Test Connection"), this);
-
     controlsLayout->addWidget(new QLabel(tr("Search:"), this));
     controlsLayout->addWidget(m_searchEdit, 1);
     controlsLayout->addWidget(new QLabel(tr("Provider:"), this));
@@ -223,9 +196,7 @@ void ModelsBrowserWidget::setupUi()
     controlsLayout->addWidget(m_fetchButton);
     controlsLayout->addWidget(m_manageSubsButton);
     controlsLayout->addWidget(m_testConnectionButton);
-
     layout->addLayout(controlsLayout);
-
     // Table: Sort by output cost ascending by default
     m_model = new QStandardItemModel(this);
     m_model->setColumnCount(ColumnCount);
@@ -237,12 +208,10 @@ void ModelsBrowserWidget::setupUi()
         tr("Capabilities"),
         tr("Provider")
     });
-
     m_proxyModel = new ModelsProxyModel(this);
     m_proxyModel->setSourceModel(m_model);
     m_proxyModel->setPreferredProviders(m_preferredProviders);
     m_proxyModel->setSubscribedOnly(true);  // Default filter
-
     m_tableView = new QTableView(this);
     m_tableView->setModel(m_proxyModel);
     m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -254,14 +223,11 @@ void ModelsBrowserWidget::setupUi()
     m_tableView->horizontalHeader()->setSectionResizeMode(Id, QHeaderView::ResizeToContents);
     m_tableView->horizontalHeader()->setSectionResizeMode(InputCost, QHeaderView::ResizeToContents);
     m_tableView->horizontalHeader()->setSectionResizeMode(OutputCost, QHeaderView::ResizeToContents);
-
     layout->addWidget(m_tableView, 1);
-
     // Status label
     m_statusLabel = new QLabel(this);
     m_statusLabel->setText(tr("Models list is empty. Click Fetch to load from models.dev."));
     layout->addWidget(m_statusLabel);
-
     // Connections
     connect(m_searchEdit, &QLineEdit::textChanged, m_proxyModel, &ModelsProxyModel::setSearchText);
     connect(m_providerCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
@@ -275,44 +241,36 @@ void ModelsBrowserWidget::setupUi()
     connect(m_contextWindowSpin, qOverload<int>(&QSpinBox::valueChanged), m_proxyModel, &ModelsProxyModel::setMinContextWindow);
     connect(m_reasoningCheck, &QCheckBox::toggled, m_proxyModel, &ModelsProxyModel::setRequireReasoning);
     connect(m_toolUseCheck, &QCheckBox::toggled, m_proxyModel, &ModelsProxyModel::setRequireToolUse);
-
     connect(m_fetchButton, &QPushButton::clicked, this, &ModelsBrowserWidget::fetchModels);
     connect(m_manageSubsButton, &QPushButton::clicked, this, &ModelsBrowserWidget::manageSubscriptions);
     connect(m_testConnectionButton, &QPushButton::clicked, this, &ModelsBrowserWidget::testConnection);
     connect(m_tableView, &QTableView::doubleClicked, this, &ModelsBrowserWidget::onTableDoubleClicked);
 }
-
 void ModelsBrowserWidget::clearModel()
 {
     m_model->removeRows(0, m_model->rowCount());
     m_allProviders.clear();
 }
-
 void ModelsBrowserWidget::loadFromCacheOrFetch()
 {
     const ModelsCache cache = m_storageManager.loadModelsCache();
     const QDateTime now = QDateTime::currentDateTimeUtc();
-
     if (cache.timestamp.isValid() && !cache.models.isEmpty()) {
         const qint64 ageHours = cache.timestamp.secsTo(now) / 3600;
         if (ageHours < 24) {
-            m_statusLabel->setText(tr("Loaded %1 models from cache (%2 hours ago). Click Fetch to refresh.")
-                                       .arg(cache.models.size())
-                                       .arg(ageHours));
             clearModel();
             QSet<QString> providers;
-            for (auto it = cache.models.constBegin(); it != cache.models.constEnd(); ++it) {
-                const ModelInfo &info = it.value();
+            const auto keys = cache.models.keys();
+            for (const QString &key : keys) {
+                const ModelInfo &info = cache.models.value(key);
                 QString providerDisplay = info.data.value("provider_display_name").toString();
                 if (providerDisplay.isEmpty()) {
                     providerDisplay = info.data.value("provider").toString();
                 }
                 providers.insert(providerDisplay);
                 m_allProviders.append(providerDisplay);
-
                 const double inputCost = info.inputCost;
                 const double outputCost = info.outputCost;
-
                 int contextWindow = 0;
                 const QJsonObject limitObj = info.data.value("limit").toObject();
                 if (!limitObj.isEmpty()) {
@@ -320,9 +278,7 @@ void ModelsBrowserWidget::loadFromCacheOrFetch()
                 } else {
                     contextWindow = info.data.value("context_window").toInt();
                 }
-
                 QStringList capsList = info.capabilities.values();
-
                 addModelRow(info.id,
                             info.displayName.isEmpty() ? info.id : info.displayName,
                             inputCost,
@@ -331,19 +287,24 @@ void ModelsBrowserWidget::loadFromCacheOrFetch()
                             providerDisplay,
                             contextWindow);
             }
-
             m_allProviders.removeDuplicates();
             m_allProviders.sort();
             rebuildProviderFilter(providers);
             updateSubscriptionFilter();
+            const int totalModels = cache.models.size();
+            const int providerCount = providers.size();
+            const int visibleModels = m_proxyModel ? m_proxyModel->rowCount() : totalModels;
+            m_statusLabel->setText(tr("Loaded %1 models from %2 providers (%3 hours ago). %4 visible after filters.")
+                                       .arg(totalModels)
+                                       .arg(providerCount)
+                                       .arg(ageHours)
+                                       .arg(visibleModels));
             return;
         }
     }
-
     // Cache stale or missing: fetch fresh
     fetchModels();
 }
-
 void ModelsBrowserWidget::fetchModels()
 {
     if (m_currentReply) {
@@ -351,93 +312,83 @@ void ModelsBrowserWidget::fetchModels()
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
     }
-
     const QUrl url("https://models.dev/api.json");
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, "OpenCode Meta Qt/0.1.0");
     req.setTransferTimeout(30000);  // 30s timeout
-
     m_statusLabel->setText(tr("Fetching models from models.dev..."));
-
     m_currentReply = m_networkManager->get(req);
     connect(m_currentReply, &QNetworkReply::finished, this, &ModelsBrowserWidget::onFetchFinished);
 }
-
 void ModelsBrowserWidget::onFetchFinished()
 {
     if (!m_currentReply) {
         return;
     }
-
     QNetworkReply *reply = m_currentReply;
     m_currentReply = nullptr;
-
     reply->deleteLater();
-
     if (reply->error() != QNetworkReply::NoError) {
-        m_statusLabel->setText(tr("Failed to fetch models: %1").arg(reply->errorString()));
+        m_statusLabel->setText(tr("Failed to load models - check network."));
         return;
     }
-
     const QByteArray data = reply->readAll();
     QJsonParseError parseError{};
     const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
-        m_statusLabel->setText(tr("Failed to parse models JSON: %1").arg(parseError.errorString()));
+    if (parseError.error != QJsonParseError::NoError) {
+        m_statusLabel->setText(tr("Failed to load models - check network."));
         return;
     }
-
+    if (!doc.isObject()) {
+        m_statusLabel->setText(tr("Failed to load - invalid JSON"));
+        return;
+    }
     const QJsonObject root = doc.object();
+    qDebug() << "Fetched root keys:" << root.keys().size();
+    if (root.keys().size() <= 0) {
+        m_statusLabel->setText(tr("Failed to load - empty JSON"));
+        return;
+    }
     populateFromRemoteJson(root);
 }
-
 void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
 {
     clearModel();
-
     ModelsCache cache;
     cache.timestamp = QDateTime::currentDateTimeUtc();  // Use current time, ignore fetched_at for simplicity
-
     QSet<QString> providers;
-
-    // Parse per models-dev.md: root["providers"] is the key object
-    const QJsonObject providersObj = root.value("providers").toObject();
-    if (providersObj.isEmpty()) {
-        m_statusLabel->setText(tr("Invalid models.dev response: No providers found."));
+    if (root.isEmpty()) {
+        qDebug() << "Empty/invalid root";
+        m_statusLabel->setText(tr("Failed to load - invalid JSON"));
         return;
     }
-
-    for (auto providerIt = providersObj.constBegin(); providerIt != providersObj.constEnd(); ++providerIt) {
+    // Per models-dev.md: root keys are provider ids (e.g. { "openai": { ... } })
+    for (auto providerIt = root.constBegin(); providerIt != root.constEnd(); ++providerIt) {
         const QString providerId = providerIt.key();
         const QJsonObject providerObj = providerIt.value().toObject();
         if (providerObj.isEmpty()) continue;
-
-        QString providerDisplay = providerObj.value("name").toString();
-        if (providerDisplay.isEmpty()) providerDisplay = providerId;
-
+        QString providerDisplay = providerObj.value("name").toString(providerId);
         const QJsonObject modelsObj = providerObj.value("models").toObject();
         for (auto modelIt = modelsObj.constBegin(); modelIt != modelsObj.constEnd(); ++modelIt) {
             const QString modelKey = modelIt.key();
             const QJsonObject modelObj = modelIt.value().toObject();
             if (modelObj.isEmpty()) continue;
-
             ModelInfo info;
             info.id = modelObj.value("id").toString(modelKey);
             info.displayName = modelObj.value("name").toString(info.id);  // name is display
-
-            // Pricing from "pricing" object
-            const QJsonObject pricingObj = modelObj.value("pricing").toObject();
-            info.inputCost = pricingObj.value("input").toDouble(0.0);
-            info.outputCost = pricingObj.value("output").toDouble(0.0);
-
-            // Capabilities from "capabilities" object
-            const QJsonObject capsObj = modelObj.value("capabilities").toObject();
-            if (capsObj.value("reasoning").toBool()) info.capabilities.insert("reasoning");
-            if (capsObj.value("tool_call").toBool() || capsObj.value("tools").toBool()) info.capabilities.insert("tool-use");
-
+            // Pricing from "cost" object (per models-dev schema)
+            const QJsonObject costObj = modelObj.value("cost").toObject();
+            info.inputCost = costObj.value("input").toDouble(0.0);
+            info.outputCost = costObj.value("output").toDouble(0.0);
+            // Capabilities from top-level booleans
+            if (modelObj.value("reasoning").toBool()) {
+                info.capabilities.insert("reasoning");
+            }
+            if (modelObj.value("tool_call").toBool() || modelObj.value("tools").toBool()) {
+                info.capabilities.insert("tool-use");
+            }
             // Context from "limit.context"
             int contextWindow = modelObj.value("limit").toObject().value("context").toInt(0);
-
             // Raw data with provider info
             QJsonObject data = modelObj;
             data["provider"] = providerId;
@@ -446,31 +397,27 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
             data["output_cost"] = info.outputCost;
             data["context_window"] = contextWindow;
             info.data = data;
-
             QStringList capsList = info.capabilities.values();
-
             addModelRow(info.id, info.displayName, info.inputCost, info.outputCost, capsList, providerDisplay, contextWindow);
-
             providers.insert(providerDisplay);
             m_allProviders.append(providerDisplay);
-
             cache.models.insert(info.id, info);
         }
     }
-
     m_allProviders.removeDuplicates();
     m_allProviders.sort();
-
     rebuildProviderFilter(providers);
-
     // Save cache
     m_storageManager.saveModelsCache(cache);
-
-    const int totalModels = m_model->rowCount();
-    const int visibleProviders = m_subscribedOnlyCheck->isChecked() ? m_preferredProviders.size() : providers.size();
-    m_statusLabel->setText(tr("Loaded %1 models from %2 providers.").arg(totalModels).arg(visibleProviders));
-
+    // Apply subscription filter after population
     updateSubscriptionFilter();
+    const int totalModels = m_model->rowCount();
+    const int providerCount = providers.size();
+    const int visibleModels = m_proxyModel ? m_proxyModel->rowCount() : totalModels;
+    m_statusLabel->setText(tr("Loaded %1 models from %2 providers. %3 visible after filters.")
+                               .arg(totalModels)
+                               .arg(providerCount)
+                               .arg(visibleModels));
 }
 
 void ModelsBrowserWidget::manageSubscriptions()
@@ -478,9 +425,7 @@ void ModelsBrowserWidget::manageSubscriptions()
     ProviderSubscriptionDialog dlg(m_storageManager, m_allProviders, this);
     if (dlg.exec() == QDialog::Accepted) {
         m_preferredProviders = dlg.selectedProviders();
-        if (!m_preferredProviders.isEmpty()) {
-            m_storageManager.savePreferredProviders(m_preferredProviders);
-        }
+        m_storageManager.savePreferredProviders(m_preferredProviders);
         m_proxyModel->setPreferredProviders(m_preferredProviders);
         updateSubscriptionFilter();
         m_statusLabel->setText(tr("Subscriptions updated. Refresh to apply filters."));
@@ -489,8 +434,9 @@ void ModelsBrowserWidget::manageSubscriptions()
 
 void ModelsBrowserWidget::toggleSubscribedFilter(bool checked)
 {
-    m_proxyModel->setSubscribedOnly(checked);
-    invalidateFilter();  // Trigger re-filter
+    if (m_proxyModel) {
+        m_proxyModel->setSubscribedOnly(checked);
+    }
 }
 
 void ModelsBrowserWidget::updateSubscriptionFilter()
@@ -567,14 +513,6 @@ void ModelsBrowserWidget::onTableDoubleClicked(const QModelIndex &proxyIndex)
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(id);
     m_statusLabel->setText(tr("Copied '%1' to clipboard.").arg(id));
-}
-
-int ModelsBrowserWidget::classifyCostTier(double outputCost)
-{
-    if (outputCost <= 0.0) return 0;
-    if (outputCost < 1.0) return 1;  // low
-    if (outputCost < 10.0) return 2; // medium
-    return 3; // high
 }
 
 void ModelsBrowserWidget::testConnection()

@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *templatesWidget = new TemplatesWidget(m_storageManager, this);
     m_tabWidget->addTab(templatesWidget, tr("Templates"));
 
-    // Profiles tab
+    // Profiles tab — index 2
     auto *profilesWidget = new ProfilesWidget(m_storageManager, this);
     m_tabWidget->addTab(profilesWidget, tr("Profiles"));
 
@@ -33,9 +33,13 @@ MainWindow::MainWindow(QWidget *parent)
     auto *projectsWidget = new ProjectsWidget(m_storageManager, this);
     m_tabWidget->addTab(projectsWidget, tr("Projects"));
 
-    // Models tab
+    // Models tab — index 4
     auto *modelsWidget = new ModelsBrowserWidget(m_storageManager, this);
     m_tabWidget->addTab(modelsWidget, tr("Models"));
+
+    // Cross-mode navigation: Profiles → Models
+    connect(profilesWidget, &ProfilesWidget::requestNavigateToModels,
+            this, [this]() { m_tabWidget->setCurrentIndex(4); });
 
     setCentralWidget(m_tabWidget);
 

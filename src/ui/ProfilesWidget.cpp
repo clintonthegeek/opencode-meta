@@ -15,6 +15,7 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 
+#include "generation.h"
 #include "models/Profile.h"
 #include "models/Template.h"
 #include "models/ModelInfo.h"
@@ -46,42 +47,6 @@ QString formatProfileSummary(const Profile &p, const QMap<QString, QString> &tem
     text += QLatin1Char(')');
 
     return text;
-}
-
-// Render a minimal opencode.json-style config from a Template + Profile.
-QJsonObject renderProfileToConfig(const Template &t, const Profile &p)
-{
-    QJsonObject root;
-
-    root.insert(QStringLiteral("$schema"), QStringLiteral("https://opencode.ai/config.json"));
-
-    if (!t.defaultAgent.isEmpty()) {
-        root.insert(QStringLiteral("default_agent"), t.defaultAgent);
-    }
-
-    QJsonObject agentsObj;
-    for (auto it = t.agents.constBegin(); it != t.agents.constEnd(); ++it) {
-        const QString agentName = it.key();
-        const AgentDef &def = it.value();
-
-        QJsonObject agentObj = def.toJson();
-
-        const QString modelId = p.modelAssignments.value(agentName);
-        if (!modelId.isEmpty()) {
-            agentObj.insert(QStringLiteral("model"), modelId);
-        }
-
-        agentsObj.insert(agentName, agentObj);
-    }
-
-    root.insert(QStringLiteral("agents"), agentsObj);
-
-    // Apply any global overrides as top-level keys (e.g. "small_model").
-    for (auto it = p.globalOverrides.constBegin(); it != p.globalOverrides.constEnd(); ++it) {
-        root.insert(it.key(), it.value());
-    }
-
-    return root;
 }
 
 // Copy any prompt files referenced by the template into the global
@@ -221,11 +186,14 @@ void ProfilesWidget::setupUi()
     m_duplicateButton = new QPushButton(tr("Duplicate"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
     m_applyButton = new QPushButton(tr("Apply (Global)"), this);
+    m_browseModelsButton = new QPushButton(tr("Browse Models..."), this);
+    m_browseModelsButton->setToolTip(tr("Switch to the Models Browser to look up model IDs"));
 
     buttonRow->addWidget(m_createButton);
     buttonRow->addWidget(m_editButton);
     buttonRow->addWidget(m_duplicateButton);
     buttonRow->addWidget(m_deleteButton);
+    buttonRow->addWidget(m_browseModelsButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_applyButton);
 
@@ -243,6 +211,7 @@ void ProfilesWidget::setupUi()
     connect(m_duplicateButton, &QPushButton::clicked, this, &ProfilesWidget::duplicateSelectedProfile);
     connect(m_deleteButton, &QPushButton::clicked, this, &ProfilesWidget::deleteSelectedProfile);
     connect(m_applyButton, &QPushButton::clicked, this, &ProfilesWidget::applySelectedProfile);
+    connect(m_browseModelsButton, &QPushButton::clicked, this, &ProfilesWidget::requestNavigateToModels);
 
     connect(m_listWidget, &QListWidget::currentItemChanged, this, &ProfilesWidget::onSelectionChanged);
 }
@@ -448,6 +417,18 @@ void ProfilesWidget::applySelectedProfile()
     }
 
     const QJsonObject config = renderProfileToConfig(t, p);
+
+    const QString configPath = QDir::homePath() + QStringLiteral("/.config/opencode/opencode.json");
+    if (QFileInfo::exists(configPath)) {
+        const auto result = QMessageBox::question(this,
+                                                  tr("Apply Profile"),
+                                                  tr("Overwrite %1?").arg(configPath),
+                                                  QMessageBox::Yes | QMessageBox::No,
+                                                  QMessageBox::No);
+        if (result != QMessageBox::Yes) {
+            return;
+        }
+    }
 
     QString error;
     if (!writeGlobalConfig(config, t, &error)) {
