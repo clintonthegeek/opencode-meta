@@ -1,7 +1,6 @@
 #include "ui/TrialsWidget.h"
 
 #include <QDateTime>
-#include <QDir>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -9,14 +8,12 @@
 #include <QPushButton>
 #include <QTableWidget>
 #include <QTableWidgetItem>
-#include <QTextEdit>
 #include <QVBoxLayout>
-#include <QDialog>
-#include <QDialogButtonBox>
 
 #include "models/Trial.h"
 #include "models/Team.h"
 #include "storage/StorageManager.h"
+#include "ui/TrialCompareDialog.h"
 
 namespace {
 
@@ -62,104 +59,6 @@ QString notesSnippet(const QString &notes)
     truncated.append(QStringLiteral("…"));
     return truncated;
 }
-
-QString formatTrialSummary(const Trial &trial,
-                           const StorageManager &storage)
-{
-    QString result;
-
-    result += QObject::tr("Trial ID: %1\n")
-                  .arg(trial.id.isEmpty() ? QObject::tr("(unknown)") : trial.id);
-
-    QString teamLabel;
-    if (!trial.teamId.isEmpty()) {
-        const Team team = storage.loadTeam(trial.teamId);
-        if (!team.id.isEmpty()) {
-            if (!team.name.isEmpty()) {
-                teamLabel = QObject::tr("%1 (%2)")
-                                .arg(team.name, team.id);
-            } else {
-                teamLabel = team.id;
-            }
-        } else {
-            teamLabel = trial.teamId;
-        }
-    }
-
-    result += QObject::tr("Team: %1\n")
-                  .arg(teamLabel.isEmpty() ? QObject::tr("(none)") : teamLabel);
-
-    result += QObject::tr("Project: %1\n")
-                  .arg(trial.projectPath.isEmpty()
-                           ? QObject::tr("(none)")
-                           : trial.projectPath);
-
-    const QString ts = trial.timestamp.isValid()
-                           ? trial.timestamp.toString(Qt::ISODate)
-                           : QObject::tr("(unknown)");
-    result += QObject::tr("Timestamp: %1\n\n").arg(ts);
-
-    result += QObject::tr("Notes:\n%1\n\n")
-                  .arg(trial.notes.isEmpty()
-                           ? QObject::tr("(none)")
-                           : trial.notes);
-
-    result += QObject::tr("Ratings summary: %1\n")
-                  .arg(summarizeRatings(trial.ratings));
-
-    return result;
-}
-
-class TrialCompareDialog : public QDialog
-{
-public:
-    TrialCompareDialog(StorageManager &storage,
-                       const QString &leftId,
-                       const QString &rightId,
-                       QWidget *parent = nullptr)
-        : QDialog(parent)
-    {
-        setWindowTitle(tr("Compare Trials (stub)"));
-        resize(900, 500);
-
-        auto *mainLayout = new QVBoxLayout(this);
-
-        auto *label = new QLabel(tr("Side-by-side comparison is not fully implemented yet.\n"
-                                    "This stub shows basic details for both Trials."),
-                                 this);
-        label->setWordWrap(true);
-        mainLayout->addWidget(label);
-
-        auto *contentLayout = new QHBoxLayout();
-
-        Trial leftTrial = storage.loadTrial(leftId);
-        if (leftTrial.id.isEmpty()) {
-            leftTrial.id = leftId;
-        }
-        Trial rightTrial = storage.loadTrial(rightId);
-        if (rightTrial.id.isEmpty()) {
-            rightTrial.id = rightId;
-        }
-
-        auto *leftEdit = new QTextEdit(this);
-        leftEdit->setReadOnly(true);
-        leftEdit->setPlainText(formatTrialSummary(leftTrial, storage));
-
-        auto *rightEdit = new QTextEdit(this);
-        rightEdit->setReadOnly(true);
-        rightEdit->setPlainText(formatTrialSummary(rightTrial, storage));
-
-        contentLayout->addWidget(leftEdit, 1);
-        contentLayout->addWidget(rightEdit, 1);
-
-        mainLayout->addLayout(contentLayout, 1);
-
-        auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Close, this);
-        connect(buttonBox, &QDialogButtonBox::rejected,
-                this, &TrialCompareDialog::reject);
-        mainLayout->addWidget(buttonBox);
-    }
-};
 
 } // namespace
 
@@ -321,8 +220,16 @@ void TrialsWidget::compareSelectedTrials()
 
     emit compareTrialsRequested(ids);
 
-    TrialCompareDialog dlg(m_storageManager, ids.at(0), ids.at(1), this);
-    dlg.exec();
+    // Non-modal viewer so the user can keep working in the Trials tab
+    // (and open further comparisons) while still dismissing the dialog
+    // with the standard window close button. Parent is TrialsWidget,
+    // which means Qt deletes the dialog when the tab itself goes away.
+    auto *dlg = new TrialCompareDialog(ids.at(0), ids.at(1),
+                                       m_storageManager, this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose, true);
+    dlg->show();
+    dlg->raise();
+    dlg->activateWindow();
 }
 
 void TrialsWidget::promoteWinningTeam()
@@ -365,16 +272,10 @@ void TrialsWidget::deleteSelectedTrial()
         return;
     }
 
-    // For now, mirror the simple deletion approach used in RolesWidget:
-    // directly remove the JSON file under ~/.opencode-meta/trials/.
-    const QString path = QDir::homePath() +
-                         QStringLiteral("/.opencode-meta/trials/%1.json").arg(trialId);
-    QFile file(path);
-    if (file.exists() && !file.remove()) {
+    if (!m_storageManager.deleteTrial(trialId)) {
         QMessageBox::warning(this,
                              tr("Delete Trial"),
-                             tr("Failed to delete trial file:\n%1")
-                                 .arg(QDir::toNativeSeparators(path)));
+                             tr("Failed to delete trial '%1'.").arg(trialId));
         return;
     }
 

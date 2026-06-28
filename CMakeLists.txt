@@ -42,7 +42,6 @@ add_library(opencode-meta-lib STATIC ${LIB_SOURCES} ${LIB_HEADERS})
 
 target_include_directories(opencode-meta-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/adapter
 )
 
 target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
@@ -52,31 +51,41 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/main.cpp
 	src/MainWindow.cpp
 	src/ui/AddSpecialistDialog.cpp
+	src/ui/ConfigInspector.cpp
+	src/ui/ConfirmApplyDialog.cpp
+	src/ui/EditSpecialistDialog.cpp
 	src/ui/LabOverviewWidget.cpp
 	src/ui/ModelsBrowserWidget.cpp
 	src/ui/ProviderSubscriptionDialog.cpp
 	src/ui/ProjectsWidget.cpp
+	src/ui/PromptPreview.cpp
 	src/ui/RoleEditorDialog.cpp
 	src/ui/RolesWidget.cpp
 	src/ui/TrialsWidget.cpp
 	src/ui/TeamsWidget.cpp
 	src/ui/TeamEditorWidget.cpp
 	src/ui/TeamsDialog.cpp
+	src/ui/TrialCompareDialog.cpp
 )
 
  set(APP_HEADERS
 	src/MainWindow.h
 	src/ui/AddSpecialistDialog.h
+	src/ui/ConfigInspector.h
+	src/ui/ConfirmApplyDialog.h
+	src/ui/EditSpecialistDialog.h
 	src/ui/LabOverviewWidget.h
 	src/ui/ModelsBrowserWidget.h
 	src/ui/ProviderSubscriptionDialog.h
 	src/ui/ProjectsWidget.h
+	src/ui/PromptPreview.h
 	src/ui/RoleEditorDialog.h
 	src/ui/RolesWidget.h
 	src/ui/TrialsWidget.h
 	src/ui/TeamsWidget.h
 	src/ui/TeamEditorWidget.h
 	src/ui/TeamsDialog.h
+	src/ui/TrialCompareDialog.h
 )
 
 qt_add_executable(opencode-meta-qt
