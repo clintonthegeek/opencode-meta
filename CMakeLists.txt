@@ -47,7 +47,7 @@ target_include_directories(opencode-meta-lib PUBLIC
 target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 
 # Main application
- set(APP_SOURCES
+ 	set(APP_SOURCES
 	src/main.cpp
 	src/MainWindow.cpp
 	src/ui/AddSpecialistDialog.cpp
@@ -55,8 +55,10 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/ConfirmApplyDialog.cpp
  	src/ui/EditSpecialistDialog.cpp
  	src/ui/FilterBar.cpp
+ 	src/ui/KeyboardShortcutsDialog.cpp
  	src/ui/LabOverviewWidget.cpp
 	src/ui/ModelsBrowserWidget.cpp
+	src/ui/ParadigmHelpDialog.cpp
 	src/ui/ProviderSubscriptionDialog.cpp
 	src/ui/ProjectsWidget.cpp
 	src/ui/PromptPreview.cpp
@@ -67,6 +69,7 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/TeamEditorWidget.cpp
 	src/ui/TeamsDialog.cpp
 	src/ui/TrialCompareDialog.cpp
+	src/ui/SettingsDialog.cpp
 )
 
  set(APP_HEADERS
@@ -76,8 +79,10 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/ConfirmApplyDialog.h
  	src/ui/EditSpecialistDialog.h
  	src/ui/FilterBar.h
- 	src/ui/LabOverviewWidget.h
+	src/ui/KeyboardShortcutsDialog.h
+	src/ui/LabOverviewWidget.h
 	src/ui/ModelsBrowserWidget.h
+	src/ui/ParadigmHelpDialog.h
 	src/ui/ProviderSubscriptionDialog.h
 	src/ui/ProjectsWidget.h
 	src/ui/PromptPreview.h
@@ -88,6 +93,7 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/TeamEditorWidget.h
 	src/ui/TeamsDialog.h
 	src/ui/TrialCompareDialog.h
+	src/ui/SettingsDialog.h
 )
 
 qt_add_executable(opencode-meta-qt

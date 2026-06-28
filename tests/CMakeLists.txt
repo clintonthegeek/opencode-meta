@@ -22,7 +22,13 @@ set(F5_UI_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ui/EditSpecialistDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.h
+    ${CMAKE_SOURCE_DIR}/src/ui/KeyboardShortcutsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/KeyboardShortcutsDialog.h
     ${CMAKE_SOURCE_DIR}/src/ui/LabOverviewWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ParadigmHelpDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ParadigmHelpDialog.h
+    ${CMAKE_SOURCE_DIR}/src/ui/SettingsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/SettingsDialog.h
     ${CMAKE_SOURCE_DIR}/src/ui/ModelsBrowserWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ProviderSubscriptionDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ProjectsWidget.cpp
@@ -155,3 +161,53 @@ target_link_libraries(test_list_filter PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib
 )
 add_test(NAME test_list_filter COMMAND test_list_filter)
+
+# SettingsDialog (P2-3) is a self-contained QDialog that only depends on
+# Qt6 Widgets + the lib (no other UI sources). Mirrors the
+# test_role_editor_dialog / test_confirm_apply_dialog pattern; the test
+# exercises the UI surface via objectName lookups and round-trips
+# through a Qt::QSettings pointing at a temp INI.
+add_executable(test_settings_dialog
+    test_settings_dialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/SettingsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/SettingsDialog.h
+)
+target_include_directories(test_settings_dialog PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_settings_dialog PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_settings_dialog COMMAND test_settings_dialog)
+
+# P2-4 paradigm help: ParadigmHelpDialog + tooltip coverage. Like
+# test_settings_dialog the dialog is self-contained but the test also
+# exercises every other major widget to assert they carry non-empty
+# toolTip/whatsThis text. We pull in the F5_UI_SOURCES set plus the
+# dialog itself so the widget constructors link cleanly. MainWindow
+# is added explicitly because ParadigmHelpDialog is reachable from
+# the Help menu -- we want to confirm linkage, not inspect MainWindow
+# behavior (that stays with test_cross_view_smoke).
+add_executable(test_paradigm_help
+    test_paradigm_help.cpp
+    ${F5_UI_SOURCES}
+)
+target_include_directories(test_paradigm_help PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_paradigm_help PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_paradigm_help COMMAND test_paradigm_help)
+
+# P2-5 keyboard shortcut overlay: KeyboardShortcutsDialog is a
+# self-contained QDialog -- only its own source is needed, mirroring
+# test_settings_dialog / test_confirm_apply_dialog. The shortcut list
+# is driven through defaultShortcuts() so the static entry model is
+# asserted alongside the dialog UI.
+add_executable(test_keyboard_shortcuts
+    test_keyboard_shortcuts.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/KeyboardShortcutsDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/KeyboardShortcutsDialog.h
+)
+target_include_directories(test_keyboard_shortcuts PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_keyboard_shortcuts PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_keyboard_shortcuts COMMAND test_keyboard_shortcuts)
