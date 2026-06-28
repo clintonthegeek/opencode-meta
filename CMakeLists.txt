@@ -53,8 +53,9 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/AddSpecialistDialog.cpp
 	src/ui/ConfigInspector.cpp
 	src/ui/ConfirmApplyDialog.cpp
-	src/ui/EditSpecialistDialog.cpp
-	src/ui/LabOverviewWidget.cpp
+ 	src/ui/EditSpecialistDialog.cpp
+ 	src/ui/FilterBar.cpp
+ 	src/ui/LabOverviewWidget.cpp
 	src/ui/ModelsBrowserWidget.cpp
 	src/ui/ProviderSubscriptionDialog.cpp
 	src/ui/ProjectsWidget.cpp
@@ -73,8 +74,9 @@ target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 	src/ui/AddSpecialistDialog.h
 	src/ui/ConfigInspector.h
 	src/ui/ConfirmApplyDialog.h
-	src/ui/EditSpecialistDialog.h
-	src/ui/LabOverviewWidget.h
+ 	src/ui/EditSpecialistDialog.h
+ 	src/ui/FilterBar.h
+ 	src/ui/LabOverviewWidget.h
 	src/ui/ModelsBrowserWidget.h
 	src/ui/ProviderSubscriptionDialog.h
 	src/ui/ProjectsWidget.h

@@ -20,6 +20,8 @@ set(F5_UI_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ui/ConfirmApplyDialog.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ConfirmApplyDialog.h
     ${CMAKE_SOURCE_DIR}/src/ui/EditSpecialistDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.h
     ${CMAKE_SOURCE_DIR}/src/ui/LabOverviewWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ModelsBrowserWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ProviderSubscriptionDialog.cpp
@@ -111,3 +113,45 @@ target_link_libraries(test_trial_compare_dialog PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test opencode-meta-lib
 )
 add_test(NAME test_trial_compare_dialog COMMAND test_trial_compare_dialog)
+
+# P2-2 list-filter test: RolesWidget, TeamsWidget, TrialsWidget, and
+# ProjectsWidget each gained a FilterBar + QSortFilterProxyModel. The
+# test constructs all four widgets in isolation and exercises the row
+# visibility wiring, case-insensitive match across every column, and
+# the selection/button disable propagation when the active filter
+# hides a row.
+#
+# TeamsWidget transitively pulls in TeamEditorWidget and its dialog
+# dependencies (AddSpecialistDialog, ConfigInspector, EditSpecialistDialog,
+# ModelsBrowserWidget, ProviderSubscriptionDialog, PromptPreview) so
+# we mirror the cross-view smoke test sources here to keep the test
+# target linkable. We also need RoleEditorDialog because RolesWidget
+# wires its Create button through it (Constructors instantiate the
+# dependents when the widget is built, even before any slot is fired).
+set(P2_2_UI_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/ui/AddSpecialistDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ConfigInspector.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ConfirmApplyDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ConfirmApplyDialog.h
+    ${CMAKE_SOURCE_DIR}/src/ui/EditSpecialistDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/FilterBar.h
+    ${CMAKE_SOURCE_DIR}/src/ui/LabOverviewWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ModelsBrowserWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ProjectsWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ProviderSubscriptionDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/PromptPreview.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/RoleEditorDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/RolesWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TeamsWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TeamEditorWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TrialsWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TrialCompareDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TrialCompareDialog.h
+)
+add_executable(test_list_filter test_list_filter.cpp ${P2_2_UI_SOURCES})
+target_include_directories(test_list_filter PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_list_filter PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_list_filter COMMAND test_list_filter)

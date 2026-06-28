@@ -2,7 +2,10 @@
 
 #include <QWidget>
 
+class FilterProxyModel;
 class QLabel;
+class QLineEdit;
+class QSortFilterProxyModel;
 class QTableWidget;
 class QPushButton;
 class StorageManager;
@@ -35,6 +38,8 @@ private slots:
     void promoteWinningTeam();
     void deleteSelectedTrial();
     void onSelectionChanged();
+    // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
+    void applyFilter(const QString &text);
 
 private:
     QStringList selectedTrialIds() const;
@@ -44,6 +49,8 @@ private:
 
     QTableWidget *m_table = nullptr;
     QLabel *m_placeholderLabel = nullptr;
+    QLineEdit *m_filterEdit = nullptr;
+    FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_compareButton = nullptr;
     QPushButton *m_promoteButton = nullptr;
     QPushButton *m_deleteButton = nullptr;

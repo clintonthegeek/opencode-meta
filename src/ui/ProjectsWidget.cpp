@@ -8,12 +8,14 @@
 #include <QInputDialog>
 #include <QJsonDocument>
  #include <QJsonObject>
+ #include <QLineEdit>
  #include <QListWidget>
  #include <QListWidgetItem>
  #include <QMessageBox>
 #include <QPushButton>
 #include <QQueue>
 #include <QSet>
+#include <QSortFilterProxyModel>
 #include <QTextCursor>
 #include <QTextCharFormat>
 #include <QTextEdit>
@@ -26,7 +28,10 @@
 #include "models/Specialist.h"
 #include "models/Team.h"
 #include "storage/StorageManager.h"
-// ApplyProfileDialog has been moved to legacy/; Team-based switching is handled elsewhere for now.
+#include "ui/ConfirmApplyDialog.h"
+#include "ui/FilterBar.h"
+// ApplyProfileDialog has been moved to legacy/; Team-based switching is
+// gated through ConfirmApplyDialog (ROADMAP P1-5).
 
  namespace {
 
@@ -151,9 +156,17 @@
      refreshList();
  }
 
- void ProjectsWidget::setupUi()
- {
-     auto *layout = new QVBoxLayout(this);
+void ProjectsWidget::setupUi()
+{
+    auto *layout = new QVBoxLayout(this);
+
+    // ROADMAP P2-2: filter bar sits above the project list and drives
+    // a QSortFilterProxyModel whose accept/reject decisions map onto
+    // QListWidgetItem::setHidden() so hidden rows disappear from
+    // navigation and selection without losing their stored data.
+    auto *filterBar = new FilterBar(tr("Filter projects..."), this);
+    m_filterEdit = filterBar->findChild<QLineEdit *>();
+    layout->addWidget(filterBar);
 
       m_listWidget = new QListWidget(this);
       m_listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -183,8 +196,19 @@
 
      connect(m_listWidget, &QListWidget::currentItemChanged, this, &ProjectsWidget::onSelectionChanged);
 
+     // Filter engine. QListWidget's underlying model is wrapped but the
+     // widget itself remains the view, so currentItemChanged() and
+     // currentItem() keep working unchanged.
+     m_filterProxy = new FilterProxyModel(this);
+     m_filterProxy->setSourceModel(m_listWidget->model());
+     m_filterProxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+     m_filterProxy->setFilterKeyColumn(-1); // every column
+
+     connect(filterBar, &FilterBar::filterChanged,
+             this, &ProjectsWidget::applyFilter);
+
      onSelectionChanged();
- }
+}
 
  void ProjectsWidget::loadProjects()
  {
@@ -196,9 +220,9 @@
      m_storageManager.saveProjects(m_projects);
  }
 
- void ProjectsWidget::refreshList()
- {
-     m_listWidget->clear();
+void ProjectsWidget::refreshList()
+{
+    m_listWidget->clear();
 
       for (const ProjectRecord &record : m_projects) {
           auto *item = new QListWidgetItem(formatProjectSummary(record, m_storageManager), m_listWidget);
@@ -206,8 +230,12 @@
           item->setToolTip(buildProjectTooltip(record, m_storageManager));
       }
 
+     // Re-apply the active filter so freshly scanned and freshly toggled
+     // projects honor the current search before the user types again.
+     applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+
      onSelectionChanged();
- }
+}
 
  int ProjectsWidget::findProjectIndexByPath(const QString &path) const
  {
@@ -225,21 +253,27 @@
      return const_cast<ProjectRecord *>(cp);
  }
 
- const ProjectRecord *ProjectsWidget::currentProject() const
- {
-     QListWidgetItem *item = m_listWidget->currentItem();
-     if (!item) {
-         return nullptr;
-     }
+const ProjectRecord *ProjectsWidget::currentProject() const
+{
+    QListWidgetItem *item = m_listWidget->currentItem();
+    if (!item) {
+        return nullptr;
+    }
 
-     const QString path = item->data(Qt::UserRole).toString();
-     const int index = findProjectIndexByPath(path);
-     if (index < 0 || index >= m_projects.size()) {
-         return nullptr;
-     }
+    // Skip rows the active filter has hidden so callers cannot operate
+    // on a project the user is not currently viewing.
+    if (item->isHidden()) {
+        return nullptr;
+    }
 
-     return &m_projects.at(index);
- }
+    const QString path = item->data(Qt::UserRole).toString();
+    const int index = findProjectIndexByPath(path);
+    if (index < 0 || index >= m_projects.size()) {
+        return nullptr;
+    }
+
+    return &m_projects.at(index);
+}
 
  void ProjectsWidget::scanForProjects()
  {
@@ -383,13 +417,14 @@ void ProjectsWidget::switchTeamForProject()
           return;
       }
 
-      const QJsonObject config = renderTeamConfig(team, m_storageManager);
+     const QDir projectDir(record->path);
+     const QString configPath = projectDir.filePath(QStringLiteral("opencode.json"));
 
-      const QDir projectDir(record->path);
-      const QString configPath = projectDir.filePath(QStringLiteral("opencode.json"));
-
+     // Capture the existing on-disk contents (if any) so the
+     // ConfirmApplyDialog can show the diff before the apply writes
+     // anything. ROADMAP P1-5 makes this the gate: nothing is written
+     // until the user accepts the dialog.
      QString existingText;
-     QJsonObject existingJson;
      bool existingIsJson = false;
 
      if (QFileInfo::exists(configPath)) {
@@ -400,39 +435,33 @@ void ProjectsWidget::switchTeamForProject()
              QJsonParseError parseError{};
              const QJsonDocument doc = QJsonDocument::fromJson(existingText.toUtf8(), &parseError);
              if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
-                 existingJson = doc.object();
                  existingIsJson = true;
-              }
-          }
-      }
+             }
+         }
+     }
 
-     const QJsonDocument newDoc(config);
-     const QString renderedText = QString::fromUtf8(newDoc.toJson(QJsonDocument::Indented));
+     ConfirmApplyDialog dlg(record->path,
+                            team,
+                            m_storageManager,
+                            existingText,
+                            existingIsJson,
+                            this);
+     if (dlg.exec() != QDialog::Accepted) {
+         // User cancelled — no file IO, no project-state change, no Trial.
+         return;
+     }
 
-      QString summaryText;
-      if (!existingText.isEmpty() && existingIsJson) {
-          // Legacy diff helper removed; show a minimal note for now.
-          summaryText = tr("Config diff preview is not available in this build (legacy helper removed).");
-      } else if (!existingText.isEmpty() && !existingIsJson) {
-          summaryText = tr("Existing project config is not valid JSON; showing full text diff below. A backup will still be created before writing.");
-      } else {
-          summaryText = tr("No existing opencode.json found in this project. A new config file will be created.");
-      }
+     if (!m_storageManager.applyTeamToProject(record->path, team.id)) {
+         QMessageBox::warning(this,
+                              tr("Switch Team"),
+                              tr("Failed to switch Team for project."));
+         return;
+     }
 
-      // Legacy ApplyProfileDialog has been removed. For now we apply without the confirmation dialog.
-      // TODO: create a Team-centric confirmation dialog that re-uses the same diff/summary logic.
+     loadProjects();
+     refreshList();
 
-      if (!m_storageManager.applyTeamToProject(record->path, team.id)) {
-          QMessageBox::warning(this,
-                               tr("Switch Team"),
-                               tr("Failed to switch Team for project."));
-          return;
-      }
-
-      loadProjects();
-      refreshList();
-
-      QMessageBox::information(this, tr("Switch Team"), tr("Team switched for project. Trial recorded."));
+     QMessageBox::information(this, tr("Switch Team"), tr("Team switched for project. Trial recorded."));
    }
 
   void ProjectsWidget::viewTeamDiffsForProject()
@@ -548,9 +577,13 @@ void ProjectsWidget::switchTeamForProject()
      refreshList();
  }
 
- void ProjectsWidget::onSelectionChanged()
- {
-     const bool hasSelection = (m_listWidget && m_listWidget->currentItem());
+void ProjectsWidget::onSelectionChanged()
+{
+     // Treat "something is selected AND it is visible" as the
+     // selection state so the action buttons cannot target a project
+     // that the current filter has hidden.
+     QListWidgetItem *current = m_listWidget ? m_listWidget->currentItem() : nullptr;
+     const bool hasSelection = (current != nullptr) && !current->isHidden();
 
       if (m_switchTeamButton) {
           m_switchTeamButton->setEnabled(hasSelection);
@@ -561,4 +594,28 @@ void ProjectsWidget::switchTeamForProject()
      if (m_watchButton) {
          m_watchButton->setEnabled(hasSelection);
      }
- }
+}
+
+void ProjectsWidget::applyFilter(const QString &text)
+{
+    if (!m_listWidget || !m_filterProxy) {
+        return;
+    }
+
+    const QString needle = text.trimmed();
+    m_filterProxy->setFilterFixedString(needle);
+
+    // Drive item visibility from the proxy's accept/reject decisions.
+    // QListWidget only has a single logical column, so this works
+    // whether filterKeyColumn is 0 or -1.
+    const QModelIndex parent;
+    for (int i = 0; i < m_listWidget->count(); ++i) {
+        QListWidgetItem *item = m_listWidget->item(i);
+        const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(i, parent);
+        item->setHidden(!match);
+    }
+
+    // Visibility just changed; make sure the action buttons reflect
+    // the new visible selection.
+    onSelectionChanged();
+}

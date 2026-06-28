@@ -1,18 +1,19 @@
 #include "ui/RolesWidget.h"
 
-#include <QDir>
-#include <QFile>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSortFilterProxyModel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 
 #include "models/Role.h"
 #include "storage/StorageManager.h"
+#include "ui/FilterBar.h"
 #include "ui/RoleEditorDialog.h"
 
 namespace {
@@ -49,6 +50,15 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     label->setWordWrap(true);
     layout->addWidget(label);
 
+    // ROADMAP P2-2: search/filter bar (placeholder text + clear button +
+    // ESC shortcut) sits immediately above the table. State changes
+    // here drive QSortFilterProxyModel filtering on the source rows.
+    auto *filterBar = new FilterBar(tr("Filter roles..."), this);
+    m_filterEdit = filterBar->findChild<QLineEdit *>();
+    layout->addWidget(filterBar);
+    connect(filterBar, &FilterBar::filterChanged,
+            this, &RolesWidget::applyFilter);
+
     m_table = new QTableWidget(this);
     m_table->setColumnCount(4);
     QStringList headers;
@@ -63,6 +73,16 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
     layout->addWidget(m_table, 1);
+
+    // Drive row visibility from a real FilterProxyModel rather
+    // than ad-hoc per-row matching, but keep the QTableWidget as the
+    // view so existing item()/currentRow()/setItem() call sites stay
+    // unchanged. The proxy covers the model's source rows; we then
+    // map that decision to setRowHidden() on the table.
+    m_filterProxy = new FilterProxyModel(this);
+    m_filterProxy->setSourceModel(m_table->model());
+    m_filterProxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_filterProxy->setFilterKeyColumn(-1); // search every column
 
     auto *buttonRow = new QHBoxLayout();
     m_createButton = new QPushButton(tr("Create New"), this);
@@ -116,6 +136,10 @@ void RolesWidget::refreshRoles()
     }
 
     m_table->resizeColumnsToContents();
+
+    // Re-apply the current filter so freshly added/edited rows honor the
+    // current search before the user types again.
+    applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
 }
 
 QString RolesWidget::selectedRoleId() const
@@ -247,15 +271,10 @@ void RolesWidget::deleteSelectedRole()
         return;
     }
 
-    // Minimal deletion: remove the role JSON file under the default
-    // ~/.opencode-meta/roles/ location, mirroring TemplatesWidget.
-    const QString path = QDir::homePath() + QStringLiteral("/.opencode-meta/roles/%1.json").arg(id);
-    QFile file(path);
-    if (file.exists() && !file.remove()) {
+    if (!m_storageManager.deleteRole(id)) {
         QMessageBox::warning(this,
                              tr("Delete Role"),
-                             tr("Failed to delete role file:\n%1")
-                                 .arg(QDir::toNativeSeparators(path)));
+                             tr("Failed to delete role '%1'.").arg(id));
         return;
     }
 
@@ -281,4 +300,22 @@ void RolesWidget::onItemDoubleClicked(QTableWidgetItem *item)
 {
     Q_UNUSED(item);
     editSelectedRole();
+}
+
+void RolesWidget::applyFilter(const QString &text)
+{
+    if (!m_table || !m_filterProxy) {
+        return;
+    }
+
+    const QString needle = text.trimmed();
+    m_filterProxy->setFilterFixedString(needle);
+
+    // Mirror the proxy's accept/reject decisions onto QTableWidget's
+    // row-visibility flag. Empty needle means "show everything".
+    const QModelIndex parent;
+    for (int row = 0; row < m_table->rowCount(); ++row) {
+        const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(row, parent);
+        m_table->setRowHidden(row, !match);
+    }
 }

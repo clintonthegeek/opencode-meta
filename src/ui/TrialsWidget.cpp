@@ -4,8 +4,10 @@
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSortFilterProxyModel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
@@ -13,6 +15,7 @@
 #include "models/Trial.h"
 #include "models/Team.h"
 #include "storage/StorageManager.h"
+#include "ui/FilterBar.h"
 #include "ui/TrialCompareDialog.h"
 
 namespace {
@@ -81,6 +84,15 @@ TrialsWidget::TrialsWidget(StorageManager &storageManager, QWidget *parent)
     m_placeholderLabel->setWordWrap(true);
     layout->addWidget(m_placeholderLabel);
 
+    // ROADMAP P2-2: filter bar sits between the placeholder and the
+    // trials table. Drives a QSortFilterProxyModel that hides rows the
+    // user is not looking for.
+    auto *filterBar = new FilterBar(tr("Filter trials..."), this);
+    m_filterEdit = filterBar->findChild<QLineEdit *>();
+    layout->addWidget(filterBar);
+    connect(filterBar, &FilterBar::filterChanged,
+            this, &TrialsWidget::applyFilter);
+
     m_table = new QTableWidget(this);
     m_table->setColumnCount(5);
     QStringList headers;
@@ -96,6 +108,14 @@ TrialsWidget::TrialsWidget(StorageManager &storageManager, QWidget *parent)
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
     layout->addWidget(m_table, 1);
+
+    // FilterProxyModel drives row visibility; the QTableWidget remains
+    // the view so existing item()/selection accessors stay intact (the
+    // cross-view smoke test uses both).
+    m_filterProxy = new FilterProxyModel(this);
+    m_filterProxy->setSourceModel(m_table->model());
+    m_filterProxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_filterProxy->setFilterKeyColumn(-1); // every column
 
     auto *buttonRow = new QHBoxLayout();
     m_compareButton = new QPushButton(tr("Compare Two Trials"), this);
@@ -171,6 +191,10 @@ void TrialsWidget::refreshTrials()
     if (m_table) {
         m_table->setVisible(true); // keep table visible even when empty for headers
     }
+
+    // Re-apply the active filter so freshly added trials honor the
+    // current search before the user types again.
+    applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
 }
 
 QStringList TrialsWidget::selectedTrialIds() const
@@ -183,6 +207,11 @@ QStringList TrialsWidget::selectedTrialIds() const
     const auto selection = m_table->selectionModel()->selectedRows();
     for (const QModelIndex &index : selection) {
         const int row = index.row();
+        // Skip rows the active filter has hidden so the user cannot act
+        // (compare/promote/delete) on a Trial they cannot see.
+        if (m_table->isRowHidden(row)) {
+            continue;
+        }
         const QString id = trialIdForRow(row);
         if (!id.isEmpty()) {
             ids.append(id);
@@ -289,7 +318,12 @@ void TrialsWidget::onSelectionChanged()
     }
 
     const auto selection = m_table->selectionModel()->selectedRows();
-    const int count = selection.size();
+    int count = 0;
+    for (const QModelIndex &index : selection) {
+        if (!m_table->isRowHidden(index.row())) {
+            ++count;
+        }
+    }
 
     if (m_compareButton) {
         m_compareButton->setEnabled(count >= 2);
@@ -300,4 +334,24 @@ void TrialsWidget::onSelectionChanged()
     if (m_deleteButton) {
         m_deleteButton->setEnabled(count == 1);
     }
+}
+
+void TrialsWidget::applyFilter(const QString &text)
+{
+    if (!m_table || !m_filterProxy) {
+        return;
+    }
+
+    const QString needle = text.trimmed();
+    m_filterProxy->setFilterFixedString(needle);
+
+    const QModelIndex parent;
+    for (int row = 0; row < m_table->rowCount(); ++row) {
+        const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(row, parent);
+        m_table->setRowHidden(row, !match);
+    }
+
+    // Visibility just changed; the button enabled-state depends on the
+    // number of visible selected rows (not the raw selection count).
+    onSelectionChanged();
 }

@@ -11,12 +11,14 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QShortcut>
+#include <QSortFilterProxyModel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 
 #include "models/Team.h"
 #include "storage/StorageManager.h"
+#include "ui/FilterBar.h"
 #include "ui/TeamEditorWidget.h"
 
 namespace {
@@ -78,7 +80,17 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
 
     auto *contentLayout = new QHBoxLayout();
 
-    m_table = new QTableWidget(this);
+    // ROADMAP P2-2: keep the table and editor in their existing
+    // side-by-side layout, but group the table with a FilterBar in a
+    // left column so the search box only affects the Team rows.
+    auto *leftColumn = new QWidget(this);
+    auto *leftLayout = new QVBoxLayout(leftColumn);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    auto *filterBar = new FilterBar(tr("Filter teams..."), leftColumn);
+    m_filterEdit = filterBar->findChild<QLineEdit *>();
+    leftLayout->addWidget(filterBar);
+
+    m_table = new QTableWidget(leftColumn);
     m_table->setColumnCount(4);
     QStringList headers;
     headers << tr("ID")
@@ -92,17 +104,39 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
 
-    contentLayout->addWidget(m_table, 1);
+    leftLayout->addWidget(m_table, 1);
+
+    contentLayout->addWidget(leftColumn, 1);
 
     m_editor = new TeamEditorWidget(m_storageManager, this);
     contentLayout->addWidget(m_editor, 1);
+
+    // Drive row visibility from a FilterProxyModel; the QTableWidget
+    // stays the view so existing selection / double-click paths keep
+    // using item()/currentRow().
+    m_filterProxy = new FilterProxyModel(leftColumn);
+    m_filterProxy->setSourceModel(m_table->model());
+    m_filterProxy->setFilterCaseSensitivity(Qt::CaseInsensitive);
+    m_filterProxy->setFilterKeyColumn(-1); // every column
+
+    connect(filterBar, &FilterBar::filterChanged,
+            this, &TeamsWidget::applyFilter);
 
     connect(m_editor,
             &TeamEditorWidget::teamVariantCreated,
             this,
             [this](const QString &newTeamId) {
+                Q_UNUSED(newTeamId);
+                // Refresh the table so the user can see and click the
+                // new variant, but DO NOT auto-select it: switching the
+                // selection flips the editor's currently loaded Team
+                // via the updateActionStates() cascade, which would
+                // yank the user away from the Team they were just
+                // working on (and previously caused the cross-view
+                // smoke test to apply the Variant instead of the
+                // parent Team). The user can click the variant row to
+                // open it if they want to.
                 refreshTeams();
-                selectTeamById(newTeamId);
             });
     // F2: forward the editor's createRoleRequested signal so MainWindow
     // can switch to the Roles tab and open Role authoring flow.
@@ -162,10 +196,23 @@ void TeamsWidget::installShortcuts()
 
 void TeamsWidget::refreshTeams()
 {
+    // Capture the currently selected team id BEFORE rebuilding the row
+    // list. The storage layer returns Teams in directory-iteration
+    // order which is filesystem-dependent; if a new Team is added
+    // (e.g. via Duplicate Variant) the next refresh can shift the
+    // previously-selected row index to point at a different Team. We
+    // want the user's selection (and the editor's teamId) to stay on
+    // the same Team across refreshes.
+    QString previouslySelectedId;
+    if (m_table && m_table->currentRow() >= 0) {
+        previouslySelectedId = selectedTeamId();
+    }
+
     const QList<Team> teams = m_storageManager.listTeams();
 
     m_table->setRowCount(teams.size());
 
+    int desiredRow = -1;
     for (int row = 0; row < teams.size(); ++row) {
         const Team &team = teams.at(row);
 
@@ -182,9 +229,30 @@ void TeamsWidget::refreshTeams()
         const int primaryCount = team.primarySpecialistIds.size();
         auto *primaryItem = new QTableWidgetItem(QString::number(primaryCount));
         m_table->setItem(row, 3, primaryItem);
+
+        if (!previouslySelectedId.isEmpty() && team.id == previouslySelectedId) {
+            desiredRow = row;
+        }
     }
 
     m_table->resizeColumnsToContents();
+
+    // Restore the user's prior selection by id BEFORE we re-apply the
+    // active filter. applyFilter() reaches into updateActionStates()
+    // and would otherwise shove the editor onto whatever Team now
+    // happens to live at the old row index (the directory-iteration
+    // order is filesystem-dependent and shifts when new Teams land on
+    // disk). Blocking signals keeps the visual highlight in place
+    // without triggering the editor-flip cascade.
+    if (desiredRow >= 0 && !previouslySelectedId.isEmpty()) {
+        m_table->blockSignals(true);
+        m_table->setCurrentCell(desiredRow, 0);
+        m_table->blockSignals(false);
+    }
+
+    // Re-apply the active filter so newly added/changed rows respect
+    // the current search.
+    applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
 }
 
 QString TeamsWidget::selectedTeamId() const
@@ -335,6 +403,11 @@ void TeamsWidget::selectTeamById(const QString &teamId)
         const QVariant userData = idItem->data(Qt::UserRole);
         const QString id = userData.isValid() ? userData.toString() : idItem->text();
         if (id == teamId) {
+            // skip rows the active filter has hidden — they are not a
+            // valid target for the editor surface.
+            if (m_table->isRowHidden(row)) {
+                continue;
+            }
             m_table->setCurrentCell(row, 0);
             return;
         }
@@ -343,6 +416,27 @@ void TeamsWidget::selectTeamById(const QString &teamId)
 
 void TeamsWidget::onSelectionChanged()
 {
+    updateActionStates();
+}
+
+void TeamsWidget::applyFilter(const QString &text)
+{
+    if (!m_table || !m_filterProxy) {
+        return;
+    }
+
+    const QString needle = text.trimmed();
+    m_filterProxy->setFilterFixedString(needle);
+
+    const QModelIndex parent;
+    for (int row = 0; row < m_table->rowCount(); ++row) {
+        const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(row, parent);
+        m_table->setRowHidden(row, !match);
+    }
+
+    // Visibility just changed; make sure the action buttons (Delete,
+    // Editor wiring) reflect the new visible selection rather than
+    // whatever row happens to be currentCell().
     updateActionStates();
 }
 

@@ -2,6 +2,9 @@
 
 #include <QWidget>
 
+class FilterProxyModel;
+class QLineEdit;
+class QSortFilterProxyModel;
 class QTableWidget;
 class QTableWidgetItem;
 class QPushButton;
@@ -34,6 +37,9 @@ private slots:
     void deleteSelectedRole();
     void onSelectionChanged();
     void onItemDoubleClicked(QTableWidgetItem *item);
+    // ROADMAP P2-2: case-insensitive dynamic filtering across all visible
+    // columns. Empty text shows every row.
+    void applyFilter(const QString &text);
 
 private:
     QString selectedRoleId() const;
@@ -41,6 +47,8 @@ private:
     StorageManager &m_storageManager;
 
     QTableWidget *m_table = nullptr;
+    QLineEdit *m_filterEdit = nullptr;
+    FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_createButton = nullptr;
     QPushButton *m_editButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;

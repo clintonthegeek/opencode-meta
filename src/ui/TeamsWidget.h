@@ -10,6 +10,9 @@
 
 class QAction;
 class QLabel;
+class QLineEdit;
+class QSortFilterProxyModel;
+class FilterProxyModel;
 class QTableWidget;
 class QPushButton;
 class StorageManager;
@@ -63,6 +66,8 @@ private slots:
     void refreshTeams();
     void onSelectionChanged();
     void onDeleteKeyPressedOnTable();
+    // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
+    void applyFilter(const QString &text);
 
 private:
     QString selectedTeamId() const;
@@ -72,6 +77,8 @@ private:
     StorageManager &m_storageManager;
 
     QTableWidget *m_table = nullptr;
+    QLineEdit *m_filterEdit = nullptr;
+    FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_newButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
     TeamEditorWidget *m_editor = nullptr;

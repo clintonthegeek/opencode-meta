@@ -1,11 +1,14 @@
  #pragma once
 
- #include <QWidget>
+#include <QWidget>
 
- #include "models/ProjectRecord.h"
+#include "models/ProjectRecord.h"
 
+ class FilterProxyModel;
+ class QLineEdit;
  class QListWidget;
  class QPushButton;
+ class QSortFilterProxyModel;
  class StorageManager;
 
 // Projects mode main widget: scan and manage OpenCode projects and active Teams
@@ -22,6 +25,8 @@
     void viewTeamDiffsForProject();
     void toggleWatchForProject();
     void onSelectionChanged();
+    // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
+    void applyFilter(const QString &text);
 
  private:
      void setupUi();
@@ -35,11 +40,13 @@
      StorageManager &m_storageManager;
      QList<ProjectRecord> m_projects;
 
-    QListWidget *m_listWidget = nullptr;
-    QPushButton *m_scanButton = nullptr;
-    QPushButton *m_switchTeamButton = nullptr;
-    QPushButton *m_diffButton = nullptr;
-    QPushButton *m_watchButton = nullptr;
+     QListWidget *m_listWidget = nullptr;
+     QLineEdit *m_filterEdit = nullptr;
+     FilterProxyModel *m_filterProxy = nullptr;
+     QPushButton *m_scanButton = nullptr;
+     QPushButton *m_switchTeamButton = nullptr;
+     QPushButton *m_diffButton = nullptr;
+     QPushButton *m_watchButton = nullptr;
 
      QString m_lastScanRoot;
  };
