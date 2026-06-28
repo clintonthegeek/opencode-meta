@@ -21,6 +21,7 @@ private slots:
     void duplicateSelectedTemplate();
     void deleteSelectedTemplate();
     void exportSelectedTemplate();
+    void importTemplate();
 
 private:
     void setupUi();
@@ -33,4 +34,5 @@ private:
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
     QPushButton *m_exportButton = nullptr;
+    QPushButton *m_importButton = nullptr;
 };

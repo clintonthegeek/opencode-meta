@@ -1,8 +1,11 @@
 #include "TemplatesWidget.h"
 
+#include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -10,6 +13,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <QDir>
+
+#include "adapter/OpencodeSchemaAdapter.h"
 #include "models/Template.h"
 #include "storage/StorageManager.h"
 #include "ui/TemplateEditorDialog.h"
@@ -73,6 +79,7 @@ void TemplatesWidget::setupUi()
     m_duplicateButton = new QPushButton(tr("Duplicate"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
     m_exportButton = new QPushButton(tr("Export"), this);
+    m_importButton = new QPushButton(tr("Import"), this);
 
     buttonRow->addWidget(m_createButton);
     buttonRow->addWidget(m_editButton);
@@ -80,6 +87,7 @@ void TemplatesWidget::setupUi()
     buttonRow->addWidget(m_deleteButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_exportButton);
+    buttonRow->addWidget(m_importButton);
 
     layout->addLayout(buttonRow);
 
@@ -88,6 +96,7 @@ void TemplatesWidget::setupUi()
     connect(m_duplicateButton, &QPushButton::clicked, this, &TemplatesWidget::duplicateSelectedTemplate);
     connect(m_deleteButton, &QPushButton::clicked, this, &TemplatesWidget::deleteSelectedTemplate);
     connect(m_exportButton, &QPushButton::clicked, this, &TemplatesWidget::exportSelectedTemplate);
+    connect(m_importButton, &QPushButton::clicked, this, &TemplatesWidget::importTemplate);
 }
 
 void TemplatesWidget::refreshTemplates()
@@ -247,4 +256,88 @@ void TemplatesWidget::exportSelectedTemplate()
 
     const QJsonDocument doc(t.toJson());
     file.write(doc.toJson(QJsonDocument::Indented));
+}
+
+void TemplatesWidget::importTemplate()
+{
+    const QString fileName = QFileDialog::getOpenFileName(this,
+                                                          tr("Import Template"),
+                                                          QString(),
+                                                          tr("JSON Files (*.json)"));
+    if (fileName.isEmpty()) {
+        return;
+    }
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Import Template"), tr("Failed to open file for reading."));
+        return;
+    }
+
+    const QByteArray data = file.readAll();
+    QJsonParseError parseError{};
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+        QMessageBox::warning(this, tr("Import Template"), tr("Selected file is not valid JSON."));
+        return;
+    }
+
+    const QJsonObject root = doc.object();
+
+    Template t;
+    // Heuristically decide whether this is a Template JSON or a raw opencode.json.
+    if (root.contains("agents") || root.contains("default_agent") || root.contains("id")) {
+        t = Template::fromJson(root);
+    } else {
+        t = OpencodeSchemaAdapter::loadTemplate(root);
+    }
+
+    if (t.agents.isEmpty()) {
+        QMessageBox::warning(this, tr("Import Template"), tr("Imported file does not contain any agents."));
+        return;
+    }
+
+    if (t.name.isEmpty()) {
+        // Fall back to a reasonable name from id or file name.
+        if (!t.id.isEmpty()) {
+            t.name = t.id;
+        } else {
+            const QFileInfo info(fileName);
+            t.name = info.completeBaseName();
+        }
+    }
+
+    if (t.id.isEmpty()) {
+        // Use name as a base id, ensuring it is unique on disk.
+        QString baseId = t.name;
+        if (baseId.isEmpty()) {
+            const QFileInfo info(fileName);
+            baseId = info.completeBaseName();
+        }
+
+        QString candidate = baseId;
+        int suffix = 1;
+        while (true) {
+            Template existing = m_storageManager.loadTemplate(candidate);
+            if (existing.id.isEmpty()) {
+                break;
+            }
+            candidate = QStringLiteral("%1-%2").arg(baseId).arg(suffix++);
+        }
+        t.id = candidate;
+    }
+
+    // Re-run basic Template validation to avoid persisting unusable templates.
+    const auto validationError = OpencodeSchemaAdapter::validate(t);
+    if (validationError.has_value()) {
+        QMessageBox::warning(this, tr("Import Template"), *validationError);
+        return;
+    }
+
+    if (!m_storageManager.saveTemplate(t)) {
+        QMessageBox::warning(this, tr("Import Template"), tr("Failed to save imported template."));
+        return;
+    }
+
+    refreshTemplates();
 }

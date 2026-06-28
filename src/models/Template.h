@@ -14,7 +14,8 @@ class AgentDef
 public:
     enum class Mode {
         Primary,
-        Subagent
+        Subagent,
+        All
     };
 
     enum class Permission {

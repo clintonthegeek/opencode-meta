@@ -22,7 +22,9 @@
 class StorageManager
 {
 public:
-    StorageManager() = default;
+    // Optional rootOverride is primarily for tests; in the application we
+    // rely on the default ~/.opencode-meta location documented in v1spec.md.
+    explicit StorageManager(const QString &rootOverride = QString());
 
     // Ensure that the root directory (~/.opencode-meta/) exists.
     void ensureRoot() const;
@@ -54,5 +56,6 @@ public:
     QSet<QString> loadPreferredProviders() const;                      // empty set on failure
 
 private:
+    QString m_rootOverride; // empty = use default under home directory
     QString rootPath() const;
 };

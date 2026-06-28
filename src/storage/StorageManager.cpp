@@ -8,9 +8,19 @@
 #include <QJsonObject>
 #include <QSet>
 
+StorageManager::StorageManager(const QString &rootOverride)
+    : m_rootOverride(rootOverride)
+{
+}
+
 QString StorageManager::rootPath() const
 {
-    // All data is stored under ~/.opencode-meta/
+    // All data is stored under ~/.opencode-meta/ by default. Tests may inject
+    // a different root via m_rootOverride to avoid touching real user data.
+    if (!m_rootOverride.isEmpty()) {
+        return m_rootOverride;
+    }
+
     return QDir::homePath() + QStringLiteral("/.opencode-meta");
 }
 

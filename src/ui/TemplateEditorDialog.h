@@ -3,7 +3,10 @@
 #include <QDialog>
 
 class QTableWidget;
+class QTableWidgetItem;
 class QPushButton;
+class QLineEdit;
+class QComboBox;
 
 class Template;
 
@@ -17,14 +20,22 @@ public:
 
     Template templateData() const;
 
+    void accept() override;
+
 private slots:
     void addAgentRow();
     void removeSelectedRow();
+    void onTableItemChanged(QTableWidgetItem *item);
 
 private:
     void setupUi();
     void loadFromTemplate(const Template &t);
     void applyToTemplate(Template &t) const;
+    void rebuildDefaultAgentCombo(const QString &preferredSelection = QString());
+
+    QLineEdit *m_nameEdit = nullptr;
+    QLineEdit *m_versionEdit = nullptr;
+    QComboBox *m_defaultAgentCombo = nullptr;
 
     QTableWidget *m_table = nullptr;
     QPushButton *m_addButton = nullptr;

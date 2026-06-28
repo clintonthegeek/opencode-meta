@@ -5,3 +5,5 @@ build.log
 Testing/
 .claude/
 cl.sh
+dist/
+opencode-meta-linux-x86_64.tar.gz

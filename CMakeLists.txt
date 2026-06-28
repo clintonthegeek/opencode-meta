@@ -14,24 +14,29 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Test)
 # Core library: models, storage, and generation — no UI, testable independently
 set(LIB_SOURCES
 	src/generation.cpp
+	src/apply_helpers.cpp
 	src/models/Template.cpp
 	src/models/Profile.cpp
 	src/storage/StorageManager.cpp
+	src/adapter/OpencodeSchemaAdapter.cpp
 )
 
 set(LIB_HEADERS
 	src/generation.h
+	src/apply_helpers.h
 	src/models/Template.h
 	src/models/Profile.h
 	src/models/ModelInfo.h
 	src/models/ProjectRecord.h
 	src/storage/StorageManager.h
+	src/adapter/OpencodeSchemaAdapter.h
 )
 
 add_library(opencode-meta-lib STATIC ${LIB_SOURCES} ${LIB_HEADERS})
 
 target_include_directories(opencode-meta-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/adapter
 )
 
 target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
@@ -47,6 +52,8 @@ set(APP_SOURCES
 	src/ui/TemplateEditorDialog.cpp
 	src/ui/ProfilesWidget.cpp
 	src/ui/ProfileEditorDialog.cpp
+	src/ui/ProfileCompareDialog.cpp
+	src/ui/ApplyProfileDialog.cpp
 )
 
 set(APP_HEADERS
@@ -58,6 +65,8 @@ set(APP_HEADERS
 	src/ui/TemplateEditorDialog.h
 	src/ui/ProfilesWidget.h
 	src/ui/ProfileEditorDialog.h
+	src/ui/ProfileCompareDialog.h
+	src/ui/ApplyProfileDialog.h
 )
 
 qt_add_executable(opencode-meta-qt

@@ -30,118 +30,6 @@
 #include "ui/ProviderSubscriptionDialog.h"
 using namespace ModelsBrowserColumns;
 using namespace ModelsBrowserRoles;
-// ===== ModelsProxyModel =====================================================
-ModelsProxyModel::ModelsProxyModel(QObject *parent)
-    : QSortFilterProxyModel(parent)
-{
-    setDynamicSortFilter(true);
-    setFilterCaseSensitivity(Qt::CaseInsensitive);
-    setSortCaseSensitivity(Qt::CaseInsensitive);
-}
-void ModelsProxyModel::setPreferredProviders(const QSet<QString> &providers)
-{
-    m_preferredProviders = providers;
-    invalidateFilter();
-}
-void ModelsProxyModel::setSubscribedOnly(bool enabled)
-{
-    m_subscribedOnly = enabled;
-    invalidateFilter();
-}
-void ModelsProxyModel::setSearchText(const QString &text)
-{
-    m_searchText = text.trimmed().toLower();
-    invalidateFilter();
-}
-void ModelsProxyModel::setProviderFilter(const QString &provider)
-{
-    m_providerFilter = provider.trimmed();
-    invalidateFilter();
-}
-void ModelsProxyModel::setCostTier(int tier)
-{
-    m_costTier = tier;
-    invalidateFilter();
-}
-void ModelsProxyModel::setMinContextWindow(int tokens)
-{
-    m_minContextWindow = tokens;
-    invalidateFilter();
-}
-void ModelsProxyModel::setRequireReasoning(bool enabled)
-{
-    m_requireReasoning = enabled;
-    invalidateFilter();
-}
-void ModelsProxyModel::setRequireToolUse(bool enabled)
-{
-    m_requireToolUse = enabled;
-    invalidateFilter();
-}
-// Helper: classify output cost into low/medium/high tiers for filtering.
-static int classifyCostTier(double outputCost)
-{
-    if (outputCost <= 0.0) return 0;
-    if (outputCost < 1.0) return 1;  // low
-    if (outputCost < 10.0) return 2; // medium
-    return 3; // high
-}
-bool ModelsProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
-{
-    const QAbstractItemModel *src = sourceModel();
-    if (!src) {
-        return true;
-    }
-    const QModelIndex idIdx = src->index(sourceRow, Id, sourceParent);
-    const QModelIndex nameIdx = src->index(sourceRow, DisplayName, sourceParent);
-    const QString id = src->data(idIdx, Qt::DisplayRole).toString();
-    const QString name = src->data(nameIdx, Qt::DisplayRole).toString();
-    const QString provider = src->data(idIdx, ProviderRole).toString();
-    // Subscription filter (new)
-    if (m_subscribedOnly && !m_preferredProviders.isEmpty()) {
-        if (!m_preferredProviders.contains(provider)) {
-            return false;
-        }
-    }
-    // Text search (id + display name)
-    if (!m_searchText.isEmpty()) {
-        const QString haystack = (id + QLatin1Char(' ') + name).toLower();
-        if (!haystack.contains(m_searchText)) {
-            return false;
-        }
-    }
-    // Provider filter
-    if (!m_providerFilter.isEmpty()) {
-        if (provider != m_providerFilter) {
-            return false;
-        }
-    }
-    // Cost tier filter
-    if (m_costTier != 0) {
-        const double outputCost = src->data(idIdx, OutputCostRole).toDouble();
-        int tier = classifyCostTier(outputCost);
-        if (tier != m_costTier) {
-            return false;
-        }
-    }
-    // Context window filter
-    if (m_minContextWindow > 0) {
-        const int contextWindow = src->data(idIdx, ContextWindowRole).toInt();
-        if (contextWindow > 0 && contextWindow < m_minContextWindow) {
-            return false;
-        }
-    }
-    // Capabilities filter
-    const QVariant capsVar = src->data(idIdx, CapabilitiesRole);
-    const QStringList caps = capsVar.toStringList();
-    if (m_requireReasoning && !caps.contains("reasoning", Qt::CaseInsensitive)) {
-        return false;
-    }
-    if (m_requireToolUse && !caps.contains("tool-use", Qt::CaseInsensitive)) {
-        return false;
-    }
-    return true;
-}
 // ===== ModelsBrowserWidget ==================================================
 ModelsBrowserWidget::ModelsBrowserWidget(StorageManager &storageManager, QWidget *parent)
     : QWidget(parent)
@@ -254,56 +142,12 @@ void ModelsBrowserWidget::clearModel()
 void ModelsBrowserWidget::loadFromCacheOrFetch()
 {
     const ModelsCache cache = m_storageManager.loadModelsCache();
-    const QDateTime now = QDateTime::currentDateTimeUtc();
-    if (cache.timestamp.isValid() && !cache.models.isEmpty()) {
-        const qint64 ageHours = cache.timestamp.secsTo(now) / 3600;
-        if (ageHours < 24) {
-            clearModel();
-            QSet<QString> providers;
-            const auto keys = cache.models.keys();
-            for (const QString &key : keys) {
-                const ModelInfo &info = cache.models.value(key);
-                QString providerDisplay = info.data.value("provider_display_name").toString();
-                if (providerDisplay.isEmpty()) {
-                    providerDisplay = info.data.value("provider").toString();
-                }
-                providers.insert(providerDisplay);
-                m_allProviders.append(providerDisplay);
-                const double inputCost = info.inputCost;
-                const double outputCost = info.outputCost;
-                int contextWindow = 0;
-                const QJsonObject limitObj = info.data.value("limit").toObject();
-                if (!limitObj.isEmpty()) {
-                    contextWindow = limitObj.value("context").toInt();
-                } else {
-                    contextWindow = info.data.value("context_window").toInt();
-                }
-                QStringList capsList = info.capabilities.values();
-                addModelRow(info.id,
-                            info.displayName.isEmpty() ? info.id : info.displayName,
-                            inputCost,
-                            outputCost,
-                            capsList,
-                            providerDisplay,
-                            contextWindow);
-            }
-            m_allProviders.removeDuplicates();
-            m_allProviders.sort();
-            rebuildProviderFilter(providers);
-            updateSubscriptionFilter();
-            const int totalModels = cache.models.size();
-            const int providerCount = providers.size();
-            const int visibleModels = m_proxyModel ? m_proxyModel->rowCount() : totalModels;
-            m_statusLabel->setText(tr("Loaded %1 models from %2 providers (%3 hours ago). %4 visible after filters.")
-                                       .arg(totalModels)
-                                       .arg(providerCount)
-                                       .arg(ageHours)
-                                       .arg(visibleModels));
-            return;
-        }
+
+    // Try to populate from a reasonably fresh cache; if that fails, fall
+    // back to a fresh network fetch.
+    if (!populateFromCache(cache, /*enforceAgeLimit=*/true)) {
+        fetchModels();
     }
-    // Cache stale or missing: fetch fresh
-    fetchModels();
 }
 void ModelsBrowserWidget::fetchModels()
 {
@@ -328,25 +172,38 @@ void ModelsBrowserWidget::onFetchFinished()
     QNetworkReply *reply = m_currentReply;
     m_currentReply = nullptr;
     reply->deleteLater();
+
     if (reply->error() != QNetworkReply::NoError) {
-        m_statusLabel->setText(tr("Failed to load models - check network."));
+        // Network error: try to fall back to whatever cache we have, even if
+        // it is older than the usual freshness window. If there is no cache,
+        // surface a clear error message.
+        const ModelsCache cache = m_storageManager.loadModelsCache();
+        if (!populateFromCache(cache, /*enforceAgeLimit=*/false,
+                               tr("Network error; showing cached models."))) {
+            m_statusLabel->setText(tr("Failed to load models - check network."));
+        }
         return;
     }
     const QByteArray data = reply->readAll();
     QJsonParseError parseError{};
     const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        m_statusLabel->setText(tr("Failed to load models - check network."));
-        return;
-    }
-    if (!doc.isObject()) {
-        m_statusLabel->setText(tr("Failed to load - invalid JSON"));
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+        // Parse/format error: again, fall back to any existing cache.
+        const ModelsCache cache = m_storageManager.loadModelsCache();
+        if (!populateFromCache(cache, /*enforceAgeLimit=*/false,
+                               tr("Invalid response; showing cached models."))) {
+            m_statusLabel->setText(tr("Failed to load models - invalid response."));
+        }
         return;
     }
     const QJsonObject root = doc.object();
     qDebug() << "Fetched root keys:" << root.keys().size();
     if (root.keys().size() <= 0) {
-        m_statusLabel->setText(tr("Failed to load - empty JSON"));
+        const ModelsCache cache = m_storageManager.loadModelsCache();
+        if (!populateFromCache(cache, /*enforceAgeLimit=*/false,
+                               tr("Empty response; showing cached models."))) {
+            m_statusLabel->setText(tr("Failed to load models - empty response."));
+        }
         return;
     }
     populateFromRemoteJson(root);
@@ -420,6 +277,86 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
                                .arg(visibleModels));
 }
 
+bool ModelsBrowserWidget::populateFromCache(const ModelsCache &cache,
+                                            bool enforceAgeLimit,
+                                            const QString &statusPrefix)
+{
+    if (!cache.timestamp.isValid() || cache.models.isEmpty()) {
+        return false;
+    }
+
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const qint64 ageHours = cache.timestamp.secsTo(now) / 3600;
+    if (enforceAgeLimit && ageHours >= 24) {
+        return false;
+    }
+
+    clearModel();
+
+    QSet<QString> providers;
+    const auto keys = cache.models.keys();
+    for (const QString &key : keys) {
+        const ModelInfo &info = cache.models.value(key);
+
+        QString providerDisplay = info.data.value("provider_display_name").toString();
+        if (providerDisplay.isEmpty()) {
+            providerDisplay = info.data.value("provider").toString();
+        }
+        providers.insert(providerDisplay);
+        m_allProviders.append(providerDisplay);
+
+        const double inputCost = info.inputCost;
+        const double outputCost = info.outputCost;
+
+        int contextWindow = 0;
+        const QJsonObject limitObj = info.data.value("limit").toObject();
+        if (!limitObj.isEmpty()) {
+            contextWindow = limitObj.value("context").toInt();
+        } else {
+            contextWindow = info.data.value("context_window").toInt();
+        }
+
+        QStringList capsList = info.capabilities.values();
+        addModelRow(info.id,
+                    info.displayName.isEmpty() ? info.id : info.displayName,
+                    inputCost,
+                    outputCost,
+                    capsList,
+                    providerDisplay,
+                    contextWindow);
+    }
+
+    m_allProviders.removeDuplicates();
+    m_allProviders.sort();
+    rebuildProviderFilter(providers);
+    updateSubscriptionFilter();
+
+    const int totalModels = cache.models.size();
+    const int providerCount = providers.size();
+    const int visibleModels = m_proxyModel ? m_proxyModel->rowCount() : totalModels;
+
+    if (!m_statusLabel) {
+        return true;
+    }
+
+    if (statusPrefix.isEmpty()) {
+        m_statusLabel->setText(tr("Loaded %1 models from %2 providers (%3 hours ago). %4 visible after filters.")
+                                   .arg(totalModels)
+                                   .arg(providerCount)
+                                   .arg(ageHours)
+                                   .arg(visibleModels));
+    } else {
+        m_statusLabel->setText(tr("%1 Loaded %2 models from %3 providers (%4 hours ago). %5 visible after filters.")
+                                   .arg(statusPrefix)
+                                   .arg(totalModels)
+                                   .arg(providerCount)
+                                   .arg(ageHours)
+                                   .arg(visibleModels));
+    }
+
+    return true;
+}
+
 void ModelsBrowserWidget::manageSubscriptions()
 {
     ProviderSubscriptionDialog dlg(m_storageManager, m_allProviders, this);
@@ -428,7 +365,7 @@ void ModelsBrowserWidget::manageSubscriptions()
         m_storageManager.savePreferredProviders(m_preferredProviders);
         m_proxyModel->setPreferredProviders(m_preferredProviders);
         updateSubscriptionFilter();
-        m_statusLabel->setText(tr("Subscriptions updated. Refresh to apply filters."));
+        m_statusLabel->setText(tr("Subscriptions updated. Filters apply immediately."));
     }
 }
 

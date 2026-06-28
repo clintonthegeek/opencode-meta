@@ -1,0 +1,49 @@
+name: Release (Linux)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-linux:
+    name: Build and attach Linux binary
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.6.*'
+          target: 'desktop'
+          install-deps: 'true'
+          cache: 'true'
+
+      - name: Configure (Release)
+        run: |
+          cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR}"
+
+      - name: Build
+        run: |
+          cmake --build build-release --config Release --parallel
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp build-release/opencode-meta-qt dist/
+          tar -C dist -czf opencode-meta-linux-x86_64.tar.gz opencode-meta-qt
+
+      - name: Upload Release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: opencode-meta-linux-x86_64.tar.gz
+          asset_name: opencode-meta-linux-x86_64.tar.gz
+          asset_content_type: application/gzip

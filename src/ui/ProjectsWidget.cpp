@@ -22,9 +22,11 @@
 #include <QDialog>
 
  #include "generation.h"
+ #include "apply_helpers.h"
  #include "models/Profile.h"
  #include "models/Template.h"
  #include "storage/StorageManager.h"
+ #include "ui/ApplyProfileDialog.h"
 
  namespace {
 
@@ -87,42 +89,6 @@
 
          QFile::copy(srcPath, dstPath);
      }
- }
-
- // Write the rendered config to the project's opencode.json path.
- bool writeProjectConfig(const QString &projectRoot, const QJsonObject &config, const Template &t, QString *errorString = nullptr)
- {
-     QDir projectDir(projectRoot);
-     if (!projectDir.exists()) {
-         if (errorString) {
-             *errorString = QObject::tr("Project directory does not exist: %1").arg(projectRoot);
-         }
-         return false;
-     }
-
-     const QString configFilePath = projectDir.filePath(QStringLiteral("opencode.json"));
-     QFile file(configFilePath);
-     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-         if (errorString) {
-             *errorString = QObject::tr("Failed to open %1 for writing: %2").arg(configFilePath, file.errorString());
-         }
-         return false;
-     }
-
-     const QJsonDocument doc(config);
-     const QByteArray data = doc.toJson(QJsonDocument::Indented);
-     const qint64 written = file.write(data);
-     if (written != data.size()) {
-         if (errorString) {
-             *errorString = QObject::tr("Failed to write complete config to %1").arg(configFilePath);
-         }
-         return false;
-     }
-
-     // Best-effort prompt copy; ignore failures here.
-     copyTemplatePromptsToProject(t, projectRoot);
-
-     return true;
  }
 
  QString formatProjectSummary(const ProjectRecord &record, const StorageManager &storage)
@@ -442,23 +408,66 @@
 
      const QJsonObject config = renderProfileToConfig(t, p);
 
-     const QString configPath = QDir(record->path).filePath(QStringLiteral("opencode.json"));
+     const QDir projectDir(record->path);
+     const QString configPath = projectDir.filePath(QStringLiteral("opencode.json"));
+
+     QString existingText;
+     QJsonObject existingJson;
+     bool existingIsJson = false;
+
      if (QFileInfo::exists(configPath)) {
-         const auto result = QMessageBox::question(this,
-                                                   tr("Apply Profile"),
-                                                   tr("Overwrite %1?").arg(configPath),
-                                                   QMessageBox::Yes | QMessageBox::No,
-                                                   QMessageBox::No);
-         if (result != QMessageBox::Yes) {
-             return;
+         QFile file(configPath);
+         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+             existingText = QString::fromUtf8(file.readAll());
+
+             QJsonParseError parseError{};
+             const QJsonDocument doc = QJsonDocument::fromJson(existingText.toUtf8(), &parseError);
+             if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+                 existingJson = doc.object();
+                 existingIsJson = true;
+             }
          }
      }
 
-     QString error;
-     if (!writeProjectConfig(record->path, config, t, &error)) {
-         QMessageBox::warning(this, tr("Apply Profile"), error);
+     const QJsonDocument newDoc(config);
+     const QString renderedText = QString::fromUtf8(newDoc.toJson(QJsonDocument::Indented));
+
+     QString summaryText;
+     if (!existingText.isEmpty() && existingIsJson) {
+         const QStringList summaryLines = summarizeTopLevelConfigDiff(existingJson, config);
+         summaryText = summaryLines.join(QLatin1Char('\n'));
+     } else if (!existingText.isEmpty() && !existingIsJson) {
+         summaryText = tr("Existing project config is not valid JSON; showing full text diff below. A backup will still be created before writing.");
+     } else {
+         summaryText = tr("No existing opencode.json found in this project. A new config file will be created.");
+     }
+
+     const QString scopeDescription = tr("Apply profile '%1' to project:\n%2")
+                                          .arg(p.name.isEmpty() ? p.id : p.name,
+                                               QDir::toNativeSeparators(record->path));
+
+     const QString warningsText = tr("This will write or update opencode.json in this project directory only. It will override the global OpenCode config for this project. If a file already exists, a timestamped .bak backup will be created next to it before writing.");
+
+     ApplyProfileDialog dlg(scopeDescription,
+                            warningsText,
+                            summaryText,
+                            existingText,
+                            renderedText,
+                            this);
+     if (dlg.exec() != QDialog::Accepted) {
          return;
      }
+
+     const ApplyResult applyResult = applyConfigWithBackup(configPath, config);
+     if (!applyResult.success) {
+         QMessageBox::warning(this,
+                              tr("Apply Profile"),
+                              tr("Failed to write project config: %1").arg(applyResult.errorString));
+         return;
+     }
+
+     // Best-effort prompt copy; ignore failures here.
+     copyTemplatePromptsToProject(t, record->path);
 
      record->profileId = profileId;
      record->lastSync = QDateTime::currentDateTimeUtc();
@@ -467,7 +476,7 @@
      refreshList();
 
      QMessageBox::information(this, tr("Apply Profile"), tr("Profile applied to project."));
- }
+  }
 
  void ProjectsWidget::viewDiffsForProject()
  {

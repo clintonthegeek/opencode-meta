@@ -59,6 +59,8 @@ QString AgentDef::modeToString(Mode mode)
         return QStringLiteral("primary");
     case Mode::Subagent:
         return QStringLiteral("subagent");
+    case Mode::All:
+        return QStringLiteral("all");
     }
 
     return QStringLiteral("primary");
@@ -72,6 +74,9 @@ AgentDef::Mode AgentDef::modeFromString(const QString &value)
     }
     if (v == QLatin1String("subagent")) {
         return Mode::Subagent;
+    }
+    if (v == QLatin1String("all")) {
+        return Mode::All;
     }
 
     // Default to primary if unknown

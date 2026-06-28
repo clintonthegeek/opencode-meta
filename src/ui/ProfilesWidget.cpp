@@ -16,11 +16,14 @@
 #include <QVBoxLayout>
 
 #include "generation.h"
+#include "apply_helpers.h"
 #include "models/Profile.h"
 #include "models/Template.h"
 #include "models/ModelInfo.h"
 #include "storage/StorageManager.h"
+#include "ui/ApplyProfileDialog.h"
 #include "ui/ProfileEditorDialog.h"
+#include "ui/ProfileCompareDialog.h"
 
 namespace {
 
@@ -111,45 +114,6 @@ void copyTemplatePromptsToGlobal(const Template &t)
     }
 }
 
-// Write the rendered config to the global opencode.json path.
-bool writeGlobalConfig(const QJsonObject &config, const Template &t, QString *errorString = nullptr)
-{
-    const QString configRoot = QDir::homePath() + QStringLiteral("/.config/opencode");
-    QDir configDir(configRoot);
-    if (!configDir.exists()) {
-        if (!configDir.mkpath(QStringLiteral("."))) {
-            if (errorString) {
-                *errorString = QObject::tr("Failed to create %1").arg(configRoot);
-            }
-            return false;
-        }
-    }
-
-    const QString configFilePath = configRoot + QStringLiteral("/opencode.json");
-    QFile file(configFilePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        if (errorString) {
-            *errorString = QObject::tr("Failed to open %1 for writing: %2").arg(configFilePath, file.errorString());
-        }
-        return false;
-    }
-
-    const QJsonDocument doc(config);
-    const QByteArray data = doc.toJson(QJsonDocument::Indented);
-    const qint64 written = file.write(data);
-    if (written != data.size()) {
-        if (errorString) {
-            *errorString = QObject::tr("Failed to write complete config to %1").arg(configFilePath);
-        }
-        return false;
-    }
-
-    // Best-effort prompt copy; ignore failures here.
-    copyTemplatePromptsToGlobal(t);
-
-    return true;
-}
-
 QString defaultModelIdFromCache(const ModelsCache &cache)
 {
     if (!cache.models.isEmpty()) {
@@ -188,12 +152,14 @@ void ProfilesWidget::setupUi()
     m_applyButton = new QPushButton(tr("Apply (Global)"), this);
     m_browseModelsButton = new QPushButton(tr("Browse Models..."), this);
     m_browseModelsButton->setToolTip(tr("Switch to the Models Browser to look up model IDs"));
+    m_compareButton = new QPushButton(tr("Compare..."), this);
 
     buttonRow->addWidget(m_createButton);
     buttonRow->addWidget(m_editButton);
     buttonRow->addWidget(m_duplicateButton);
     buttonRow->addWidget(m_deleteButton);
     buttonRow->addWidget(m_browseModelsButton);
+    buttonRow->addWidget(m_compareButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_applyButton);
 
@@ -212,6 +178,7 @@ void ProfilesWidget::setupUi()
     connect(m_deleteButton, &QPushButton::clicked, this, &ProfilesWidget::deleteSelectedProfile);
     connect(m_applyButton, &QPushButton::clicked, this, &ProfilesWidget::applySelectedProfile);
     connect(m_browseModelsButton, &QPushButton::clicked, this, &ProfilesWidget::requestNavigateToModels);
+    connect(m_compareButton, &QPushButton::clicked, this, &ProfilesWidget::compareProfiles);
 
     connect(m_listWidget, &QListWidget::currentItemChanged, this, &ProfilesWidget::onSelectionChanged);
 }
@@ -418,23 +385,66 @@ void ProfilesWidget::applySelectedProfile()
 
     const QJsonObject config = renderProfileToConfig(t, p);
 
-    const QString configPath = QDir::homePath() + QStringLiteral("/.config/opencode/opencode.json");
+    const QString configRoot = QDir::homePath() + QStringLiteral("/.config/opencode");
+    const QString configPath = configRoot + QStringLiteral("/opencode.json");
+
+    QString existingText;
+    QJsonObject existingJson;
+    bool existingIsJson = false;
+
     if (QFileInfo::exists(configPath)) {
-        const auto result = QMessageBox::question(this,
-                                                  tr("Apply Profile"),
-                                                  tr("Overwrite %1?").arg(configPath),
-                                                  QMessageBox::Yes | QMessageBox::No,
-                                                  QMessageBox::No);
-        if (result != QMessageBox::Yes) {
-            return;
+        QFile file(configPath);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            existingText = QString::fromUtf8(file.readAll());
+
+            QJsonParseError parseError{};
+            const QJsonDocument doc = QJsonDocument::fromJson(existingText.toUtf8(), &parseError);
+            if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+                existingJson = doc.object();
+                existingIsJson = true;
+            }
         }
     }
 
-    QString error;
-    if (!writeGlobalConfig(config, t, &error)) {
-        QMessageBox::warning(this, tr("Apply Profile"), error);
+    const QJsonDocument newDoc(config);
+    const QString renderedText = QString::fromUtf8(newDoc.toJson(QJsonDocument::Indented));
+
+    QString summaryText;
+    if (!existingText.isEmpty() && existingIsJson) {
+        const QStringList summaryLines = summarizeTopLevelConfigDiff(existingJson, config);
+        summaryText = summaryLines.join(QLatin1Char('\n'));
+    } else if (!existingText.isEmpty() && !existingIsJson) {
+        summaryText = tr("Existing config is not valid JSON; showing full text diff below. A backup will still be created before writing.");
+    } else {
+        summaryText = tr("No existing global config found. A new opencode.json will be created.");
+    }
+
+    const QString scopeDescription = tr("Apply profile '%1' to the global OpenCode config at:\n%2")
+                                         .arg(p.name.isEmpty() ? p.id : p.name,
+                                              QDir::toNativeSeparators(configPath));
+
+    const QString warningsText = tr("This will update the global OpenCode configuration used for all projects that do not have their own opencode.json. If a file already exists, a timestamped .bak backup will be created next to it before writing.");
+
+    ApplyProfileDialog dlg(scopeDescription,
+                           warningsText,
+                           summaryText,
+                           existingText,
+                           renderedText,
+                           this);
+    if (dlg.exec() != QDialog::Accepted) {
         return;
     }
+
+    const ApplyResult applyResult = applyConfigWithBackup(configPath, config);
+    if (!applyResult.success) {
+        QMessageBox::warning(this,
+                             tr("Apply Profile"),
+                             tr("Failed to write global config: %1").arg(applyResult.errorString));
+        return;
+    }
+
+    // Best-effort prompt copy; ignore failures here.
+    copyTemplatePromptsToGlobal(t);
 
     // Update metadata with last_applied timestamp and persist profile.
     const QString nowIso = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
@@ -450,6 +460,20 @@ void ProfilesWidget::applySelectedProfile()
 void ProfilesWidget::onSelectionChanged()
 {
     updatePreview();
+}
+
+void ProfilesWidget::compareProfiles()
+{
+    const QList<Profile> profiles = m_storageManager.listProfiles();
+    if (profiles.size() < 2) {
+        QMessageBox::information(this,
+                                 tr("Compare Profiles"),
+                                 tr("At least two profiles are required to compare."));
+        return;
+    }
+
+    ProfileCompareDialog dlg(m_storageManager, this);
+    dlg.exec();
 }
 
 void ProfilesWidget::updatePreview()

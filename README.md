@@ -1,8 +1,10 @@
 # OpenCode Meta Qt
 
-A Qt6/C++ GUI tool for creating and deploying [OpenCode](https://opencode.ai) configurations.
+A Qt6/C++ GUI tool (under active development) for creating and deploying [OpenCode](https://opencode.ai) configurations.
 
-Manage reusable agent templates, model profiles, and project configurations from a clean graphical interface. Apply profiles to any project (or globally) to generate a valid `opencode.json` in seconds.
+Manage reusable agent templates, model profiles, and project configurations from a clean graphical interface. Apply profiles to any project (or globally) to generate a valid `opencode.json`.
+
+> **Note**: This project is in active development. Features described below are planned or partially implemented; see `ROADMAP.md` for current status.
 
 ---
 
@@ -39,6 +41,15 @@ cmake --build build-dev --parallel
 # Run
 ./build-dev/opencode-meta-qt
 ```
+
+### GitHub Releases
+
+When this repository is hosted on GitHub as `clintonthegeek/opencode-meta`, creating a GitHub Release will trigger the `Release (Linux)` workflow. That workflow:
+
+- Installs Qt 6 on an Ubuntu runner
+- Configures and builds a Release binary
+- Packages `opencode-meta-qt` into `opencode-meta-linux-x86_64.tar.gz`
+- Attaches that archive as an asset on the GitHub Release
 
 ---
 

@@ -26,6 +26,7 @@ private slots:
     void deleteSelectedProfile();
     void applySelectedProfile();
     void onSelectionChanged();
+    void compareProfiles();
 
 private:
     void setupUi();
@@ -40,5 +41,6 @@ private:
     QPushButton *m_deleteButton = nullptr;
     QPushButton *m_applyButton = nullptr;
     QPushButton *m_browseModelsButton = nullptr;
+    QPushButton *m_compareButton = nullptr;
     QTextEdit *m_previewEdit = nullptr;
 };
