@@ -31,9 +31,12 @@
 using namespace ModelsBrowserColumns;
 using namespace ModelsBrowserRoles;
 // ===== ModelsBrowserWidget ==================================================
-ModelsBrowserWidget::ModelsBrowserWidget(StorageManager &storageManager, QWidget *parent)
+ModelsBrowserWidget::ModelsBrowserWidget(StorageManager &storageManager,
+                                         QWidget *parent,
+                                         bool pickerMode)
     : QWidget(parent)
     , m_storageManager(storageManager)
+    , m_pickerMode(pickerMode)
 {
     m_networkManager = new QNetworkAccessManager(this);
     m_preferredProviders = m_storageManager.loadPreferredProviders();
@@ -114,8 +117,38 @@ void ModelsBrowserWidget::setupUi()
     layout->addWidget(m_tableView, 1);
     // Status label
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setText(tr("Models list is empty. Click Fetch to load from models.dev."));
+    m_statusLabel->setText(tr("Models list is empty. Click Fetch to run `opencode models --refresh`."));
     layout->addWidget(m_statusLabel);
+
+    // Picker-mode controls: explicit OK/Cancel buttons that embedders can
+    // connect to in dialogs or other views.
+    if (m_pickerMode) {
+        auto *buttonsLayout = new QHBoxLayout();
+        buttonsLayout->addStretch(1);
+
+        m_acceptButton = new QPushButton(tr("OK"), this);
+        m_cancelButton = new QPushButton(tr("Cancel"), this);
+
+        buttonsLayout->addWidget(m_acceptButton);
+        buttonsLayout->addWidget(m_cancelButton);
+
+        layout->addLayout(buttonsLayout);
+
+        connect(m_acceptButton, &QPushButton::clicked, this, [this]() {
+            const QString id = selectedModelId();
+            if (id.isEmpty()) {
+                if (m_statusLabel) {
+                    m_statusLabel->setText(tr("Select a model before accepting."));
+                }
+                return;
+            }
+            emit modelAccepted(id);
+        });
+
+        connect(m_cancelButton, &QPushButton::clicked, this, [this]() {
+            emit selectionCanceled();
+        });
+    }
     // Connections
     connect(m_searchEdit, &QLineEdit::textChanged, m_proxyModel, &ModelsProxyModel::setSearchText);
     connect(m_providerCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
@@ -141,28 +174,47 @@ void ModelsBrowserWidget::clearModel()
 }
 void ModelsBrowserWidget::loadFromCacheOrFetch()
 {
-    const ModelsCache cache = m_storageManager.loadModelsCache();
-
-    // Try to populate from a reasonably fresh cache; if that fails, fall
-    // back to a fresh network fetch.
-    if (!populateFromCache(cache, /*enforceAgeLimit=*/true)) {
-        fetchModels();
+    // Phase G1: the live `<Global.Path.cache>/models.json` (opencode-
+    // managed) is the authoritative source. Try it first; if it's empty
+    // (or the user has never run `opencode models --refresh`), fall
+    // back to the local `~/.opencode-meta/models-cache.json` snapshot.
+    if (populateFromLiveCatalog(/*forceRefresh=*/false) > 0) {
+        return;
     }
+    const ModelsCache cache = m_storageManager.loadModelsCache();
+    if (populateFromCache(cache, /*enforceAgeLimit=*/true)) {
+        return;
+    }
+    // Last resort: refresh the opencode catalog, then read it again.
+    if (populateFromLiveCatalog(/*forceRefresh=*/true) > 0) {
+        return;
+    }
+    m_statusLabel->setText(tr(
+        "Live catalog empty. Click Fetch to run `opencode models --refresh` "
+        "or install opencode so it can populate <Global.Path.cache>/models.json."));
 }
 void ModelsBrowserWidget::fetchModels()
 {
+    // Phase G1: "Fetch" now means "shell out to opencode models --refresh"
+    // rather than a direct HTTP GET against models.dev/api.json. The
+    // direct fetch path is removed entirely — see
+    // docs/PARADIGM.md §5.6 and OPENCODE-CONFIG-INTROSPECTION.md §12.2
+    // item 1.
     if (m_currentReply) {
         m_currentReply->abort();
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
     }
-    const QUrl url("https://models.dev/api.json");
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::UserAgentHeader, "OpenCode Meta Qt/0.1.0");
-    req.setTransferTimeout(30000);  // 30s timeout
-    m_statusLabel->setText(tr("Fetching models from models.dev..."));
-    m_currentReply = m_networkManager->get(req);
-    connect(m_currentReply, &QNetworkReply::finished, this, &ModelsBrowserWidget::onFetchFinished);
+    m_statusLabel->setText(tr("Running `opencode models --refresh`..."));
+    const int count = populateFromLiveCatalog(/*forceRefresh=*/true,
+                                             tr("Refresh:"));
+    if (count <= 0) {
+        // Fall back to offline cache so the user still has something to
+        // browse while the opencode cache is missing.
+        const ModelsCache cache = m_storageManager.loadModelsCache();
+        (void)populateFromCache(cache, /*enforceAgeLimit=*/false,
+                                tr("Live catalog unreachable; showing cached models."));
+    }
 }
 void ModelsBrowserWidget::onFetchFinished()
 {
@@ -197,7 +249,7 @@ void ModelsBrowserWidget::onFetchFinished()
         return;
     }
     const QJsonObject root = doc.object();
-    qDebug() << "Fetched root keys:" << root.keys().size();
+    qDebug() << "Parsed <Global.Path.cache>/models.json root keys:" << root.keys().size();
     if (root.keys().size() <= 0) {
         const ModelsCache cache = m_storageManager.loadModelsCache();
         if (!populateFromCache(cache, /*enforceAgeLimit=*/false,
@@ -208,6 +260,91 @@ void ModelsBrowserWidget::onFetchFinished()
     }
     populateFromRemoteJson(root);
 }
+int ModelsBrowserWidget::populateFromLiveCatalog(bool forceRefresh,
+                                                  const QString &statusPrefix)
+{
+    if (forceRefresh) {
+        // Refresh runs `opencode models --refresh`. We deliberately do
+        // not abort-on-empty-cache: a successful refresh against a TTL
+        // < 5min short-circuits the network refetch using opencode's own
+        // schedule (report §8.1: 60-min auto refresh).
+        m_catalog.refreshFromCli();
+    }
+    if (!m_catalog.loadFromCache()) {
+        return 0;
+    }
+    if (m_catalog.providerCount() <= 0 || m_catalog.modelCount() <= 0) {
+        return 0;
+    }
+    clearModel();
+
+    // Walk the parsed catalog and emit one row per (provider, model).
+    // The shape mirrors the models.dev/api.json schema (provider id →
+    // models map; per-model `name`, `cost`, `limit.context`,
+    // `tool_call`/`reasoning`/`attachment`).
+    QSet<QString> providerFilterSet;
+    const QStringList providers = m_catalog.providerIDs();
+    int totalRows = 0;
+    for (const QString &providerID : providers) {
+        const QJsonValue pval = m_catalog.providerObject(providerID);
+        if (!pval.isObject()) {
+            continue;
+        }
+        const QJsonObject pobj = pval.toObject();
+        const QString providerDisplay = pobj.value(QStringLiteral("name")).toString(providerID);
+        const QStringList models = m_catalog.modelIDs(providerID);
+        for (const QString &modelID : models) {
+            const QJsonValue mval = pobj.value(QStringLiteral("models")).toObject().value(modelID);
+            if (!mval.isObject()) {
+                continue;
+            }
+            const QJsonObject mobj = mval.toObject();
+            const QString displayName = mobj.value(QStringLiteral("name")).toString(modelID);
+            const QJsonObject costObj = mobj.value(QStringLiteral("cost")).toObject();
+            const double inputCost = costObj.value(QStringLiteral("input")).toDouble(0.0);
+            const double outputCost = costObj.value(QStringLiteral("output")).toDouble(0.0);
+            const int contextWindow = mobj.value(QStringLiteral("limit")).toObject().value(QStringLiteral("context")).toInt(0);
+            QStringList caps;
+            if (mobj.value(QStringLiteral("reasoning")).toBool()) {
+                caps.append(QStringLiteral("reasoning"));
+            }
+            if (mobj.value(QStringLiteral("tool_call")).toBool() || mobj.value(QStringLiteral("tools")).toBool()) {
+                caps.append(QStringLiteral("tool-use"));
+            }
+            if (mobj.value(QStringLiteral("attachment")).toBool()) {
+                caps.append(QStringLiteral("attachment"));
+            }
+            addModelRow(QStringLiteral("%1/%2").arg(providerID, modelID),
+                        displayName,
+                        inputCost,
+                        outputCost,
+                        caps,
+                        providerDisplay,
+                        contextWindow);
+            providerFilterSet.insert(providerDisplay);
+            m_allProviders.append(providerDisplay);
+            ++totalRows;
+        }
+    }
+    m_allProviders.removeDuplicates();
+    m_allProviders.sort();
+    rebuildProviderFilter(providerFilterSet);
+    updateSubscriptionFilter();
+
+    const int visible = m_proxyModel ? m_proxyModel->rowCount() : totalRows;
+    if (m_statusLabel) {
+        const QString prefix = statusPrefix.isEmpty() ? QString() : statusPrefix + QLatin1Char(' ');
+        m_statusLabel->setText(tr(
+            "%1Loaded %2 models from %3 providers (%4 total in live catalog). %5 visible after filters.")
+            .arg(prefix)
+            .arg(totalRows)
+            .arg(m_catalog.providerCount())
+            .arg(m_catalog.modelCount())
+            .arg(visible));
+    }
+    return totalRows;
+}
+
 void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
 {
     clearModel();
@@ -219,7 +356,9 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
         m_statusLabel->setText(tr("Failed to load - invalid JSON"));
         return;
     }
-    // Per models-dev.md: root keys are provider ids (e.g. { "openai": { ... } })
+    // Per models.dev schema (loaded into <Global.Path.cache>/models.json
+    // by opencode models --refresh, see ProviderCatalog and introspection
+    // report §8.1/§8.4): root keys are provider ids (e.g. { "openai": { ... } })
     for (auto providerIt = root.constBegin(); providerIt != root.constEnd(); ++providerIt) {
         const QString providerId = providerIt.key();
         const QJsonObject providerObj = providerIt.value().toObject();
@@ -233,7 +372,8 @@ void ModelsBrowserWidget::populateFromRemoteJson(const QJsonObject &root)
             ModelInfo info;
             info.id = modelObj.value("id").toString(modelKey);
             info.displayName = modelObj.value("name").toString(info.id);  // name is display
-            // Pricing from "cost" object (per models-dev schema)
+            // Pricing from "cost" object (per models.dev schema loaded
+            // into <Global.Path.cache>/models.json)
             const QJsonObject costObj = modelObj.value("cost").toObject();
             info.inputCost = costObj.value("input").toDouble(0.0);
             info.outputCost = costObj.value("output").toDouble(0.0);
@@ -447,6 +587,14 @@ void ModelsBrowserWidget::onTableDoubleClicked(const QModelIndex &proxyIndex)
     const QString id = m_model->data(idIndex, Qt::DisplayRole).toString();
     if (id.isEmpty()) return;
 
+    // In picker mode, treat double-click as an accept action on the
+    // current row. In browser mode, keep the existing behavior of
+    // copying the id to the clipboard.
+    if (m_pickerMode) {
+        emit modelAccepted(id);
+        return;
+    }
+
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(id);
     m_statusLabel->setText(tr("Copied '%1' to clipboard.").arg(id));
@@ -497,4 +645,26 @@ void ModelsBrowserWidget::testConnection()
             QMessageBox::warning(this, tr("Test Connection"), tr("HTTP %1").arg(status));
         }
     });
+}
+
+QString ModelsBrowserWidget::selectedModelId() const
+{
+    if (!m_tableView || !m_proxyModel || !m_model) {
+        return QString();
+    }
+
+    QItemSelectionModel *sel = m_tableView->selectionModel();
+    if (!sel) {
+        return QString();
+    }
+
+    const QModelIndexList rows = sel->selectedRows(Id);
+    if (rows.isEmpty()) {
+        return QString();
+    }
+
+    const QModelIndex proxyIndex = rows.first();
+    const QModelIndex sourceIndex = m_proxyModel->mapToSource(proxyIndex);
+    const QModelIndex idIndex = m_model->index(sourceIndex.row(), Id);
+    return m_model->data(idIndex, Qt::DisplayRole).toString();
 }

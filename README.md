@@ -59,7 +59,7 @@ When this repository is hosted on GitHub as `clintonthegeek/opencode-meta`, crea
 ctest --test-dir build-dev --output-on-failure
 ```
 
-Tests cover Template/Profile serialization round-trips and `opencode.json` generation correctness.
+Tests cover Template/Profile serialization round-trips, schema adapter validation and unknown-field preservation, `opencode.json` generation, models browser filters/cache, and safe apply-with-backup helpers.
 
 ---
 
@@ -77,6 +77,15 @@ All data is stored under `~/.opencode-meta/`:
   projects.json
   default-profile.json
 ```
+
+---
+
+## Archive And Historical Docs
+
+Older design documents that are no longer the active plan are kept under
+`archive/` in this repository (for example `archive/plan.md`). Treat anything
+under `archive/` as read-only historical reference; use this README and
+`ROADMAP.md` for current behavior.
 
 ---
 
@@ -123,6 +132,15 @@ src/
   storage/StorageManager  — JSON persistence under ~/.opencode-meta/
   ui/                     — Qt widget classes (one per mode)
 tests/
-  test_models.cpp         — Template/Profile serialization round-trips
-  test_generation.cpp     — opencode.json generation correctness
+  test_cross_view_smoke.cpp   — F5 cross-view end-to-end walk (Lab → Teams → Apply → Trials + restart)
+  test_team_renderer.cpp      — TeamRenderer v1+v2 emission (Phase G5)
+  test_apply_team.cpp         — Apply Team path with backup (Phase E apply trio)
+  test_starter_team_apply.cpp — Seeded starter-team apply round-trip
+  test_teams_storage.cpp      — Teams CRUD on-disk round-trip (Phase F4)
+  test_contract_checker.cpp   — ContractChecker validation gate (Phase G3)
 ```
+
+Legacy Template/Profile-era tests (`test_apply.cpp`, `test_generation.cpp`,
+`test_models.cpp`, `test_opencode_schema_adapter.cpp`, `test_profile_compare.cpp`,
+`test_templates.cpp`, `test_models_browser.cpp`) were removed in Phase A3; their
+subjects were superseded by the Role/Specialist/Team/Trial world.

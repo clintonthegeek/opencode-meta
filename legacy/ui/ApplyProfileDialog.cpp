@@ -47,7 +47,7 @@ ApplyProfileDialog::ApplyProfileDialog(const QString &scopeDescription,
                                        QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle(tr("Apply Profile"));
+    setWindowTitle(tr("Switch Team"));
 
     auto *mainLayout = new QVBoxLayout(this);
 
@@ -77,7 +77,7 @@ ApplyProfileDialog::ApplyProfileDialog(const QString &scopeDescription,
     leftColumn->addWidget(m_currentEdit, 1);
 
     auto *rightColumn = new QVBoxLayout();
-    auto *rightLabel = new QLabel(tr("New config (rendered from profile)"), this);
+    auto *rightLabel = new QLabel(tr("New config (rendered from team)"), this);
     m_renderedEdit = new QTextEdit(this);
     m_renderedEdit->setReadOnly(true);
     rightColumn->addWidget(rightLabel);
@@ -89,7 +89,7 @@ ApplyProfileDialog::ApplyProfileDialog(const QString &scopeDescription,
     mainLayout->addLayout(diffRow, 1);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(tr("Apply"));
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Switch Team"));
     connect(buttons, &QDialogButtonBox::accepted, this, &ApplyProfileDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &ApplyProfileDialog::reject);
     mainLayout->addWidget(buttons);

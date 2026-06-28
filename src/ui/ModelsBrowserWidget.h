@@ -7,6 +7,7 @@
 #include <QStringList>
 
 #include "models/ModelInfo.h" // for ModelsCache
+#include "generation/ProviderCatalog.h" // Phase G1 live catalog source
 
 namespace ModelsBrowserInternal {
 
@@ -71,10 +72,27 @@ class ModelsBrowserWidget : public QWidget
 public:
     /**
      * Constructor: Initializes UI and loads from cache or fetches fresh data.
-     * \param storageManager Shared storage for cache and preferences.
-     * \param parent Parent widget.
-     */
-    explicit ModelsBrowserWidget(StorageManager &storageManager, QWidget *parent = nullptr);
+      * \param storageManager Shared storage for cache and preferences.
+      * \param parent Parent widget.
+      * \param pickerMode When true, enables single-selection picker mode with
+      *        explicit accept/cancel controls and selection signals so the
+      *        widget can be embedded as a model chooser.
+      */
+     explicit ModelsBrowserWidget(StorageManager &storageManager,
+                                  QWidget *parent = nullptr,
+                                  bool pickerMode = false);
+
+     // Helper for embedders: return the currently selected model id in the
+     // proxy-filtered table, or an empty string if nothing is selected.
+     QString selectedModelId() const;
+
+ signals:
+     // Emitted in picker mode when the user accepts the current selection
+     // (via the OK button or double-click). Carries the chosen model id.
+     void modelAccepted(const QString &modelId);
+
+     // Emitted in picker mode when the user cancels out of the picker UI.
+     void selectionCanceled();
 
 private slots:
     void fetchModels(); ///< Trigger network fetch or cache load.
@@ -89,6 +107,15 @@ private:
      void loadFromCacheOrFetch(); ///< Load recent cache or initiate fetch.
      void populateFromRemoteJson(const QJsonObject &root); ///< Parse and display fetched JSON.
      void clearModel(); ///< Clear table data.
+
+    // Phase G1: populate the table from the live ProviderCatalog snapshot
+    // (the opencode-managed `<Global.Path.cache>/models.json`). When
+    // `forceRefresh` is true we first run `opencode models --refresh` so
+    // the cache file is up-to-date before we read it. Always returns the
+    // provider count actually populated so the caller can pick an
+    // appropriate status message.
+    int populateFromLiveCatalog(bool forceRefresh,
+                                const QString &statusPrefix = QString());
 
     // Shared helper: populate the table and provider filters from a cached
     // ModelsCache instance. When enforceAgeLimit is true, caches older than
@@ -114,7 +141,23 @@ private:
      void updateSubscriptionFilter();
 
 private:
-    StorageManager &m_storageManager;
+     StorageManager &m_storageManager;
+
+     // When true, the widget behaves as an embeddable single-selection model
+     // picker with explicit accept/cancel affordances.
+     bool m_pickerMode = false;
+
+    // Live provider catalog (Phase G1). Sole source of provider/model
+    // enumeration — replaces the prior direct `https://models.dev/api.json`
+    // HTTP fetch and the static `models-dev.md` snapshot. Refreshed
+    // externally when the user hits Fetch; pre-populated from
+    // `<Global.Path.cache>/models.json` if the opencode CLI populated it
+    // (paradigm §5.6 + introspection report §8.1/§8.4).
+    ProviderCatalog m_catalog;
+    // Models not in the live catalog but previously fetched from
+    // models.dev (some niche providers may local-cache entries). Kept
+    // for the offline fallback so a stale storage cache is still useful
+    // when the opencode cache is absent.
 
     QNetworkAccessManager *m_networkManager = nullptr;
     QNetworkReply *m_currentReply = nullptr;
@@ -132,7 +175,10 @@ private:
     QCheckBox *m_subscribedOnlyCheck = nullptr; ///< New: Filter to subscribed providers.
     QPushButton *m_fetchButton = nullptr;
     QPushButton *m_manageSubsButton = nullptr; ///< New: Manage subscriptions.
-    QPushButton *m_testConnectionButton = nullptr;
+     QPushButton *m_testConnectionButton = nullptr;
+
+     QPushButton *m_acceptButton = nullptr; ///< Picker-mode OK button.
+     QPushButton *m_cancelButton = nullptr; ///< Picker-mode Cancel button.
 
     QLabel *m_statusLabel = nullptr;
 

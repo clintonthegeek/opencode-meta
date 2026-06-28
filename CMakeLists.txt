@@ -12,25 +12,31 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Test)
 
 # Core library: models, storage, and generation — no UI, testable independently
-set(LIB_SOURCES
-	src/generation.cpp
-	src/apply_helpers.cpp
-	src/models/Template.cpp
-	src/models/Profile.cpp
-	src/storage/StorageManager.cpp
-	src/adapter/OpencodeSchemaAdapter.cpp
-)
+ set(LIB_SOURCES
+ 	src/generation/ContractChecker.cpp
+ 	src/generation/ProviderCatalog.cpp
+ 	src/generation/TeamRenderer.cpp
+ 	src/apply_helpers.cpp
+ 	src/models/Role.cpp
+ 	src/models/Specialist.cpp
+ 	src/models/Team.cpp
+ 	src/models/Trial.cpp
+ 	src/storage/StorageManager.cpp
+ )
 
-set(LIB_HEADERS
-	src/generation.h
-	src/apply_helpers.h
-	src/models/Template.h
-	src/models/Profile.h
-	src/models/ModelInfo.h
-	src/models/ProjectRecord.h
-	src/storage/StorageManager.h
-	src/adapter/OpencodeSchemaAdapter.h
-)
+ set(LIB_HEADERS
+ 	src/generation/ContractChecker.h
+ 	src/generation/ProviderCatalog.h
+ 	src/generation/TeamRenderer.h
+ 	src/apply_helpers.h
+ 	src/models/ModelInfo.h
+ 	src/models/ProjectRecord.h
+ 	src/models/Role.h
+ 	src/models/Specialist.h
+ 	src/models/Team.h
+ 	src/models/Trial.h
+ 	src/storage/StorageManager.h
+ )
 
 add_library(opencode-meta-lib STATIC ${LIB_SOURCES} ${LIB_HEADERS})
 
@@ -42,31 +48,35 @@ target_include_directories(opencode-meta-lib PUBLIC
 target_link_libraries(opencode-meta-lib PUBLIC Qt6::Core)
 
 # Main application
-set(APP_SOURCES
+ set(APP_SOURCES
 	src/main.cpp
 	src/MainWindow.cpp
+	src/ui/AddSpecialistDialog.cpp
+	src/ui/LabOverviewWidget.cpp
 	src/ui/ModelsBrowserWidget.cpp
 	src/ui/ProviderSubscriptionDialog.cpp
 	src/ui/ProjectsWidget.cpp
-	src/ui/TemplatesWidget.cpp
-	src/ui/TemplateEditorDialog.cpp
-	src/ui/ProfilesWidget.cpp
-	src/ui/ProfileEditorDialog.cpp
-	src/ui/ProfileCompareDialog.cpp
-	src/ui/ApplyProfileDialog.cpp
+	src/ui/RoleEditorDialog.cpp
+	src/ui/RolesWidget.cpp
+	src/ui/TrialsWidget.cpp
+	src/ui/TeamsWidget.cpp
+	src/ui/TeamEditorWidget.cpp
+	src/ui/TeamsDialog.cpp
 )
 
-set(APP_HEADERS
+ set(APP_HEADERS
 	src/MainWindow.h
+	src/ui/AddSpecialistDialog.h
+	src/ui/LabOverviewWidget.h
 	src/ui/ModelsBrowserWidget.h
 	src/ui/ProviderSubscriptionDialog.h
 	src/ui/ProjectsWidget.h
-	src/ui/TemplatesWidget.h
-	src/ui/TemplateEditorDialog.h
-	src/ui/ProfilesWidget.h
-	src/ui/ProfileEditorDialog.h
-	src/ui/ProfileCompareDialog.h
-	src/ui/ApplyProfileDialog.h
+	src/ui/RoleEditorDialog.h
+	src/ui/RolesWidget.h
+	src/ui/TrialsWidget.h
+	src/ui/TeamsWidget.h
+	src/ui/TeamEditorWidget.h
+	src/ui/TeamsDialog.h
 )
 
 qt_add_executable(opencode-meta-qt

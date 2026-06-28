@@ -7,6 +7,8 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 
+#include "generation/ContractChecker.h"
+
 ApplyResult applyConfigWithBackup(const QString &targetPath,
                                   const QJsonObject &config)
 {
@@ -86,4 +88,26 @@ ApplyResult applyConfigWithBackup(const QString &targetPath,
     result.success = true;
     result.backupPath = backupPath;
     return result;
+}
+
+ApplyResult commit(const QString &targetPath, const QJsonObject &config)
+{
+    // Pre-write contract gate (Phase G3 spec). The check is the
+    // ContractChecker::validate() that mirrors opencode's
+    // ConfigParse.schema (report §12.3 + parse.ts:74–78): unknown keys
+    // trip the topLevelExtraKeys check at load time. We surface the
+    // first violation here so the user never sees a runtime
+    // InvalidError from a Team / Trial / manual-export apply.
+    QString contractError;
+    if (!ContractChecker::validate(config, &contractError)) {
+        ApplyResult result;
+        result.success = false;
+        result.errorString = QStringLiteral(
+            "contract check failed for %1 (no file written): %2")
+            .arg(targetPath.isEmpty() ? QStringLiteral("<empty path>") : targetPath,
+                 contractError);
+        qWarning() << "apply_helpers::commit:" << result.errorString;
+        return result;
+    }
+    return applyConfigWithBackup(targetPath, config);
 }

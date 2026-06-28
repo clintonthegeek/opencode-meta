@@ -4,6 +4,7 @@
 
 #include "storage/StorageManager.h"
 
+class QMenu;
 class QTabWidget;
 
 class MainWindow : public QMainWindow
@@ -15,6 +16,9 @@ public:
     ~MainWindow() override = default;
 
 private:
+    void createMenus();
+
     StorageManager m_storageManager;
     QTabWidget *m_tabWidget = nullptr;
+    QMenu *m_teamsMenu = nullptr;
 };

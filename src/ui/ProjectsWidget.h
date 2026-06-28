@@ -8,7 +8,7 @@
  class QPushButton;
  class StorageManager;
 
- // Projects mode main widget: scan and manage OpenCode projects
+// Projects mode main widget: scan and manage OpenCode projects and active Teams
  class ProjectsWidget : public QWidget
  {
      Q_OBJECT
@@ -17,11 +17,11 @@
      explicit ProjectsWidget(StorageManager &storageManager, QWidget *parent = nullptr);
 
  private slots:
-     void scanForProjects();
-     void applyProfileToProject();
-     void viewDiffsForProject();
-     void toggleWatchForProject();
-     void onSelectionChanged();
+    void scanForProjects();
+    void switchTeamForProject();
+    void viewTeamDiffsForProject();
+    void toggleWatchForProject();
+    void onSelectionChanged();
 
  private:
      void setupUi();
@@ -35,11 +35,11 @@
      StorageManager &m_storageManager;
      QList<ProjectRecord> m_projects;
 
-     QListWidget *m_listWidget = nullptr;
-     QPushButton *m_scanButton = nullptr;
-     QPushButton *m_applyButton = nullptr;
-     QPushButton *m_diffButton = nullptr;
-     QPushButton *m_watchButton = nullptr;
+    QListWidget *m_listWidget = nullptr;
+    QPushButton *m_scanButton = nullptr;
+    QPushButton *m_switchTeamButton = nullptr;
+    QPushButton *m_diffButton = nullptr;
+    QPushButton *m_watchButton = nullptr;
 
      QString m_lastScanRoot;
  };
