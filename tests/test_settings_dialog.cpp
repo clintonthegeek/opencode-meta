@@ -23,6 +23,7 @@
 // deterministic and avoids needing a running event loop.
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDialogButtonBox>
@@ -54,6 +55,12 @@ private slots:
     void nonexistentStorageRootOverrideWarns();
     void roundTripsThroughQSettings();
     void acceptPersistsViaAppSettings();
+
+    // Phase D3-5 / D-9 / D-12: storage-seed controls.
+    void seedStockDefaultsCheckBox_persists();
+    void resetSeedCheckBox_persists();
+    void seedDefaults_defaultToTrue();
+    void storageSeedWidgets_areConstructed();
 
 private:
     static QString lineTextFrom(const QObject *parent, const QString &name);
@@ -337,6 +344,78 @@ void TestSettingsDialog::acceptPersistsViaAppSettings()
     QCOMPARE(back.opencodeBinaryPath, QStringLiteral("/tmp/some/opencode-binary"));
     QCOMPARE(back.storageRootPath, m_tmpRoot.path());
     QCOMPARE(back.theme, SettingsDialog::Theme::Dark);
+}
+
+void TestSettingsDialog::seedStockDefaultsCheckBox_persists()
+{
+    // Phase D3-5 / D-9: the `seed_stock_defaults` checkbox round-trips
+    // through QSettings under the `settings` group. Toggling it OFF
+    // and accepting the dialog must persist `false` to settings, and
+    // reloading via the static loader must reproduce `false`.
+    SettingsDialog dlg;
+    auto *box = dlg.findChild<QCheckBox *>(
+        QStringLiteral("settingsDialog.seedStockDefaultsCheckBox"));
+    QVERIFY(box);
+    QCOMPARE(box->isChecked(), true); // default ON
+    box->setChecked(false);
+    QCOMPARE(dlg.values().seedStockDefaults, false);
+
+    const QString iniPath = m_appCfgRoot.filePath(QStringLiteral("cfg2.ini"));
+    QSettings settings(iniPath, QSettings::IniFormat);
+    SettingsDialog::writeSettings(dlg.values(), settings);
+    settings.sync();
+
+    QSettings reread(iniPath, QSettings::IniFormat);
+    const SettingsDialog::Values back = SettingsDialog::loadSettings(reread);
+    QCOMPARE(back.seedStockDefaults, false);
+}
+
+void TestSettingsDialog::resetSeedCheckBox_persists()
+{
+    // Phase D3-5 / D-12: the `reset_seed_on_next_launch` checkbox is
+    // a single-shot flag distinct from `seed_stock_defaults`. Default
+    // unchecked; flipping it persists `true` across reload.
+    SettingsDialog dlg;
+    auto *box = dlg.findChild<QCheckBox *>(
+        QStringLiteral("settingsDialog.resetSeedCheckBox"));
+    QVERIFY(box);
+    QCOMPARE(box->isChecked(), false); // default OFF
+    box->setChecked(true);
+    QCOMPARE(dlg.values().resetSeedOnNextLaunch, true);
+
+    const QString iniPath = m_appCfgRoot.filePath(QStringLiteral("cfg3.ini"));
+    QSettings settings(iniPath, QSettings::IniFormat);
+    SettingsDialog::writeSettings(dlg.values(), settings);
+    settings.sync();
+
+    QSettings reread(iniPath, QSettings::IniFormat);
+    const SettingsDialog::Values back = SettingsDialog::loadSettings(reread);
+    QCOMPARE(back.resetSeedOnNextLaunch, true);
+}
+
+void TestSettingsDialog::seedDefaults_defaultToTrue()
+{
+    // An empty (fresh) QSettings should resolve `seed_stock_defaults`
+    // to `true` because that is the new-install D-9 default. This
+    // keeps a brand-new install on the stock-aligned seed without
+    // requiring user action.
+    const QString iniPath = m_appCfgRoot.filePath(QStringLiteral("empty.ini"));
+    QSettings settings(iniPath, QSettings::IniFormat);
+    const SettingsDialog::Values v = SettingsDialog::loadSettings(settings);
+    QCOMPARE(v.seedStockDefaults, true);
+    QCOMPARE(v.resetSeedOnNextLaunch, false);
+}
+
+void TestSettingsDialog::storageSeedWidgets_areConstructed()
+{
+    // The two new QCheckBoxes sit under a "Seeding" QGroupBox and
+    // exist with stable objectNames so test_cross_view_smoke and any
+    // future UI smoke test can findChild them.
+    SettingsDialog dlg;
+    QVERIFY(dlg.findChild<QCheckBox *>(
+        QStringLiteral("settingsDialog.seedStockDefaultsCheckBox")));
+    QVERIFY(dlg.findChild<QCheckBox *>(
+        QStringLiteral("settingsDialog.resetSeedCheckBox")));
 }
 
 QTEST_MAIN(TestSettingsDialog)

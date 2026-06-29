@@ -37,6 +37,7 @@
 #include <QDialog>
 #include <QString>
 
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QLineEdit;
@@ -61,6 +62,11 @@ public:
         QString opencodeBinaryPath;
         QString storageRootPath;
         Theme   theme = Theme::System;
+        // Phase D3-5 / D-9: storage-seed controls. Defaults match
+        // the in-process defaults so a fresh install lands on the
+        // stock-aligned seed (D1) without user intervention.
+        bool    seedStockDefaults         = true;
+        bool    resetSeedOnNextLaunch     = false;
     };
 
     explicit SettingsDialog(QWidget *parent = nullptr);
@@ -82,6 +88,8 @@ public:
     static QString keyOpencodeBinaryPath();
     static QString keyStorageRootPath();
     static QString keyTheme();
+    static QString keySeedStockDefaults();
+    static QString keyResetSeedOnNextLaunch();
 
     // Convenience accessors that wrap the QSettings round-trip using
     // the application's default QSettings (organization + app name as
@@ -105,6 +113,8 @@ private:
     QLineEdit    *m_storageRootEdit       = nullptr;
     QPushButton  *m_storageRootBrowseButton = nullptr;
     QComboBox    *m_themeCombo            = nullptr;
+    QCheckBox    *m_seedStockDefaultsCheckBox = nullptr;
+    QCheckBox    *m_resetSeedCheckBox     = nullptr;
     QLabel       *m_validationLabel       = nullptr;
 
     QPushButton  *m_okButton              = nullptr;

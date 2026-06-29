@@ -199,6 +199,11 @@ void TestComplianceSignoff::seededTeamsRoundTripThroughOpencodeDebugConfig()
                 QStringLiteral("snapshots"),
                 QStringLiteral("smallModel"),
                 QStringLiteral("attachments"),
+                // Phase D2-2 / D-11: v2 mirror of `default_agent`.
+                // Same scalar shape as v1 (string), but the live
+                // 1.17.x runtime still rejects unknown top-level
+                // keys with InvalidError so it's stripped here too.
+                QStringLiteral("defaultAgent"),
             };
             const QStringList v2AgentFields = {
                 QStringLiteral("system"),

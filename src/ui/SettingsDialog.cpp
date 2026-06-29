@@ -1,6 +1,7 @@
 #include "ui/SettingsDialog.h"
 
 #include <QColor>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDialogButtonBox>
@@ -26,6 +27,12 @@ constexpr const char *kGroup           = "settings";
 constexpr const char *kKeyOpencodePath = "opencode_binary_path";
 constexpr const char *kKeyStorageRoot  = "storage_root_path";
 constexpr const char *kKeyTheme        = "theme";
+// Phase D3-5 / D-9: storage-seed controls documented in
+// `docs/plan/2026-06-29-stock-agent-fidelity.md`. Default true so
+// a fresh install lands on the stock-aligned seed without user
+// action.
+constexpr const char *kKeySeedStockDefaults     = "seed_stock_defaults";
+constexpr const char *kKeyResetSeedOnNextLaunch = "reset_seed_on_next_launch";
 
 constexpr const char *kThemeSystem = "system";
 constexpr const char *kThemeLight  = "light";
@@ -38,6 +45,11 @@ constexpr const char *kObjOpencodeBrowseButton  = "settingsDialog.opencodeBrowse
 constexpr const char *kObjStorageRootEdit        = "settingsDialog.storageRootEdit";
 constexpr const char *kObjStorageRootBrowseButton= "settingsDialog.storageRootBrowseButton";
 constexpr const char *kObjThemeCombo             = "settingsDialog.themeCombo";
+// Phase D3-5 object names — kept as a separate group so test
+// findChild calls don't accidentally collide with the existing
+// settings widgets.
+constexpr const char *kObjSeedStockDefaultsCheckBox = "settingsDialog.seedStockDefaultsCheckBox";
+constexpr const char *kObjResetSeedCheckBox         = "settingsDialog.resetSeedCheckBox";
 constexpr const char *kObjValidationLabel        = "settingsDialog.validationLabel";
 
 SettingsDialog::Theme themeFromString(const QString &raw)
@@ -96,6 +108,16 @@ QString SettingsDialog::keyTheme()
     return QString::fromLatin1(kKeyTheme);
 }
 
+QString SettingsDialog::keySeedStockDefaults()
+{
+    return QString::fromLatin1(kKeySeedStockDefaults);
+}
+
+QString SettingsDialog::keyResetSeedOnNextLaunch()
+{
+    return QString::fromLatin1(kKeyResetSeedOnNextLaunch);
+}
+
 SettingsDialog::Values SettingsDialog::loadFromAppSettings()
 {
     QSettings settings;
@@ -118,6 +140,16 @@ SettingsDialog::Values SettingsDialog::loadSettings(QSettings &settings)
         QString::fromLatin1(kKeyStorageRoot)).toString();
     out.theme = themeFromString(settings.value(
         QString::fromLatin1(kKeyTheme)).toString());
+    // Phase D3-5: storage-seed controls. Default true so a fresh
+    // install lands on the stock-aligned seed without user
+    // intervention. The resetSeed flag is single-shot (the seeder
+    // clears it after consuming).
+    out.seedStockDefaults = settings.value(
+        QString::fromLatin1(kKeySeedStockDefaults),
+        QVariant(true)).toBool();
+    out.resetSeedOnNextLaunch = settings.value(
+        QString::fromLatin1(kKeyResetSeedOnNextLaunch),
+        QVariant(false)).toBool();
     settings.endGroup();
     return out;
 }
@@ -131,6 +163,10 @@ void SettingsDialog::writeSettings(const Values &values, QSettings &settings)
                       values.storageRootPath);
     settings.setValue(QString::fromLatin1(kKeyTheme),
                       themeToString(values.theme));
+    settings.setValue(QString::fromLatin1(kKeySeedStockDefaults),
+                      values.seedStockDefaults);
+    settings.setValue(QString::fromLatin1(kKeyResetSeedOnNextLaunch),
+                      values.resetSeedOnNextLaunch);
     settings.endGroup();
     settings.sync();
 }
@@ -145,6 +181,12 @@ SettingsDialog::Values SettingsDialog::values() const
     } else {
         out.theme = Theme::System;
     }
+    out.seedStockDefaults = m_seedStockDefaultsCheckBox
+        ? m_seedStockDefaultsCheckBox->isChecked()
+        : true;
+    out.resetSeedOnNextLaunch = m_resetSeedCheckBox
+        ? m_resetSeedCheckBox->isChecked()
+        : false;
     return out;
 }
 
@@ -237,6 +279,51 @@ void SettingsDialog::buildUi()
 
     mainLayout->addWidget(formGroup);
 
+    // ---- Phase D3-5 / D-9 / D-12: Seeding section ----
+    // Sits below the Application group per UI §4.2 ("seeding section
+    // sits below the Storage root row" — we honor the intent even if
+    // we restate it on a separate group for visual hierarchy). The
+    // toggle defaults match the in-process defaults so a fresh
+    // install picks the stock-aligned seed without user action.
+    auto *seedGroup = new QGroupBox(tr("Seeding"), this);
+    auto *seedLayout = new QVBoxLayout(seedGroup);
+
+    m_seedStockDefaultsCheckBox = new QCheckBox(
+        tr("Seed stock-aligned defaults on first run"), seedGroup);
+    m_seedStockDefaultsCheckBox->setObjectName(
+        QString::fromLatin1(kObjSeedStockDefaultsCheckBox));
+    m_seedStockDefaultsCheckBox->setToolTip(tr(
+        "When the storage root is empty, seed it with the seven stock "
+        "opencode agents (Build, Plan, General, Explore + the three "
+        "hidden primaries compaction/title/summary). Uncheck to seed "
+        "the legacy opencode-meta approximation instead."));
+    m_seedStockDefaultsCheckBox->setWhatsThis(tr(
+        "When checked, an empty storage root is seeded with the seven "
+        "<b>stock</b> opencode native agents, each carrying "
+        "<code>metadata.native = true</code> so the editor can badge "
+        "them and gate the Delete action. When unchecked the seeder "
+        "falls back to the legacy opencode-meta fiction (a coarse "
+        "build/plan/general approximation)."));
+    seedLayout->addWidget(m_seedStockDefaultsCheckBox);
+
+    m_resetSeedCheckBox = new QCheckBox(
+        tr("Reset storage to stock defaults on next launch"), seedGroup);
+    m_resetSeedCheckBox->setObjectName(
+        QString::fromLatin1(kObjResetSeedCheckBox));
+    m_resetSeedCheckBox->setToolTip(tr(
+        "Wipes the existing roles and teams JSON and re-runs the "
+        "stock-aligned seed. Use this if you want to compare your "
+        "current settings with stock."));
+    m_resetSeedCheckBox->setWhatsThis(tr(
+        "<b>Single-shot</b> reset. The flag clears itself after the "
+        "next launch so subsequent runs do not re-wipe. Existing "
+        "user-created Roles and Teams outside the seed set are "
+        "preserved (only the JSON files under roles/ and teams/ are "
+        "removed, not the entire storage tree)."));
+    seedLayout->addWidget(m_resetSeedCheckBox);
+
+    mainLayout->addWidget(seedGroup);
+
     // ---- validation label ----
     m_validationLabel = new QLabel(this);
     m_validationLabel->setObjectName(QString::fromLatin1(kObjValidationLabel));
@@ -304,6 +391,12 @@ void SettingsDialog::populateFromValues(const Values &in)
         if (idx >= 0) {
             m_themeCombo->setCurrentIndex(idx);
         }
+    }
+    if (m_seedStockDefaultsCheckBox) {
+        m_seedStockDefaultsCheckBox->setChecked(in.seedStockDefaults);
+    }
+    if (m_resetSeedCheckBox) {
+        m_resetSeedCheckBox->setChecked(in.resetSeedOnNextLaunch);
     }
 }
 

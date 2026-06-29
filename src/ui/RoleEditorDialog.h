@@ -145,6 +145,7 @@ private:
     int indexOfRowWithKey(QTableWidget *table, const QString &key) const;
 
     QLabel *m_idLabel = nullptr;
+    QLabel *m_nativeBadge = nullptr; // Phase D3-1 / D-10: stock-defined indicator
     QLineEdit *m_nameEdit = nullptr;
     QLineEdit *m_descriptionEdit = nullptr;
     QComboBox *m_modeCombo = nullptr;

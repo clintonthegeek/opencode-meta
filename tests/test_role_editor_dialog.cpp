@@ -44,6 +44,11 @@ private slots:
     void roundTripWithoutEdits();
     void editsPropagateToRoleData();
 
+    // Phase D3-1 / D-10: native (stock-defined) Role lock surface.
+    void nativeBadge_visibleWhenRoleIsNative();
+    void nativeBadge_hiddenWhenRoleIsNotNative();
+    void nameAndMode_lockedWhenRoleIsNative();
+
     // Phase 2: Prompt tab — inline / file-reference modes + preview
     void loadDetectsFileReferenceMode();
     void loadDefaultsToInlineForStringPrompt();
@@ -1149,6 +1154,74 @@ void TestRoleEditorDialog::workSpaceServersTabRoundTrips()
                 .value(QStringLiteral("path"))
                 .toString(),
              QStringLiteral("./docs/spec.md"));
+}
+
+void TestRoleEditorDialog::nativeBadge_visibleWhenRoleIsNative()
+{
+    // Phase D3-1 / D-10: when the loaded Role carries
+    // `metadata.native = true`, the badge label hides no longer. The
+    // label itself reads literally "native (stock-defined)" so a
+    // user/glance at the row sees the lock + tooltip explains the
+    // contract. We assert via isHiddenTo (parent-independent) because
+    // the dialog isn't exec()d in the test, so isVisible() would be
+    // gated on the parent's show() state and trivially return false.
+    Role r;
+    r.id = QStringLiteral("build");
+    r.name = QStringLiteral("Build");
+    r.mode = Role::Mode::Primary;
+    QJsonObject m;
+    m.insert(QStringLiteral("native"), true);
+    r.metadata = m;
+
+    RoleEditorDialog dlg(r);
+    auto *badge = dlg.findChild<QLabel *>(
+        QStringLiteral("roleEditor.nativeBadge"));
+    QVERIFY(badge);
+    QVERIFY(!badge->isHidden());
+    QVERIFY(badge->text().contains(QStringLiteral("native")));
+}
+
+void TestRoleEditorDialog::nativeBadge_hiddenWhenRoleIsNotNative()
+{
+    // User-authored Roles must NOT show the native badge. This is
+    // the inverse of the slot above and locks the visual contract
+    // for normal Roles.
+    Role r;
+    r.id = QStringLiteral("custom");
+    r.name = QStringLiteral("Custom");
+    r.mode = Role::Mode::Primary;
+    // No metadata.native — leaves it absent so the check value
+    // defaults to false.
+    RoleEditorDialog dlg(r);
+    auto *badge = dlg.findChild<QLabel *>(
+        QStringLiteral("roleEditor.nativeBadge"));
+    QVERIFY(badge);
+    QVERIFY(badge->isHidden());
+}
+
+void TestRoleEditorDialog::nameAndMode_lockedWhenRoleIsNative()
+{
+    // Phase D3-1 / D-10: native Roles must lock `name` (setReadOnly)
+    // AND `mode` (setEnabled false) so a user cannot drift the
+    // stock display string or tab-switch semantics.
+    Role r;
+    r.id = QStringLiteral("plan");
+    r.name = QStringLiteral("Plan");
+    r.mode = Role::Mode::Primary;
+    QJsonObject m;
+    m.insert(QStringLiteral("native"), true);
+    r.metadata = m;
+    RoleEditorDialog dlg(r);
+
+    auto *nameEdit = dlg.findChild<QLineEdit *>(
+        QStringLiteral("roleEditor.nameEdit"));
+    QVERIFY(nameEdit);
+    QVERIFY(nameEdit->isReadOnly());
+
+    auto *modeCombo = dlg.findChild<QComboBox *>(
+        QStringLiteral("roleEditor.modeCombo"));
+    QVERIFY(modeCombo);
+    QVERIFY(!modeCombo->isEnabled());
 }
 
 QTEST_MAIN(TestRoleEditorDialog)

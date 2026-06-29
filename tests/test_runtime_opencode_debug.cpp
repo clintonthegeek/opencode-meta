@@ -164,6 +164,11 @@ QJsonObject TestRuntimeOpencodeDebug::stripV2Sidecar(const QJsonObject &in)
         QStringLiteral("snapshots"),
         QStringLiteral("smallModel"),
         QStringLiteral("attachments"),
+        // Phase D2-2 / D-11: v2 mirror of `default_agent`. Same
+        // scalar shape as v1 key (string) but the live 1.17.x
+        // runtime still rejects unknown top-level keys with
+        // InvalidError, so strip here for runtime-gate tests.
+        QStringLiteral("defaultAgent"),
     };
     const QStringList v2AgentFields = {
         QStringLiteral("system"),

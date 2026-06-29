@@ -69,6 +69,11 @@ const std::vector<QString> &topLevelKeys()
         QStringLiteral("snapshots"),
         QStringLiteral("smallModel"),
         QStringLiteral("attachments"),
+        // Phase D2-2 / D-11: v2 mirror of `default_agent`. Same
+        // scalar shape as the v1 key (string) so per D-1 "only emit
+        // v2 sidecars when v2 form is structurally correct" this
+        // mirror is safe.
+        QStringLiteral("defaultAgent"),
     };
     return keys;
 }
