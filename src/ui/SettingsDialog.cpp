@@ -200,7 +200,9 @@ void SettingsDialog::buildUi()
 
     m_storageRootEdit = new QLineEdit(storageRow);
     m_storageRootEdit->setObjectName(QString::fromLatin1(kObjStorageRootEdit));
-    m_storageRootEdit->setPlaceholderText(tr("Directory for roles/, teams/, trials/, projects/"));
+    m_storageRootEdit->setPlaceholderText(
+        tr("Optional override. Leave blank for ~/.opencode-meta. "
+           "Holds roles/, teams/, trials/, projects/."));
 
     m_storageRootBrowseButton = new QPushButton(tr("Browse..."), storageRow);
     m_storageRootBrowseButton->setObjectName(QString::fromLatin1(kObjStorageRootBrowseButton));
@@ -210,7 +212,9 @@ void SettingsDialog::buildUi()
 
     auto *storageLabel = new QLabel(tr("Storage &root:"), formGroup);
     storageLabel->setBuddy(m_storageRootEdit);
-    storageLabel->setToolTip(tr("Where the .opencode-meta folders live. Will be created if it does not exist."));
+    storageLabel->setToolTip(
+        tr("Optional override. Leave blank to fall back to "
+           "~/.opencode-meta. If set, the directory must already exist."));
     formLayout->addRow(storageLabel, storageRow);
 
     // ---- theme row ----
@@ -369,15 +373,18 @@ void SettingsDialog::runValidation()
         }
     }
 
-    // Storage root: required. We do NOT auto-create here on
-    // validation — Accept is the right moment to mkdir because the
-    // user must have a chance to correct first.
+    // Storage root: optional override. Empty is fine (we fall back to
+    // ~/.opencode-meta on the read side). A non-empty value that does
+    // not resolve to an existing directory is still a warning so the
+    // user knows their override will not take effect.
     const QString storagePath = m_storageRootEdit ? m_storageRootEdit->text().trimmed() : QString();
-    if (storagePath.isEmpty()) {
-        warnings << tr("Storage root is required.");
-    } else {
+    if (!storagePath.isEmpty()) {
         const QFileInfo info(storagePath);
-        if (info.exists() && !info.isDir()) {
+        if (!info.exists()) {
+            warnings << tr("Storage root override does not exist "
+                           "(will fall back to default): <code>%1</code>")
+                            .arg(storagePath.toHtmlEscaped());
+        } else if (!info.isDir()) {
             warnings << tr("Storage root exists but is not a directory: <code>%1</code>")
                             .arg(storagePath.toHtmlEscaped());
         }

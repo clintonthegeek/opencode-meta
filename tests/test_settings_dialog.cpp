@@ -5,9 +5,11 @@
 //      reachable through their stable objectNames).
 //   2. Defaults are sensible: Theme = System, empty paths.
 //   3. UI edits propagate to values() for every field.
-//   4. Validation surfaces a warning for a known-bad binary path and
-//      does NOT surface one for an empty path ("$PATH fallback" is
-//      allowed).
+//   4. Validation surfaces a warning for known-bad paths (a missing
+//      opencode binary OR a non-existent explicit storage-root
+//      override) and does NOT surface one for the empty path ("$PATH
+//      fallback" for opencode, "use default ~/.opencode-meta" for
+//      storage root).
 //   5. Round-trip via QSettings holds the data lossless. We use the
 //      public loadSettings()/writeSettings() helpers with a QSettings
 //      that points at a temp INI, so no real user prefs are touched.
@@ -48,7 +50,8 @@ private slots:
     void editsPropagateToValues();
     void emptyOpencodePathIsValid();
     void nonexistentOpencodePathWarns();
-    void missingStorageRootWarns();
+    void emptyStorageRootIsOptional();
+    void nonexistentStorageRootOverrideWarns();
     void roundTripsThroughQSettings();
     void acceptPersistsViaAppSettings();
 
@@ -163,17 +166,17 @@ void TestSettingsDialog::emptyOpencodePathIsValid()
     SettingsDialog dlg;
 
     // Empty binary path -> "$PATH fallback" is allowed -> no warning.
+    // Empty storage root -> "use default ~/.opencode-meta" is allowed
+    // -> no warning.
     QLineEdit *opencodeEdit = dlg.findChild<QLineEdit *>(
         QStringLiteral("settingsDialog.opencodePathEdit"));
     QVERIFY(opencodeEdit);
     opencodeEdit->setText(QString());
 
-    // Storage root must be set, so we have to wire a valid dir to
-    // avoid spurious warnings from the storage-root validator.
     QLineEdit *storageEdit = dlg.findChild<QLineEdit *>(
         QStringLiteral("settingsDialog.storageRootEdit"));
     QVERIFY(storageEdit);
-    storageEdit->setText(m_tmpRoot.path());
+    storageEdit->setText(QString());
 
     QLabel *validation = dlg.findChild<QLabel *>(
         QStringLiteral("settingsDialog.validationLabel"));
@@ -212,10 +215,13 @@ void TestSettingsDialog::nonexistentOpencodePathWarns()
              qPrintable(QStringLiteral("expected opencode warning, got: ") + validation->text()));
 }
 
-void TestSettingsDialog::missingStorageRootWarns()
+void TestSettingsDialog::emptyStorageRootIsOptional()
 {
     SettingsDialog dlg;
 
+    // Empty storage root on first boot is the documented default-state:
+    // downstream code falls back to ~/.opencode-meta. The validator
+    // MUST NOT flag this as a warning (that was the P2-3 bug).
     QLineEdit *storageEdit = dlg.findChild<QLineEdit *>(
         QStringLiteral("settingsDialog.storageRootEdit"));
     QVERIFY(storageEdit);
@@ -224,10 +230,32 @@ void TestSettingsDialog::missingStorageRootWarns()
     QLabel *validation = dlg.findChild<QLabel *>(
         QStringLiteral("settingsDialog.validationLabel"));
     QVERIFY(validation);
+    QVERIFY2(validation->text().isEmpty(),
+             qPrintable(QStringLiteral("storage root is optional; unexpected warning: ")
+                        + validation->text()));
+}
+
+void TestSettingsDialog::nonexistentStorageRootOverrideWarns()
+{
+    SettingsDialog dlg;
+
+    // A non-empty storage-root override that does not exist on disk
+    // still warrants a warning so the user knows the override will not
+    // take effect (we will fall back to the default).
+    QLineEdit *storageEdit = dlg.findChild<QLineEdit *>(
+        QStringLiteral("settingsDialog.storageRootEdit"));
+    QVERIFY(storageEdit);
+    storageEdit->setText(m_tmpRoot.path()
+                         + QStringLiteral("/does-not-exist-storage-override"));
+
+    QLabel *validation = dlg.findChild<QLabel *>(
+        QStringLiteral("settingsDialog.validationLabel"));
+    QVERIFY(validation);
     QVERIFY2(!validation->text().isEmpty(),
-             "validation label should carry a warning for a missing storage root");
-    QVERIFY2(validation->text().contains(QStringLiteral("Storage root is required")),
-             qPrintable(QStringLiteral("expected storage-required warning, got: ") + validation->text()));
+             qPrintable(QStringLiteral("expected warning for non-existent storage override, got: ")
+                        + validation->text()));
+    QVERIFY2(validation->text().contains(QStringLiteral("Storage root override")),
+             qPrintable(QStringLiteral("expected storage-override warning, got: ") + validation->text()));
 }
 
 void TestSettingsDialog::roundTripsThroughQSettings()

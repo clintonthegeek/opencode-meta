@@ -19,8 +19,10 @@
 // Validation:
 //   * opencodeBinaryPath: empty allowed (means "use $PATH"). Non-empty
 //     values must point at an existing file.
-//   * storageRootPath:    required; if it does not exist we attempt
-//     mkdir and report the result. Anything else is fatal.
+//   * storageRootPath:    optional override. Empty means "use default
+//     (~/.opencode-meta)". Non-empty values that do not exist as a
+//     directory are still surfaced as warnings so the user knows the
+//     override will not take effect.
 //   Validation feedback shows in a red label below the form but does
 //   NOT disable OK — the user can still accept once the warning is
 //   acknowledged via visual inspection (the warning stays after Accept
