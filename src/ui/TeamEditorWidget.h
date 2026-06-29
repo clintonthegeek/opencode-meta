@@ -1,8 +1,9 @@
 // TeamEditorWidget: core Team/Specialist editor surface.
 //
 // Stage 2 implementation focuses on rendering the Specialists table and
-// supporting primary toggles. Add/remove flows, model picker, and
-// prompt overrides are layered on in later stages.
+// supporting primary toggles. Add/remove flows, model picker, prompt
+// overrides, and the lightweight revert/dirty affordance are layered on
+// in later stages.
 
 #pragma once
 
@@ -57,7 +58,7 @@ signals:
     // succeeds.
     void specialistUpdated(const QString &specialistId);
 
-    // Emitted when the current Team is discarded/reverted.
+    // Emitted when the current Team is discarded/reverted from storage.
     void teamReverted(const QString &teamId,
                       const QString &snapshotId);
 
@@ -80,12 +81,15 @@ private slots:
     void onDuplicateVariant();
     void onCompare();
     void onApplyTeam(); // F1 footer "Apply Team..." click handler
+    void onRevertChanges();
+    void reloadTeamFromStorage();
 
 private:
     void refreshSpecialistsTable();
     QString formatModelDisplay(const QString &modelId) const;
     QString formatCostBadge(const QString &modelId) const;
     void updateActionButtons();
+    bool hasDirtyChanges() const;
     int currentSpecialistRow() const;
     QString specialistIdAtRow(int row) const;
 
@@ -96,6 +100,7 @@ private:
 
     QTableWidget *m_table = nullptr;
     QLabel *m_emptyLabel = nullptr;
+    QLabel *m_dirtyIndicator = nullptr;
 
     // Button row under the Specialists table. These actions are wired
     // incrementally as the Team editor gains more save flows.
@@ -105,6 +110,7 @@ private:
     QPushButton *m_moveDownButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_compareButton = nullptr;
+    QPushButton *m_revertButton = nullptr;
     QPushButton *m_applyButton = nullptr; // F1 footer "Apply Team..."
 
     bool m_updatingTable = false; // guard to avoid feedback loops while populating

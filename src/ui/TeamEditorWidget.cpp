@@ -18,6 +18,7 @@
 #include <QHash>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QFont>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -134,6 +135,30 @@ QJsonObject renderTeamConfig(const Team &team, StorageManager &storage)
     return TeamRenderer::render(team, specialists, roles);
 }
 
+bool teamsEqual(const Team &lhs, const Team &rhs)
+{
+    if (lhs.id != rhs.id
+        || lhs.name != rhs.name
+        || lhs.description != rhs.description
+        || lhs.primarySpecialistIds != rhs.primarySpecialistIds
+        || lhs.version != rhs.version
+        || lhs.parentTeamId != rhs.parentTeamId
+        || lhs.metadata != rhs.metadata
+        || lhs.specialists.size() != rhs.specialists.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < lhs.specialists.size(); ++i) {
+        const Team::SpecialistBinding &left = lhs.specialists.at(i);
+        const Team::SpecialistBinding &right = rhs.specialists.at(i);
+        if (left.roleId != right.roleId || left.specialistId != right.specialistId) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // F3: side-by-side diff highlighter. Identical shape to
 // ProjectsWidget::populateDiffEditor -- kept local and minimal so the
 // editor can launch a lightweight inline diff dialog without dragging
@@ -207,7 +232,20 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     m_moveDownButton = new QPushButton(tr("Move Down"), this);
     m_duplicateButton = new QPushButton(tr("Duplicate as Variant"), this);
     m_compareButton = new QPushButton(tr("Compare..."), this);
+    m_revertButton = new QPushButton(tr("Revert changes"), this);
     m_applyButton = new QPushButton(tr("Apply Team..."), this);
+
+    m_revertButton->setObjectName(QStringLiteral("teamEditor.revertButton"));
+    m_revertButton->setToolTip(tr("Discard in-memory changes and reload the Team from storage."));
+    m_revertButton->setStatusTip(tr("Reload the Team from storage and discard local edits"));
+
+    m_dirtyIndicator = new QLabel(tr("Unsaved changes"), this);
+    m_dirtyIndicator->setObjectName(QStringLiteral("teamEditor.dirtyIndicator"));
+    QFont dirtyFont = m_dirtyIndicator->font();
+    dirtyFont.setItalic(true);
+    m_dirtyIndicator->setFont(dirtyFont);
+    m_dirtyIndicator->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    m_dirtyIndicator->setVisible(false);
 
     buttonRow->addWidget(m_addButton);
     buttonRow->addWidget(m_removeButton);
@@ -216,6 +254,8 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     buttonRow->addWidget(m_duplicateButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_compareButton);
+    buttonRow->addWidget(m_dirtyIndicator);
+    buttonRow->addWidget(m_revertButton);
     buttonRow->addWidget(m_applyButton);
     layout->addLayout(buttonRow);
 
@@ -231,6 +271,8 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
             this, &TeamEditorWidget::onDuplicateVariant);
     connect(m_compareButton, &QPushButton::clicked,
             this, &TeamEditorWidget::onCompare);
+    connect(m_revertButton, &QPushButton::clicked,
+            this, &TeamEditorWidget::onRevertChanges);
     // F1: footer "Apply Team..." button simply forwards the current
     // Team id upward; the host (TeamsWidget -> MainWindow) decides
     // how to present the apply dialog.
@@ -447,6 +489,7 @@ QString TeamEditorWidget::formatCostBadge(const QString &modelId) const
 void TeamEditorWidget::updateActionButtons()
 {
     const bool hasTeam = !m_team.id.isEmpty();
+    const bool dirty = hasDirtyChanges();
     const int row = currentSpecialistRow();
     const bool hasSelection = (row >= 0);
     const int rowCount = m_table ? m_table->rowCount() : 0;
@@ -469,11 +512,31 @@ void TeamEditorWidget::updateActionButtons()
     if (m_compareButton) {
         m_compareButton->setEnabled(hasTeam);
     }
+    if (m_dirtyIndicator) {
+        m_dirtyIndicator->setVisible(hasTeam && dirty);
+    }
+    if (m_revertButton) {
+        m_revertButton->setEnabled(hasTeam && dirty);
+    }
     // F1: the Apply Team... footer button only makes sense when a Team
     // is actually loaded; no Team = no pre-selection to send upstream.
     if (m_applyButton) {
         m_applyButton->setEnabled(hasTeam);
     }
+}
+
+bool TeamEditorWidget::hasDirtyChanges() const
+{
+    if (m_team.id.isEmpty()) {
+        return false;
+    }
+
+    const Team stored = m_storageManager.loadTeam(m_team.id);
+    if (stored.id.isEmpty()) {
+        return false;
+    }
+
+    return !teamsEqual(m_team, stored);
 }
 
 QString TeamEditorWidget::teamId() const
@@ -503,17 +566,11 @@ QString TeamEditorWidget::specialistIdAtRow(int row) const
 
 void TeamEditorWidget::setTeamId(const QString &teamId)
 {
-    const QString previousTeamId = m_team.id;
-
     if (teamId.isEmpty()) {
         m_team = Team();
     } else {
         const Team loaded = m_storageManager.loadTeam(teamId);
         m_team = loaded.id.isEmpty() ? Team() : loaded;
-    }
-
-    if (!previousTeamId.isEmpty() && previousTeamId != m_team.id) {
-        emit teamReverted(previousTeamId, QString());
     }
 
     refreshSpecialistsTable();
@@ -555,6 +612,7 @@ void TeamEditorWidget::onPrimaryItemChanged(QTableWidgetItem *item)
         m_updatingTable = true;
         item->setCheckState(already ? Qt::Checked : Qt::Unchecked);
         m_updatingTable = false;
+        updateActionButtons();
         return;
     }
 
@@ -686,6 +744,7 @@ void TeamEditorWidget::onAddSpecialist()
         QMessageBox::warning(this,
                              tr("Team Editor"),
                              tr("Specialist saved but Team update failed."));
+        updateActionButtons();
         return;
     }
 
@@ -728,6 +787,7 @@ void TeamEditorWidget::onRemoveSpecialist()
         QMessageBox::warning(this,
                              tr("Team Editor"),
                              tr("Failed to save Team changes."));
+        updateActionButtons();
         return;
     }
 
@@ -758,6 +818,7 @@ void TeamEditorWidget::onMoveUp()
         QMessageBox::warning(this,
                              tr("Team Editor"),
                              tr("Failed to save Team changes."));
+        updateActionButtons();
         return;
     }
 
@@ -787,6 +848,7 @@ void TeamEditorWidget::onMoveDown()
         QMessageBox::warning(this,
                              tr("Team Editor"),
                              tr("Failed to save Team changes."));
+        updateActionButtons();
         return;
     }
 
@@ -958,4 +1020,45 @@ void TeamEditorWidget::onApplyTeam()
         return;
     }
     emit applyTeamRequested(id);
+}
+
+void TeamEditorWidget::onRevertChanges()
+{
+    if (!hasDirtyChanges()) {
+        updateActionButtons();
+        return;
+    }
+
+    const auto reply = QMessageBox::question(
+        this,
+        tr("Revert changes"),
+        tr("Reload this Team from storage and discard in-memory edits?"),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+
+    reloadTeamFromStorage();
+}
+
+void TeamEditorWidget::reloadTeamFromStorage()
+{
+    const QString id = teamId();
+    if (id.isEmpty()) {
+        return;
+    }
+
+    const Team reloaded = m_storageManager.loadTeam(id);
+    if (reloaded.id.isEmpty()) {
+        QMessageBox::warning(this,
+                             tr("Revert changes"),
+                             tr("Failed to reload the Team from storage."));
+        return;
+    }
+
+    m_team = reloaded;
+    refreshSpecialistsTable();
+    updateActionButtons();
+    emit teamReverted(id, QStringLiteral("user-discard"));
 }

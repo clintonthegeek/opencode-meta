@@ -125,6 +125,25 @@ target_link_libraries(test_role_editor_dialog PRIVATE
 )
 add_test(NAME test_role_editor_dialog COMMAND test_role_editor_dialog)
 
+add_executable(test_team_editor_widget
+    test_team_editor_widget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/AddSpecialistDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/AddSpecialistDialog.h
+    ${CMAKE_SOURCE_DIR}/src/ui/ModelsBrowserWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ModelsBrowserWidget.h
+    ${CMAKE_SOURCE_DIR}/src/ui/ProviderSubscriptionDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/ProviderSubscriptionDialog.h
+    ${CMAKE_SOURCE_DIR}/src/ui/PromptPreview.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/PromptPreview.h
+    ${CMAKE_SOURCE_DIR}/src/ui/TeamEditorWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/TeamEditorWidget.h
+)
+target_include_directories(test_team_editor_widget PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_team_editor_widget PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_team_editor_widget COMMAND test_team_editor_widget)
+
 # Phase C1-1 / D-4: the Tools deprecation banner lives on the
 # RoleEditorDialog Tools tab. This targeted test asserts the banner
 # exists with the right textual content AND that the legacy
