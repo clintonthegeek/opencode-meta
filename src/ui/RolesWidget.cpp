@@ -141,6 +141,15 @@ void saveShowStockRolesSetting(bool showStock)
     QSettings().setValue(QStringLiteral("settings/roles_show_stock"), showStock);
 }
 
+QString stockVisibilityText(int hiddenCount, bool showStock)
+{
+    if (showStock) {
+        return QObject::tr("all visible");
+    }
+
+    return QObject::tr("%1 stock items hidden").arg(hiddenCount);
+}
+
 QString generateUniqueRoleId(StorageManager &storage, const QString &base)
 {
     QString baseId = base.trimmed();
@@ -194,6 +203,7 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
         saveShowStockRolesSetting(m_showStockCheck && m_showStockCheck->isChecked());
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+        updateStockVisibilityStatus();
     });
 
     m_table = new QTableWidget(this);
@@ -271,18 +281,47 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_aboutStockItemAction->setObjectName(QStringLiteral("rolesWidget.aboutStockItemAction"));
     connect(m_aboutStockItemAction, &QAction::triggered, this, &RolesWidget::showAboutThisStockItem);
 
+    installShortcuts();
+
+    auto *footerRow = new QHBoxLayout();
+    footerRow->addStretch(1);
+    m_stockStatusLabel = new QLabel(this);
+    m_stockStatusLabel->setObjectName(QStringLiteral("rolesWidget.stockStatusLabel"));
+    m_stockStatusLabel->setStyleSheet(QStringLiteral("font-size: 10px;"));
+    footerRow->addWidget(m_stockStatusLabel);
+    layout->addLayout(footerRow);
+
     refreshRoles();
     onSelectionChanged();
+}
+
+void RolesWidget::installShortcuts()
+{
+    m_toggleShowStockAction = new QAction(tr("Toggle Show stock"), this);
+    m_toggleShowStockAction->setObjectName(QStringLiteral("rolesWidget.toggleShowStockAction"));
+    m_toggleShowStockAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    m_toggleShowStockAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    m_toggleShowStockAction->setStatusTip(tr("Toggle the Show stock filter"));
+    addAction(m_toggleShowStockAction);
+    connect(m_toggleShowStockAction, &QAction::triggered, this, [this]() {
+        if (m_showStockCheck) {
+            m_showStockCheck->toggle();
+        }
+    });
 }
 
 void RolesWidget::refreshRoles()
 {
     const QList<Role> roles = m_storageManager.listRoles();
+    int stockCount = 0;
 
     m_table->setRowCount(roles.size());
 
     for (int row = 0; row < roles.size(); ++row) {
         const Role &role = roles.at(row);
+        if (m_storageManager.isStockRole(role)) {
+            ++stockCount;
+        }
 
         auto *idItem = new QTableWidgetItem(role.id);
         idItem->setData(Qt::UserRole, role.id);
@@ -314,6 +353,10 @@ void RolesWidget::refreshRoles()
     // Re-apply the current filter so freshly added/edited rows honor the
     // current search before the user types again.
     applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+    if (m_stockStatusLabel) {
+        m_stockStatusLabel->setText(stockVisibilityText(stockCount,
+                                                        m_showStockCheck && m_showStockCheck->isChecked()));
+    }
 }
 
 QString RolesWidget::selectedRoleId() const
@@ -572,4 +615,22 @@ void RolesWidget::applyFilter(const QString &text)
             m_table->setCurrentItem(nullptr);
         }
     }
+}
+
+void RolesWidget::updateStockVisibilityStatus()
+{
+    if (!m_stockStatusLabel) {
+        return;
+    }
+
+    int stockCount = 0;
+    const QList<Role> roles = m_storageManager.listRoles();
+    for (const Role &role : roles) {
+        if (m_storageManager.isStockRole(role)) {
+            ++stockCount;
+        }
+    }
+
+    m_stockStatusLabel->setText(stockVisibilityText(stockCount,
+                                                    m_showStockCheck && m_showStockCheck->isChecked()));
 }

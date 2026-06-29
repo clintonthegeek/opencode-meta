@@ -19,6 +19,8 @@
 #include <QDir>
 #include <QHBoxLayout>
 #include <QCheckBox>
+#include <QKeySequence>
+#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -53,8 +55,10 @@ private slots:
     void initTestCase();
     void roles_filtersAcrossAllColumns_caseInsensitive();
     void roles_hidesStockByDefault_andToggleShowsIt();
+    void roles_showStockShortcutUpdatesStatusText();
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
+    void teams_showStockShortcutUpdatesStatusText();
     void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
     void teams_cloneStockTeamSelectsEditableCopy();
     void roles_duplicateStockRoleSelectsNameAndPrefixesMy();
@@ -162,6 +166,36 @@ void makeAndSaveTrial(StorageManager &storage,
 }
 
 } // namespace
+
+template <typename WidgetT>
+void verifyShowStockShortcutAndStatus(WidgetT &widget,
+                                      const QString &checkBoxObjectName,
+                                      const QString &actionObjectName,
+                                      const QString &labelObjectName,
+                                      const QString &hiddenText)
+{
+    auto *showStock = widget.template findChild<QCheckBox *>(checkBoxObjectName);
+    QVERIFY(showStock);
+    auto *toggleAction = widget.template findChild<QAction *>(actionObjectName);
+    QVERIFY(toggleAction);
+    auto *statusLabel = widget.template findChild<QLabel *>(labelObjectName);
+    QVERIFY(statusLabel);
+
+    const QKeySequence expected(Qt::CTRL | Qt::SHIFT | Qt::Key_S);
+    QVERIFY2(toggleAction->shortcut().matches(expected) != QKeySequence::NoMatch,
+             qPrintable(QStringLiteral("unexpected shortcut for ") + actionObjectName));
+
+    QCOMPARE(showStock->isChecked(), false);
+    QCOMPARE(statusLabel->text(), hiddenText);
+
+    toggleAction->trigger();
+    QCOMPARE(showStock->isChecked(), true);
+    QCOMPARE(statusLabel->text(), QStringLiteral("all visible"));
+
+    toggleAction->trigger();
+    QCOMPARE(showStock->isChecked(), false);
+    QCOMPARE(statusLabel->text(), hiddenText);
+}
 
 void TestListFilter::initTestCase()
 {
@@ -333,6 +367,35 @@ void TestListFilter::roles_hidesStockByDefault_andToggleShowsIt()
     }
 }
 
+void TestListFilter::roles_showStockShortcutUpdatesStatusText()
+{
+    resetShowStockSettings();
+
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveRole(storage, QStringLiteral("build"), QStringLiteral("Build"),
+                    QStringLiteral("Primary build agent"), Role::Mode::Primary);
+    Role stockRole;
+    stockRole.id = QStringLiteral("stock-review");
+    stockRole.name = QStringLiteral("Stock Review");
+    stockRole.description = QStringLiteral("Seeded review role");
+    stockRole.mode = Role::Mode::Subagent;
+    stockRole.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY2(storage.saveRole(stockRole), "saveRole(stock-review) failed");
+
+    RolesWidget widget(storage);
+    verifyShowStockShortcutAndStatus(widget,
+                                     QStringLiteral("rolesWidget.showStock"),
+                                     QStringLiteral("rolesWidget.toggleShowStockAction"),
+                                     QStringLiteral("rolesWidget.stockStatusLabel"),
+                                     QStringLiteral("1 stock items hidden"));
+}
+
 void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
 {
     QTemporaryDir tmpRoot;
@@ -467,6 +530,30 @@ void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
         QVERIFY(showStockReloaded);
         QCOMPARE(showStockReloaded->isChecked(), false);
     }
+}
+
+void TestListFilter::teams_showStockShortcutUpdatesStatusText()
+{
+    resetShowStockSettings();
+
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveTeam(storage, QStringLiteral("custom-team"),
+                    QStringLiteral("Custom Team"), QStringLiteral("User team"));
+    makeAndSaveStockTeam(storage, QStringLiteral("starter-team"),
+                         QStringLiteral("Starter Team"), QStringLiteral("Seeded team"));
+
+    TeamsWidget widget(storage);
+    verifyShowStockShortcutAndStatus(widget,
+                                     QStringLiteral("teamsWidget.showStock"),
+                                     QStringLiteral("teamsWidget.toggleShowStockAction"),
+                                     QStringLiteral("teamsWidget.stockStatusLabel"),
+                                     QStringLiteral("1 stock items hidden"));
 }
 
 void TestListFilter::teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists()

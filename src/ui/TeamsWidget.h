@@ -71,6 +71,7 @@ private slots:
     void onSelectionChanged();
     void onDeleteKeyPressedOnTable();
     void showAboutThisStockItem();
+    void updateStockVisibilityStatus();
     // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
     void applyFilter(const QString &text);
 
@@ -86,6 +87,7 @@ private:
     QTableWidget *m_table = nullptr;
     QLineEdit *m_filterEdit = nullptr;
     QCheckBox *m_showStockCheck = nullptr;
+    QLabel *m_stockStatusLabel = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_newButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
@@ -94,4 +96,5 @@ private:
     QAction *m_newAction = nullptr;
     QAction *m_deleteAction = nullptr;
     QAction *m_aboutStockItemAction = nullptr;
+    QAction *m_toggleShowStockAction = nullptr;
 };

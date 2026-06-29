@@ -5,6 +5,7 @@
 class FilterProxyModel;
 class QCheckBox;
 class QLineEdit;
+class QLabel;
 class QSortFilterProxyModel;
 class QTableWidget;
 class QTableWidgetItem;
@@ -40,6 +41,8 @@ private slots:
     void onSelectionChanged();
     void onItemDoubleClicked(QTableWidgetItem *item);
     void showAboutThisStockItem();
+    void installShortcuts();
+    void updateStockVisibilityStatus();
     // ROADMAP P2-2: case-insensitive dynamic filtering across all visible
     // columns. Empty text shows every row.
     void applyFilter(const QString &text);
@@ -54,10 +57,12 @@ private:
     QTableWidget *m_table = nullptr;
     QLineEdit *m_filterEdit = nullptr;
     QCheckBox *m_showStockCheck = nullptr;
+    QLabel *m_stockStatusLabel = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_createButton = nullptr;
     QPushButton *m_editButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
     QAction *m_aboutStockItemAction = nullptr;
+    QAction *m_toggleShowStockAction = nullptr;
 };

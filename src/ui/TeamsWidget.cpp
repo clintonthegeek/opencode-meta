@@ -145,6 +145,15 @@ void saveShowStockTeamsSetting(bool showStock)
     QSettings().setValue(QStringLiteral("settings/teams_show_stock"), showStock);
 }
 
+QString stockVisibilityText(int hiddenCount, bool showStock)
+{
+    if (showStock) {
+        return QObject::tr("all visible");
+    }
+
+    return QObject::tr("%1 stock items hidden").arg(hiddenCount);
+}
+
 // Produce a unique Team id under the given storage root, starting from
 // the slugified base and appending "-N" as needed.
 QString generateUniqueTeamId(StorageManager &storage, const QString &base)
@@ -250,6 +259,7 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
             m_editor->setShowStock(m_showStockCheck && m_showStockCheck->isChecked());
         }
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+        updateStockVisibilityStatus();
     });
 
     connect(m_editor,
@@ -331,6 +341,14 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
 
     installShortcuts();
 
+    auto *footerRow = new QHBoxLayout();
+    footerRow->addStretch(1);
+    m_stockStatusLabel = new QLabel(this);
+    m_stockStatusLabel->setObjectName(QStringLiteral("teamsWidget.stockStatusLabel"));
+    m_stockStatusLabel->setStyleSheet(QStringLiteral("font-size: 10px;"));
+    footerRow->addWidget(m_stockStatusLabel);
+    layout->addLayout(footerRow);
+
     refreshTeams();
     updateActionStates();
 }
@@ -356,6 +374,18 @@ void TeamsWidget::installShortcuts()
     addAction(m_deleteAction);
     connect(m_deleteAction, &QAction::triggered,
             this, &TeamsWidget::onDeleteKeyPressedOnTable);
+
+    m_toggleShowStockAction = new QAction(tr("Toggle Show stock"), this);
+    m_toggleShowStockAction->setObjectName(QStringLiteral("teamsWidget.toggleShowStockAction"));
+    m_toggleShowStockAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    m_toggleShowStockAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    m_toggleShowStockAction->setStatusTip(tr("Toggle the Show stock filter"));
+    addAction(m_toggleShowStockAction);
+    connect(m_toggleShowStockAction, &QAction::triggered, this, [this]() {
+        if (m_showStockCheck) {
+            m_showStockCheck->toggle();
+        }
+    });
 }
 
 void TeamsWidget::refreshTeams()
@@ -373,12 +403,16 @@ void TeamsWidget::refreshTeams()
     }
 
     const QList<Team> teams = m_storageManager.listTeams();
+    int stockCount = 0;
 
     m_table->setRowCount(teams.size());
 
     int desiredRow = -1;
     for (int row = 0; row < teams.size(); ++row) {
         const Team &team = teams.at(row);
+        if (m_storageManager.isStockTeam(team)) {
+            ++stockCount;
+        }
 
         auto *idItem = new QTableWidgetItem(team.id);
         idItem->setData(Qt::UserRole, team.id);
@@ -430,6 +464,10 @@ void TeamsWidget::refreshTeams()
     // Re-apply the active filter so newly added/changed rows respect
     // the current search.
     applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+    if (m_stockStatusLabel) {
+        m_stockStatusLabel->setText(stockVisibilityText(stockCount,
+                                                        m_showStockCheck && m_showStockCheck->isChecked()));
+    }
 }
 
 QString TeamsWidget::selectedTeamId() const
@@ -699,6 +737,24 @@ void TeamsWidget::applyFilter(const QString &text)
     // Editor wiring) reflect the new visible selection rather than
     // whatever row happens to be currentCell().
     updateActionStates();
+}
+
+void TeamsWidget::updateStockVisibilityStatus()
+{
+    if (!m_stockStatusLabel) {
+        return;
+    }
+
+    int stockCount = 0;
+    const QList<Team> teams = m_storageManager.listTeams();
+    for (const Team &team : teams) {
+        if (m_storageManager.isStockTeam(team)) {
+            ++stockCount;
+        }
+    }
+
+    m_stockStatusLabel->setText(stockVisibilityText(stockCount,
+                                                    m_showStockCheck && m_showStockCheck->isChecked()));
 }
 
 void TeamsWidget::updateActionStates()
