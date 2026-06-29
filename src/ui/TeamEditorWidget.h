@@ -83,6 +83,7 @@ private slots:
     void onMoveUp();
     void onMoveDown();
     void onDuplicateVariant();
+    void onResetToStock();
     void onCompare();
     void onApplyTeam(); // F1 footer "Apply Team..." click handler
     void onRevertChanges();
@@ -114,6 +115,7 @@ private:
     QPushButton *m_moveUpButton = nullptr;
     QPushButton *m_moveDownButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;
+    QPushButton *m_resetButton = nullptr;
     QPushButton *m_compareButton = nullptr;
     QPushButton *m_revertButton = nullptr;
     QPushButton *m_applyButton = nullptr; // F1 footer "Apply Team..."

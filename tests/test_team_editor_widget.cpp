@@ -1,12 +1,15 @@
 // Tests for TeamEditorWidget's revert affordance.
 
 #include <QApplication>
+#include <QAbstractButton>
 #include <QDir>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QTableWidget>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QTest>
 
 #include "models/Role.h"
@@ -23,6 +26,7 @@ private slots:
     void initTestCase();
     void revertButtonTracksDirtyStateAndEmitsSignal();
     void defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidden();
+    void resetToStockRestoresClonedTeamAndClearsParentLink();
 
 private:
     static void seedTeam(StorageManager &storage, const QString &teamId);
@@ -183,6 +187,65 @@ void TestTeamEditorWidget::defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidde
 
     widget.setShowStock(false);
     QCOMPARE(table->isRowHidden(stockRow), true);
+}
+
+void TestTeamEditorWidget::resetToStockRestoresClonedTeamAndClearsParentLink()
+{
+    StorageManager storage(m_storageRoot);
+    const QString stockTeamId = QStringLiteral("starter-team");
+    seedTeam(storage, stockTeamId);
+
+    Team stock = storage.loadTeam(stockTeamId);
+    QVERIFY(!stock.id.isEmpty());
+    stock.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY(storage.saveTeam(stock));
+
+    const Team cloned = storage.cloneTeam(stockTeamId);
+    QVERIFY(!cloned.id.isEmpty());
+
+    Team editedClone = storage.loadTeam(cloned.id);
+    QVERIFY(!editedClone.id.isEmpty());
+    editedClone.description = QStringLiteral("custom clone notes");
+    editedClone.metadata.insert(QStringLiteral("note"), QStringLiteral("user edit"));
+    QVERIFY(storage.saveTeam(editedClone));
+
+    TeamEditorWidget widget(storage);
+    widget.setTeamId(cloned.id);
+
+    auto *resetButton = widget.findChild<QPushButton *>(QStringLiteral("teamEditor.resetToStockButton"));
+    QVERIFY(resetButton);
+    QVERIFY(!resetButton->isHidden());
+
+    QSignalSpy updatedSpy(&widget, &TeamEditorWidget::teamUpdated);
+    QVERIFY(updatedSpy.isValid());
+
+    QTimer::singleShot(0, [&]() {
+        for (QWidget *topLevel : QApplication::topLevelWidgets()) {
+            auto *box = qobject_cast<QMessageBox *>(topLevel);
+            if (!box) {
+                continue;
+            }
+            for (QAbstractButton *button : box->buttons()) {
+                if (button && button->text() == QStringLiteral("Keep current name")) {
+                    QTest::mouseClick(button, Qt::LeftButton);
+                    return;
+                }
+            }
+        }
+    });
+
+    QTest::mouseClick(resetButton, Qt::LeftButton);
+    QTRY_COMPARE(updatedSpy.count(), 1);
+
+    const Team reset = storage.loadTeam(cloned.id);
+    QCOMPARE(reset.id, cloned.id);
+    QCOMPARE(reset.name, editedClone.name);
+    QCOMPARE(reset.description, stock.description);
+    QCOMPARE(reset.parentTeamId, QString());
+    QVERIFY(!reset.metadata.contains(QStringLiteral("cloned_from")));
+    QVERIFY(!reset.metadata.contains(QStringLiteral("cloned_from_team_id")));
+    QVERIFY(!reset.metadata.contains(QStringLiteral("stock")));
+    QTRY_VERIFY(resetButton->isHidden());
 }
 
 QTEST_MAIN(TestTeamEditorWidget)

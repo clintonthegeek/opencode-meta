@@ -407,6 +407,9 @@ continuity.
     * D3-4 TeamEditorWidget "Default agent name" QLineEdit
       round-trip.
     * D3-6 ImportExportManager `__wasNative` marker on export.
+    * 2026-06-29: TeamsWidget/TeamEditorWidget gained a minimal
+      "Reset to stock" action for stock-cloned teams; covered by
+      `test_team_editor_widget`.
   These land in a later session without touching the data-model
   surface locked by D1–D4.
 

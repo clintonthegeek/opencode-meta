@@ -11,6 +11,7 @@
 
 #include "ui/TeamEditorWidget.h"
 
+#include <QAbstractButton>
 #include <QAction>
 #include <QColor>
 #include <QDebug>
@@ -185,6 +186,16 @@ bool teamsEqual(const Team &lhs, const Team &rhs)
     return true;
 }
 
+bool isResettableStockClone(const Team &team, StorageManager &storage)
+{
+    if (team.id.isEmpty() || team.parentTeamId.isEmpty()) {
+        return false;
+    }
+
+    const Team parent = storage.loadTeam(team.parentTeamId);
+    return !parent.id.isEmpty() && storage.isStockTeam(parent);
+}
+
 // F3: side-by-side diff highlighter. Identical shape to
 // ProjectsWidget::populateDiffEditor -- kept local and minimal so the
 // editor can launch a lightweight inline diff dialog without dragging
@@ -257,6 +268,7 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     m_moveUpButton = new QPushButton(tr("Move Up"), this);
     m_moveDownButton = new QPushButton(tr("Move Down"), this);
     m_duplicateButton = new QPushButton(tr("Duplicate as Variant"), this);
+    m_resetButton = new QPushButton(tr("Reset to stock"), this);
     m_compareButton = new QPushButton(tr("Compare..."), this);
     m_revertButton = new QPushButton(tr("Revert changes"), this);
     m_applyButton = new QPushButton(tr("Apply Team..."), this);
@@ -264,6 +276,9 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     m_revertButton->setObjectName(QStringLiteral("teamEditor.revertButton"));
     m_revertButton->setToolTip(tr("Discard in-memory changes and reload the Team from storage."));
     m_revertButton->setStatusTip(tr("Reload the Team from storage and discard local edits"));
+    m_resetButton->setObjectName(QStringLiteral("teamEditor.resetToStockButton"));
+    m_resetButton->setToolTip(tr("Reset this cloned Team back to its original stock source"));
+    m_resetButton->setStatusTip(tr("Reset this cloned Team back to its original stock source"));
 
     m_dirtyIndicator = new QLabel(tr("Unsaved changes"), this);
     m_dirtyIndicator->setObjectName(QStringLiteral("teamEditor.dirtyIndicator"));
@@ -278,6 +293,7 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     buttonRow->addWidget(m_moveUpButton);
     buttonRow->addWidget(m_moveDownButton);
     buttonRow->addWidget(m_duplicateButton);
+    buttonRow->addWidget(m_resetButton);
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_compareButton);
     buttonRow->addWidget(m_dirtyIndicator);
@@ -295,6 +311,8 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
             this, &TeamEditorWidget::onMoveDown);
     connect(m_duplicateButton, &QPushButton::clicked,
             this, &TeamEditorWidget::onDuplicateVariant);
+    connect(m_resetButton, &QPushButton::clicked,
+            this, &TeamEditorWidget::onResetToStock);
     connect(m_compareButton, &QPushButton::clicked,
             this, &TeamEditorWidget::onCompare);
     connect(m_revertButton, &QPushButton::clicked,
@@ -347,6 +365,12 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     dupAct->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     addAction(dupAct);
     connect(dupAct, &QAction::triggered, this, &TeamEditorWidget::onDuplicateVariant);
+
+    auto *resetAct = new QAction(tr("Reset to stock"), this);
+    resetAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+R")));
+    resetAct->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    addAction(resetAct);
+    connect(resetAct, &QAction::triggered, this, &TeamEditorWidget::onResetToStock);
 
     refreshSpecialistsTable();
     updateActionButtons();
@@ -574,6 +598,12 @@ void TeamEditorWidget::updateActionButtons()
     }
     if (m_duplicateButton) {
         m_duplicateButton->setEnabled(hasTeam && rowCount > 0);
+    }
+    const bool canReset = isResettableStockClone(m_team, m_storageManager);
+    if (m_resetButton) {
+        m_resetButton->setVisible(canReset);
+        m_resetButton->setEnabled(canReset);
+        m_resetButton->setToolTip(tr("Reset this cloned Team back to its original stock source"));
     }
     if (m_compareButton) {
         m_compareButton->setEnabled(hasTeam);
@@ -977,6 +1007,63 @@ void TeamEditorWidget::onDuplicateVariant()
     emit teamUpdated(copy.id);
 
     emit teamVariantCreated(copy.id);
+}
+
+void TeamEditorWidget::onResetToStock()
+{
+    if (m_team.id.isEmpty() || !isResettableStockClone(m_team, m_storageManager)) {
+        return;
+    }
+
+    const Team stock = m_storageManager.loadTeam(m_team.parentTeamId);
+    if (stock.id.isEmpty()) {
+        QMessageBox::warning(this,
+                             tr("Reset to stock"),
+                             tr("Could not load the original stock Team."));
+        return;
+    }
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Question);
+    box.setWindowTitle(tr("Reset to stock"));
+    box.setText(tr("Reset this Team to a fresh copy of '%1'?")
+                    .arg(stock.name.isEmpty() ? stock.id : stock.name));
+    box.setInformativeText(tr("Keep the current Team name, or replace it with the stock version. The Team id stays the same either way."));
+    QPushButton *keepButton = box.addButton(tr("Keep current name"), QMessageBox::AcceptRole);
+    QPushButton *replaceButton = box.addButton(tr("Replace name with stock"), QMessageBox::DestructiveRole);
+    QAbstractButton *cancelButton = box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(keepButton);
+    box.exec();
+
+    const QAbstractButton *clicked = box.clickedButton();
+    if (clicked == nullptr || clicked == cancelButton) {
+        return;
+    }
+
+    Team reset = stock;
+    reset.id = m_team.id;
+    if (clicked == keepButton) {
+        reset.name = m_team.name;
+    } else if (clicked != replaceButton) {
+        return;
+    }
+    reset.parentTeamId.clear();
+    reset.metadata.remove(QStringLiteral("cloned_from"));
+    reset.metadata.remove(QStringLiteral("cloned_from_team_id"));
+    reset.metadata.remove(QStringLiteral("stock"));
+
+    if (!m_storageManager.saveTeam(reset)) {
+        QMessageBox::warning(this,
+                             tr("Reset to stock"),
+                             tr("Failed to save the reset Team."));
+        return;
+    }
+
+    m_team = reset;
+    refreshSpecialistsTable();
+    updateActionButtons();
+
+    emit teamUpdated(m_team.id);
 }
 
 void TeamEditorWidget::onCompare()
