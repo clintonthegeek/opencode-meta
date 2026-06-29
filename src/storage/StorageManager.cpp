@@ -318,6 +318,27 @@ QList<Role> StorageManager::listRoles() const
     return roles;
 }
 
+bool StorageManager::deleteRole(const QString &id) const
+{
+    if (id.isEmpty()) {
+        qDebug() << "StorageManager::deleteRole: empty id";
+        return false;
+    }
+
+    const QString filePath = rootPath() + QStringLiteral("/roles/%1.json").arg(id);
+    QFile file(filePath);
+    if (!file.exists()) {
+        qDebug() << "StorageManager::deleteRole: file does not exist" << filePath;
+        return false;
+    }
+    if (!file.remove()) {
+        qDebug() << "StorageManager::deleteRole: failed to remove" << filePath << file.errorString();
+        return false;
+    }
+
+    return true;
+}
+
 // Specialists (PARADIGM entities)
 
 bool StorageManager::saveSpecialist(const Specialist &s) const

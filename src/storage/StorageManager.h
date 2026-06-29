@@ -55,6 +55,7 @@ public:
      bool saveRole(const Role &role) const;        // roles/<id>.json
      Role loadRole(const QString &id) const;       // returns empty Role on failure
      QList<Role> listRoles() const;                // scans roles/ directory
+     bool deleteRole(const QString &id) const;     // removes roles/<id>.json; false if missing
 
      // Specialists
      bool saveSpecialist(const Specialist &s) const;   // specialists/<id>.json
