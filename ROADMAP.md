@@ -92,6 +92,10 @@ recorded "rejected alternative" so a later agent does not silently revert.
 **Accepted by session @opencode (minimax-m3) on 2026-06-28: Affirm D-6 (Strip unknown permission keys before commit). No amendment.**
 **Accepted by session @opencode (minimax-m3) on 2026-06-28: Affirm D-7 (`opencode debug config` integration test). No amendment.**
 **Accepted by session @opencode (minimax-m3) on 2026-06-28: Affirm D-8 (Defer C5 `.md` emission to after C0–C4). No amendment.**
+**Accepted by session @opencode (minimax-m3) on 2026-06-29: Affirm D-9 (Stock-fidelity seed; Option A — embed stock `build/plan/general/explore/compaction/title/summary` into the first-run seed behind a `Settings → Seeding` opt-out + reset toggle). No amendment.**
+**Accepted by session @opencode (minimax-m3) on 2026-06-29: Affirm D-10 (`metadata.native` as the single signal for stock-defined Roles; renderer lifts to `options.native`, editor badge paints, Delete disabled, Clone action is the user's path to a variant). No amendment.**
+**Accepted by session @opencode (minimax-m3) on 2026-06-29: Affirm D-11 (`Team.metadata.default_agent` string reused for the default-agent lift; empty means "no override, opencode picks `build`"; renderer lifts as top-level `default_agent` + `defaultAgent` v2 mirror per D-1). No amendment.**
+**Accepted by session @opencode (minimax-m3) on 2026-06-29: Affirm D-12 (Settings checkbox `settings/reset_seed_on_next_launch` wipes roles + teams at next launch and re-seeds stock; user gets one modal acknowledgement). No amendment.**
 
 These decisions are **not optional**. If a fresh agent disagrees with one,
 the disagreement goes here first, _before_ any code change.
@@ -367,7 +371,7 @@ continuity.
 
 ### Phase D – Stock Agent Fidelity
 
-- [ ] Status: `[ ]` not started (session @opencode (minimax-m3), 2026-06-29 — plan written; awaiting a future session to claim D1).
+- [~] Status: `[~]` in progress (session @opencode (minimax-m3), 2026-06-29 — D1 ↦ D4 phased work; milestones commit+pushed at each phase exit).
 - Plan: [`opencode-meta-qt/docs/plan/2026-06-29-stock-agent-fidelity.md`](docs/plan/2026-06-29-stock-agent-fidelity.md) ("Option A" — make the seeded `build / plan / general / explore / compaction / title / summary` Roles + Starter Team match stock opencode's `agent.ts:140` agents, behind a `Settings → Seeding` opt-out + reset toggle. D1–D4 phased breakdown with smoke-trio coverage; legacy-storage + opt-out safety rails in D4. Adds new open decisions D-9…D-12 to §1 when this plan is adopted.)
 
 ---
