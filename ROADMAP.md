@@ -371,9 +371,45 @@ continuity.
 
 ### Phase D – Stock Agent Fidelity
 
-- [~] Status: `[~]` in progress (session @opencode (minimax-m3), 2026-06-29 — D1 ↦ D4 phased work; milestones commit+pushed at each phase exit).
-- Plan: [`opencode-meta-qt/docs/plan/2026-06-29-stock-agent-fidelity.md`](docs/plan/2026-06-29-stock-agent-fidelity.md) ("Option A" — make the seeded `build / plan / general / explore / compaction / title / summary` Roles + Starter Team match stock opencode's `agent.ts:140` agents, behind a `Settings → Seeding` opt-out + reset toggle. D1–D4 phased breakdown with smoke-trio coverage; legacy-storage + opt-out safety rails in D4. Adds new open decisions D-9…D-12 to §1 when this plan is adopted.)
+- [x] done (session @opencode (minimax-m3), 2026-06-29; Option A stock-aligned seed landed; D1–D4 phased work committed + pushed at each phase exit gate).
+- Plan: [`opencode-meta-qt/docs/plan/2026-06-29-stock-agent-fidelity.md`](docs/plan/2026-06-29-stock-agent-fidelity.md) ("Option A" — seeded `build / plan / general / explore / compaction / title / summary` Roles + Starter Team match stock opencode's `agent.ts:140` agents, behind a `Settings → Seeding` opt-out + reset toggle. D1–D4 phased breakdown completed end-to-end; legacy-storage + opt-out safety rails live in D4.)
+- Phase exit-gate status:
+    - D1 stock-seed nits: `[x]` (kStockDefaults anon-ns + 7 perm fragments
+      + SeedVersion enum + SeedStorage + 4 Specialists; 30/30 in
+      `test_seed_stock_fidelity`).
+    - D2 renderer lifts: `[x]` (`liftAgentStringMetadata` for native/hidden/color,
+      `team.metadata.default_agent` top-level + `defaultAgent` v2 mirror,
+      `ContractChecker` accepts `default_agent` + `defaultAgent`,
+      C6-2 metadataLiftsDefaultAgentViaSubKey slot green).
+    - D3 UX surfaces: `[x]` (RoleEditorDialog native badge + readOnly
+      id/name + locked mode, SettingsDialog seed checkboxes,
+      `metadata` round-trips through the metadata table; v2 sidecar
+      strip in `stripV2Sidecar` extended for `defaultAgent`).
+    - D4 compliance + migration: `[x]` (`everyNativeAgent_isAcceptedByRuntime`
+      walks the seven stock natives through `opencode debug config`,
+      `test_legacy_storage_unaffected_by_seed` locks the §7 migration
+      contract, `test_seed_opt_out_path` locks the D-7 escape hatch,
+      `scripts/ci_smoke_trio.sh` extended to 7 tests).
+- Final smoke counts (inside `scripts/ci_smoke_trio.sh`):
+    `test_team_renderer` 24/24 PASS (15 prior + 9 D2 slots);
+    `test_apply_team` unchanged, 10/10;
+    `test_starter_team_apply` unchanged, 3/3;
+    `test_contract_checker` 8/8 PASS (6 prior + 2 D2-3 slots);
+    `test_seed_stock_fidelity` 30/30 PASS (new in D1, locked in D4);
+    `test_legacy_storage_unaffected_by_seed` 3/3 PASS (new in D4);
+    `test_seed_opt_out_path` 3/3 PASS (new in D4);
+    `test_compliance_signoff` 2/2 PASS (`everyNativeAgent_isAcceptedByRuntime`
+    walks all 7 stock natives, exits 0 on `opencode debug config`).
+- Open Phase-D follow-ups (deferred, not blockers):
+    * D3-2 RolesWidget stock badge + Delete-disabled-on-native +
+      Show-hidden filter + Clone action (visible UX).
+    * D3-3 TeamsWidget default-agent badge + Clone action.
+    * D3-4 TeamEditorWidget "Default agent name" QLineEdit
+      round-trip.
+    * D3-6 ImportExportManager `__wasNative` marker on export.
+  These land in a later session without touching the data-model
+  surface locked by D1–D4.
 
 ---
 
-**Last updated: 2026-06-28 by @opencode (minimax-m3) — Phase C7 complete; ALL C2–C7 PHASES DONE. Final smoke trio `scripts/ci_smoke_trio.sh` 5/5 green on `build/`. Test counts: `test_team_renderer` 15/15 PASS (incl. `stripsNonCanonicalPermissionKeys`, `metadataLiftsOptionalEntries`, `providerOptionsAreLifted`); `test_apply_team` 10/10 PASS (incl. `liveCatalog_rejectsUnknownModel`, `callsEnsureReadyForApplyBeforeCommit`, `*_withAgentMarkdown_*`); `test_starter_team_apply` 3/3 PASS; `test_contract_checker` 6/6 PASS; `test_provider_catalog` 6/6 PASS (incl. `freshCache_doesNotAttemptRefresh`, `staleCache_attemptsRefresh`, `missingCache_noBinary_returnsFalse`, `unparseableCache_toleratedByLoad`, `maxAgeZeroForcesRefresh`); `test_role_editor_dialog` 31/31 PASS (incl. C3-3 `readOnlyToggle/DefaultsToOff/ResetRevertsToInMemoryRole`, C4-1 `customKeyWarning*` + `rendererStripsNonCanonicalKeys` + `saveIsStillPermittedWithCustomKeys`, C6-2 `workSpaceServersTab*`); `test_team_renderer_toolsDeprecationBannerInEditor` 9/9 PASS; `test_agent_markdown` 9/9 PASS (scaffolded for D-8 reversal); `test_compliance_signoff` 1/1 PASS (every seeded Team round-trips through `opencode debug config` exit-0 + empty stderr); `test_runtime_opencode_debug` 1/1 PASS. Final compliance state: every config emitted by `applyTeamToProject` passes the live runtime's `opencode debug config` gate. Next phase for a future agent: Phase D-8 reversal (move `test_agent_markdown` into smoke-trio regex) then Phase E (legacy UI purge).**
+**Last updated: 2026-06-29 by @opencode (minimax-m3) — Phase D complete; Option A stock fidelity landed. Final smoke trio `scripts/ci_smoke_trio.sh` 7/7 green on `build/` (the explicit D-4-4 reversal; regex now includes `test_seed_stock_fidelity`, `test_legacy_storage_unaffected_by_seed`, `test_seed_opt_out_path`). Test counts: `test_team_renderer` 24/24 PASS (prior 15/15 + 9 D2 slots incl. `nativeHiddenColor_liftFromRoleMetadata`, `metadataNative_isLiftedToOptionsNative`, `metadataHidden_isLiftedToAgentHidden`, `metadataColor_isLiftedToAgentColor`, `metadataNonBoolNative_isSkippedWithWarning`, `defaultAgent_liftFromTeamMetadata`, `defaultAgent_emptyOverrideYieldsNoKey`, `defaultAgent_overridesInferredDefault`, `metadataLiftsDefaultAgentViaSubKey`); `test_apply_team` 10/10 PASS; `test_starter_team_apply` 3/3 PASS; `test_contract_checker` 8/8 PASS (prior 6/6 + 2 D2-3 slots `acceptsDefaultAgent_topLevelString`, `rejectsDefaultAgent_nonString`); `test_provider_catalog` 6/6 PASS; `test_role_editor_dialog` 34/34 PASS (prior 31/31 + 3 D3-1 slots `nativeBadge_visibleWhenRoleIsNative`, `nativeBadge_hiddenWhenRoleIsNotNative`, `nameAndMode_lockedWhenRoleIsNative`); `test_team_renderer_toolsDeprecationBannerInEditor` 9/9 PASS; `test_agent_markdown` 9/9 PASS (still scaffolded for D-8 reversal; not in smoke-trio); `test_settings_dialog` 15/15 PASS (prior 11/11 + 4 D3-5 slots `seedStockDefaultsCheckBox_persists`, `resetSeedCheckBox_persists`, `seedDefaults_defaultToTrue`, `storageSeedWidgets_areConstructed`); `test_seed_stock_fidelity` 30/30 PASS (new in D1: 7 stockDefaults shape slots + 1 SeedVersion slot + 11 seededRoles_* slots + 5 seededHidden + 3 seededStarterTeam + 3 seededSpecialists); `test_legacy_storage_unaffected_by_seed` 3/3 PASS (new in D4: `legacyBuild_Role_isNotOverwritten`, `legacyStorage_DoesNotBumpSeedVersion`, `legacyStorage_DoesNotAddNativeRoles` — locks the §7 migration contract); `test_seed_opt_out_path` 3/3 PASS (new in D4-3: `optOutSeeds_v0_legacyFiction`, `optOut_plan_isSubagent`, `optOut_role_notMarkedNative`); `test_compliance_signoff` 2/2 PASS (`seededTeamsRoundTripThroughOpencodeDebugConfig` + D4-1 `everyNativeAgent_isAcceptedByRuntime` walks all 7 stock natives through `opencode debug config` exit-0 + empty stderr); `test_runtime_opencode_debug` 1/1 PASS. Final compliance state: every config emitted by `applyTeamToProject` AND every seed-fidelity Role renders + writes a v1 config file accepted by `opencode debug config` on the live 1.17.x runtime. Next milestones for a future agent: D3-2 / D3-3 / D3-4 / D3-6 visible-UX follow-ups (not blockers); D-8 reversal (`test_agent_markdown` into smoke-trio); Phase E (legacy UI purge).**

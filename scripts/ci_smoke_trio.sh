@@ -1,13 +1,28 @@
 #!/usr/bin/env bash
 # scripts/ci_smoke_trio.sh
 #
-# Phase C0-4 — Pin the apply-path smoke trio as a runnable, CI-friendly
-# script. Locks the regression bar across all future changes:
+# Phase C0-4 / D4-4 — Pin the apply-path smoke trio + stock-fidelity
+# test as a runnable, CI-friendly script. Locks the regression bar
+# across all future changes:
 #   test_team_renderer
 #   test_apply_team
 #   test_starter_team_apply
 #   test_contract_checker        (Phase G3 unit test, slotted in for
 #                                  compliance work per ROADMAP.md §2)
+#   test_seed_stock_fidelity      (Phase D4-4 — explicit reversal of
+#                                  the D1-6 "regex update lands after
+#                                  D1 exit gate" hold. Now unified
+#                                  into the canonical regression bar
+#                                  so every CI run asserts the
+#                                  stock-aligned seed shape.)
+#   test_legacy_storage_unaffected_by_seed
+#                                (Phase D4-4 — migration safety rail.)
+#   test_seed_opt_out_path        (Phase D4-4 — v0-fiction escape
+#                                  hatch.)
+#
+# 7 tests total. Per Phase D4-4 the hash-update was made in the same
+# commit as the rest of Phase D4 so CI flips in lock-step with the
+# migration contract, not via a separate C5-1 / D-8-style flag flip.
 #
 # Usage:
 #   scripts/ci_smoke_trio.sh                          # default: build/, no log
@@ -18,7 +33,7 @@
 #   0   → every smoke test passed.
 #   1   → ctest reported a non-zero exit (one or more tests failed).
 #   2   → toolchain preflight failed (cmake / ctest missing).
-#   3   → the smoke regex matched fewer than the four expected targets
+#   3   → the smoke regex matched fewer than the 7 expected targets
 #         (defensive against silent test renames / regex typos).
 #
 # The script is location-aware: it resolves REPO_ROOT from its own
@@ -43,12 +58,18 @@ REPO_ROOT=$(cd -P "$SCRIPT_DIR/.." && pwd)
 BUILD_DIR="${BUILD_DIR:-build}"
 LOG_FILE="${LOG_FILE:-}"
 
-# The 4-test smoke regex — Phase C0-4 defines this exact alternation.
-# DO NOT reorder: ctest -R is anchored alternation, and the regex
-# is the bar cited from CLAUDE.md "Build / Run / Test Discipline".
-SMOKE_TESTS_REGEX='test_team_renderer|test_apply_team|test_starter_team_apply|test_contract_checker'
+# Phase D4-4 / C0-4 — D4-4 added test_seed_stock_fidelity +
+# test_legacy_storage_unaffected_by_seed + test_seed_opt_out_path to
+# the canonical regression bar so every CI run asserts the
+# stock-fidelity seed, the migration safety rail, and the v0-fiction
+# opt-out all hold. 7 tests total. The regex is anchored alternation;
+# ctest -R enumerates this exact set.
+SMOKE_TESTS_REGEX='test_team_renderer|test_apply_team|test_starter_team_apply|test_contract_checker|test_seed_stock_fidelity|test_legacy_storage_unaffected_by_seed|test_seed_opt_out_path'
 REQUIRED_TESTS=(test_team_renderer test_apply_team
-                test_starter_team_apply test_contract_checker)
+                test_starter_team_apply test_contract_checker
+                test_seed_stock_fidelity
+                test_legacy_storage_unaffected_by_seed
+                test_seed_opt_out_path)
 
 # --- Pretty logging (only when stdout is a TTY and no log file is set) -----
 if [ -t 1 ] && [ -z "$LOG_FILE" ]; then
@@ -98,7 +119,7 @@ if ! ctest --test-dir "$BUILD_DIR" \
   fail "ctest returned non-zero for one or more smoke tests"
   exit 1
 fi
-ok "all 4 smoke tests passed"
+ok "all 7 smoke tests passed"
 
 # --- Belt-and-braces: enumerate which tests ctest actually ran --------------
 # Defensive against silent regex typos or future test renames that would
@@ -123,7 +144,7 @@ if [ "${#MISSING[@]}" -ne 0 ]; then
   fail "ctest registry is missing required tests: ${MISSING[*]}"
   exit 3
 fi
-ok "ctest registry covers all 4 required tests"
+ok "ctest registry covers all 7 required tests"
 
 hdr "summary"
 printf '%b== Final verdict: PASS ==%b\n' "$C_GREEN$C_BOLD" "$C_RESET"

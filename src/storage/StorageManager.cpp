@@ -1392,12 +1392,22 @@ void StorageManager::seedDefaultsIfNeeded() const
         || QDir(teamsPath).entryList(QStringList() << QStringLiteral("*.json"),
                                       QDir::Files).isEmpty();
 
-    // EARLY-OUT (D4-2 / §7): existing user data wins. The seed is
-    // strictly an "empty storage on first run" path. We deliberately
-    // do not bump seed_version here — a user who already curated
-    // their own Roles / Teams keeps exactly what they had before we
-    // shipped the stock seed.
-    if (!rolesEmptyNow && !teamsEmptyNow && !resetJustRan) {
+    // EARLY-OUT (D4-2 / §7): existing user data wins. ANY user file
+    // — a pre-existing Role OR a pre-existing Team — bails the seed.
+    // We deliberately do NOT bump seed_version in this case so a
+    // user who already curated their own data keeps exactly what
+    // they had before we shipped the stock seed. To opt back into
+    // the stock seed the user flips Settings → Seeding → "Reset
+    // storage to stock defaults on next launch" (D-12), which is
+    // consumed at the very top of this function.
+    //
+    // NOTE: the previous condition `(!rolesEmpty && !teamsEmpty)`
+    // was wrong because it only bailed when BOTH existed. That let
+    // the seed run on a legacy Role-only storage and silently bump
+    // seed_version, breaking the migration contract. The D4-2
+    // test_legacy_storage_unaffected_by_seed locks the strict
+    // (||) form.
+    if ((!rolesEmptyNow || !teamsEmptyNow) && !resetJustRan) {
         return;
     }
 
