@@ -113,6 +113,89 @@ void TeamRenderer::ensureSubagentTaskRule(QJsonObject *perms, Role::Mode m)
     perms->insert(QStringLiteral("task"), QStringLiteral("allow"));
 }
 
+QSet<QString> TeamRenderer::liftAgentStringMetadata(QJsonObject &agentObj,
+                                                    const Role &role)
+{
+    // Phase D2-1 / D-10: lift `metadata.{native,hidden,color}` from
+    // the stock-fidelity Role into the matching v1 agent field. Each
+    // lift is shape-gated so a wrong-typed value triggers a one-shot
+    // qWarning instead of a silent broken entry. The lift success
+    // set is returned so callers (and tests) can assert exactly which
+    // paths were lifted.
+    QSet<QString> lifted;
+
+    // `native` — boolean metadata.sub-key. Stock opencode routes
+    // `native` through `options` because agent.ts:43 KNOWN_KEYS does
+    // not list it (the normalize function folds unknown keys into
+    // options.native). Lift into options.native — preserve any
+    // options the user already set.
+    if (role.metadata.contains(QStringLiteral("native"))) {
+        const QJsonValue v = role.metadata.value(QStringLiteral("native"));
+        if (!v.isBool()) {
+            qWarning("TeamRenderer: liftAgentStringMetadata skipping "
+                     "metadata.native on role id=%s — expected boolean, "
+                     "got %s (Phase D2-1 D-10 contract)",
+                     qPrintable(role.id.isEmpty()
+                                    ? QStringLiteral("(unnamed)")
+                                    : role.id),
+                     v.type() == QJsonValue::Null
+                         ? QStringLiteral("null")
+                         : QStringLiteral("non-bool"));
+        } else {
+            QJsonObject options = agentObj.value(QStringLiteral("options"))
+                                      .toObject();
+            options.insert(QStringLiteral("native"), v);
+            agentObj.insert(QStringLiteral("options"), options);
+            lifted.insert(QStringLiteral("options.native"));
+        }
+    }
+
+    // `hidden` — boolean metadata sub-key. v1 KNOWN_KEYS lists
+    // `hidden` (agent.ts:43) so it lands at the agent's top-level.
+    if (role.metadata.contains(QStringLiteral("hidden"))) {
+        const QJsonValue v = role.metadata.value(QStringLiteral("hidden"));
+        if (!v.isBool()) {
+            qWarning("TeamRenderer: liftAgentStringMetadata skipping "
+                     "metadata.hidden on role id=%s — expected boolean, "
+                     "got %s (Phase D2-1 D-10 contract)",
+                     qPrintable(role.id.isEmpty()
+                                    ? QStringLiteral("(unnamed)")
+                                    : role.id),
+                     v.type() == QJsonValue::Null
+                         ? QStringLiteral("null")
+                         : QStringLiteral("non-bool"));
+        } else {
+            agentObj.insert(QStringLiteral("hidden"), v);
+            lifted.insert(QStringLiteral("hidden"));
+        }
+    }
+
+    // `color` — string metadata sub-key. Color can be a hex string
+    // `#RRGGBB` or a theme name `primary|secondary|accent|success|
+    // warning|error|info` per agent.ts:7-10. We shape-gate on "is
+    // string" only — the runtime enforces the actual pattern/value
+    // match.
+    if (role.metadata.contains(QStringLiteral("color"))) {
+        const QJsonValue v = role.metadata.value(QStringLiteral("color"));
+        if (!v.isString()) {
+            qWarning("TeamRenderer: liftAgentStringMetadata skipping "
+                     "metadata.color on role id=%s — expected string, "
+                     "got %s (Phase D2-1 D-10 contract)",
+                     qPrintable(role.id.isEmpty()
+                                    ? QStringLiteral("(unnamed)")
+                                    : role.id),
+                     v.type() == QJsonValue::Null
+                         ? QStringLiteral("null")
+                         : QStringLiteral("non-string"));
+        } else {
+            agentObj.insert(QStringLiteral("color"), v);
+            lifted.insert(QStringLiteral("color"));
+        }
+    }
+
+    return lifted;
+}
+
 QJsonObject TeamRenderer::render(const Team &team,
                                  const QMap<QString, Specialist> &specialists,
                                  const QMap<QString, Role> &roles)
@@ -327,6 +410,14 @@ QJsonObject TeamRenderer::render(const Team &team,
                             flattenPermissions(perms));
         }
 
+        // Phase D2-1 / D-10: lift `metadata.native / hidden / color`
+        // to the matching v1 agent field. Done last so any prior
+        // v2-mirror write (`options`) wins through a fresh merge on
+        // the lift side. The helper logs a one-shot qWarning per
+        // shape mismatch so users can fix the source Role if a
+        // future stock key change trips a new shape gate.
+        TeamRenderer::liftAgentStringMetadata(agentObj, role);
+
         agentsObj.insert(agentName, agentObj);
     }
 
@@ -393,6 +484,39 @@ QJsonObject TeamRenderer::render(const Team &team,
             }
         }
     }
+
+    // Phase D2-2 / D-11: explicit `team.metadata.default_agent`
+    // override wins over the inferred value above. The renderer
+    // surfaces whatever string the user put under team.metadata
+    // (snake_case) or team.metadata.defaultAgent (camelCase). The v2
+    // `defaultAgent` mirror is emitted only when the source value is
+    // itself a string — per D-1 "only emit v2 sidecars when v2 form
+    // is structurally correct".
+    auto liftDefaultAgent = [&](const QString &metaKey) {
+        if (!team.metadata.contains(metaKey)) {
+            return;
+        }
+        const QJsonValue v = team.metadata.value(metaKey);
+        if (!v.isString()) {
+            qWarning("TeamRenderer: team.metadata.%s is not a string; "
+                     "skipping as default_agent override (Phase D2-2 D-11 "
+                     "contract)",
+                     qPrintable(metaKey));
+            return;
+        }
+        const QString s = v.toString();
+        if (s.isEmpty()) {
+            // Empty == no override; the inferred default_agent above
+            // still wins. No qWarning — empty override is an explicit
+            // "use the default".
+            return;
+        }
+        root.insert(QStringLiteral("default_agent"), s);
+        // v2 mirror (Phase D2-2 / D-1 symmetric safe scalars).
+        root.insert(QStringLiteral("defaultAgent"), s);
+    };
+    liftDefaultAgent(QStringLiteral("default_agent"));
+    liftDefaultAgent(QStringLiteral("defaultAgent"));
 
     // Phase C6-1 / D-1 / report §5.9: lift `Role::metadata.<kind>` to
     // the corresponding v1 top-level key. The Role model exposes

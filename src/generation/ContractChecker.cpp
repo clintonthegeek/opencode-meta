@@ -634,6 +634,26 @@ ContractCheckResult ContractChecker::validateDetailed(
         }
     }
 
+    // Phase D2-3 / D-11: top-level `default_agent` is a string scalar
+    // (report §4 / core/src/v1/config/config.ts:80). Anything else —
+    // e.g. a list or number — is a hard reject. Empty string is
+    // permitted (opencode picks "build" in that case per stock
+    // agent.ts:330-340).
+    if (candidate.contains(QStringLiteral("default_agent"))) {
+        const QJsonValue v = candidate.value(QStringLiteral("default_agent"));
+        if (!v.isString()) {
+            ContractCheckResult sub;
+            sub.ok = false;
+            sub.errors.append(QStringLiteral(
+                "top-level \"default_agent\" must be a string scalar "
+                "(got %1) per report §4 / D2-3 D-11")
+                .arg(v.type() == QJsonValue::Null
+                          ? QStringLiteral("null")
+                          : QStringLiteral("non-string")));
+            merged.merge(sub);
+        }
+    }
+
     return merged;
 }
 

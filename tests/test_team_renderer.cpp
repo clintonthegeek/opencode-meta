@@ -12,7 +12,7 @@ class TestTeamRenderer : public QObject
 {
     Q_OBJECT
 
-private slots:
+ private slots:
     void basicRendering();
     void toolsKeyIsAbsentByDefault();
     void toolsKeyIsAbsentEvenWhenRoleHasTools();
@@ -26,6 +26,21 @@ private slots:
     void stripsNonCanonicalPermissionKeys();
     void metadataLiftsOptionalEntries();
     void providerOptionsAreLifted();
+
+    // ---- Phase D2-1 / D-10: stock-fidelity metadata lifts ----
+    void nativeHiddenColor_liftFromRoleMetadata();
+    void metadataNative_isLiftedToOptionsNative();
+    void metadataHidden_isLiftedToAgentHidden();
+    void metadataColor_isLiftedToAgentColor();
+    void metadataNonBoolNative_isSkippedWithWarning();
+
+    // ---- Phase D2-2 / D-11: default_agent top-level lift ----
+    void defaultAgent_liftFromTeamMetadata();
+    void defaultAgent_emptyOverrideYieldsNoKey();
+    void defaultAgent_overridesInferredDefault();
+
+    // ---- Phase D2-4 / report §5.9: metadata.defaultAgent sub-key ----
+    void metadataLiftsDefaultAgentViaSubKey();
 };
 
 namespace {
@@ -589,6 +604,296 @@ void TestTeamRenderer::providerOptionsAreLifted()
                 .value(QStringLiteral("baseURL"))
                 .toString(),
              QStringLiteral("https://api.example.com"));
+}
+
+void TestTeamRenderer::nativeHiddenColor_liftFromRoleMetadata()
+{
+    // Phase D2-1: a Plan Role with `metadata.native = true` produces
+    // an agent entry whose `options.native` is set (because `native`
+    // is NOT in v1 KNOWN_KEYS at agent.ts:43 and stock opencode's
+    // `normalize()` routes unknown keys into the `options` rest
+    // bag). A Compaction Role with `metadata.hidden = true` produces
+    // a top-level `hidden: true` on the agent (because `hidden` IS
+    // in KNOWN_KEYS, agent.ts:27).
+    Role plan;
+    plan.id = QStringLiteral("plan");
+    plan.name = QStringLiteral("Plan");
+    plan.mode = Role::Mode::Primary;
+    plan.systemPrompt = QJsonValue(QStringLiteral("You are the plan agent."));
+    QJsonObject meta;
+    meta.insert(QStringLiteral("native"), true);
+    meta.insert(QStringLiteral("color"), QStringLiteral("#FF5500"));
+    plan.metadata = meta;
+
+    const QJsonObject out = renderSingleAgentTeam(plan);
+    const QJsonObject planAgent =
+        out.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("plan")).toObject();
+    QVERIFY(planAgent.contains(QStringLiteral("options")));
+    QCOMPARE(planAgent.value(QStringLiteral("options"))
+                 .toObject()
+                 .value(QStringLiteral("native"))
+                 .toBool(),
+             true);
+    QCOMPARE(planAgent.value(QStringLiteral("color")).toString(),
+             QStringLiteral("#FF5500"));
+
+    // The Compaction case has `hidden: true` raised to agent top-level.
+    Role compaction;
+    compaction.id = QStringLiteral("compaction");
+    compaction.name = QStringLiteral("Compaction");
+    compaction.mode = Role::Mode::Primary;
+    QJsonObject cMeta;
+    cMeta.insert(QStringLiteral("native"), true);
+    cMeta.insert(QStringLiteral("hidden"), true);
+    compaction.metadata = cMeta;
+    const QJsonObject compOut = renderSingleAgentTeam(compaction);
+    const QJsonObject compAgent =
+        compOut.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("compaction")).toObject();
+    QCOMPARE(compAgent.value(QStringLiteral("hidden")).toBool(), true);
+    // And options.native rides along.
+    QCOMPARE(compAgent.value(QStringLiteral("options"))
+                 .toObject()
+                 .value(QStringLiteral("native"))
+                 .toBool(),
+             true);
+}
+
+void TestTeamRenderer::metadataNative_isLiftedToOptionsNative()
+{
+    // Granular slot for native only — locks the v1 KNOWN_KEYS story in
+    // its own assertion so a regression trips one slot, not the whole
+    // nativeHiddenColor_liftFromRoleMetadata() test.
+    Role r;
+    r.id = QStringLiteral("buildx");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("BuildX");
+    r.systemPrompt = QJsonValue(
+        QStringLiteral("stub"));
+    QJsonObject m;
+    m.insert(QStringLiteral("native"), true);
+    r.metadata = m;
+
+    const QJsonObject out = renderSingleAgentTeam(r);
+    const QJsonObject agent =
+        out.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("buildx")).toObject();
+    QCOMPARE(agent.value(QStringLiteral("options"))
+                 .toObject()
+                 .value(QStringLiteral("native"))
+                 .toBool(),
+             true);
+    // `native` does NOT appear at the agent top-level (only `options.native`).
+    QVERIFY(!agent.contains(QStringLiteral("native")));
+}
+
+void TestTeamRenderer::metadataHidden_isLiftedToAgentHidden()
+{
+    Role r;
+    r.id = QStringLiteral("compactx");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("CompactX");
+    r.systemPrompt = QJsonValue(QStringLiteral("stub"));
+    QJsonObject m;
+    m.insert(QStringLiteral("hidden"), true);
+    r.metadata = m;
+
+    const QJsonObject out = renderSingleAgentTeam(r);
+    const QJsonObject agent =
+        out.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("compactx")).toObject();
+    QCOMPARE(agent.value(QStringLiteral("hidden")).toBool(), true);
+}
+
+void TestTeamRenderer::metadataColor_isLiftedToAgentColor()
+{
+    Role r;
+    r.id = QStringLiteral("colored");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("Colored");
+    r.systemPrompt = QJsonValue(QStringLiteral("stub"));
+    QJsonObject m;
+    m.insert(QStringLiteral("color"), QStringLiteral("primary"));
+    r.metadata = m;
+
+    const QJsonObject out = renderSingleAgentTeam(r);
+    const QJsonObject agent =
+        out.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("colored")).toObject();
+    QCOMPARE(agent.value(QStringLiteral("color")).toString(),
+             QStringLiteral("primary"));
+}
+
+void TestTeamRenderer::metadataNonBoolNative_isSkippedWithWarning()
+{
+    // Wrong-shaped `native` (string instead of bool) is dropped with
+    // a one-shot qWarning — the lift helper does NOT promote it to
+    // options.native with an invalid type. We assert that no lift
+    // happened (options is absent unless the test setup created one).
+    Role r;
+    r.id = QStringLiteral("broken");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("Broken");
+    r.systemPrompt = QJsonValue(QStringLiteral("stub"));
+    QJsonObject m;
+    m.insert(QStringLiteral("native"), QStringLiteral("yes-please"));
+    r.metadata = m;
+
+    const QJsonObject out = renderSingleAgentTeam(r);
+    const QJsonObject agent =
+        out.value(QStringLiteral("agent")).toObject()
+            .value(QStringLiteral("broken")).toObject();
+    QVERIFY(!agent.contains(QStringLiteral("options")));
+}
+
+void TestTeamRenderer::defaultAgent_liftFromTeamMetadata()
+{
+    // Phase D2-2 / D-11: a Team whose metadata.default_agent = "build"
+    // produces an emitted config with top-level default_agent = "build"
+    // AND the v2 mirror defaultAgent = "build".
+    Role r;
+    r.id = QStringLiteral("build");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("Build");
+    r.systemPrompt = QJsonValue(QStringLiteral("stub"));
+
+    Specialist spec;
+    spec.id = QStringLiteral("s");
+    spec.roleId = r.id;
+    spec.modelId = QStringLiteral("anthropic/claude-sonnet-4-6");
+
+    Team team;
+    team.id = QStringLiteral("t1");
+    QJsonObject m;
+    m.insert(QStringLiteral("default_agent"), QStringLiteral("build"));
+    team.metadata = m;
+    Team::SpecialistBinding b;
+    b.roleId = r.id;
+    b.specialistId = spec.id;
+    team.specialists.append(b);
+
+    QMap<QString, Specialist> specs; specs.insert(spec.id, spec);
+    QMap<QString, Role> roles; roles.insert(r.id, r);
+    const QJsonObject out = TeamRenderer::render(team, specs, roles);
+
+    QCOMPARE(out.value(QStringLiteral("default_agent")).toString(),
+             QStringLiteral("build"));
+    QCOMPARE(out.value(QStringLiteral("defaultAgent")).toString(),
+             QStringLiteral("build"));
+}
+
+void TestTeamRenderer::defaultAgent_emptyOverrideYieldsNoKey()
+{
+    // D-11: empty override is treated as "no override" — the
+    // inferred default_agent (from primarySpecialistIds) wins. We
+    // assert that the empty override does NOT clobber an inferred
+    // name AND that the v2 mirror is absent (no auto-paired mirror
+    // when the inferred path also yields nothing).
+    Role r;
+    r.id = QStringLiteral("primary-agent");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("Primary");
+    r.systemPrompt = QJsonValue(QStringLiteral("stub"));
+
+    Specialist spec;
+    spec.id = QStringLiteral("ps");
+    spec.roleId = r.id;
+    spec.modelId = QStringLiteral("anthropic/claude-sonnet-4-6");
+
+    Team team;
+    team.id = QStringLiteral("t1");
+    team.primarySpecialistIds.append(spec.id);
+    QJsonObject m;
+    m.insert(QStringLiteral("default_agent"), QString());
+    team.metadata = m;
+    Team::SpecialistBinding b;
+    b.roleId = r.id;
+    b.specialistId = spec.id;
+    team.specialists.append(b);
+
+    QMap<QString, Specialist> specs; specs.insert(spec.id, spec);
+    QMap<QString, Role> roles; roles.insert(r.id, r);
+    const QJsonObject out = TeamRenderer::render(team, specs, roles);
+    // Inferred default wins (the binding roleId).
+    QCOMPARE(out.value(QStringLiteral("default_agent")).toString(),
+             QStringLiteral("primary-agent"));
+}
+
+void TestTeamRenderer::defaultAgent_overridesInferredDefault()
+{
+    // The override ALWAYS wins over the inferred default_agent. This
+    // lets stock-fidelity Teed carry `metadata.default_agent =
+    // "build"` from the seed even when the team's bindings include
+    // a non-`build` primary on top.
+    Role r1;
+    r1.id = QStringLiteral("a-one");
+    r1.mode = Role::Mode::Primary;
+    r1.name = QStringLiteral("AOne");
+    r1.systemPrompt = QJsonValue(QStringLiteral("s"));
+    Role r2;
+    r2.id = QStringLiteral("a-two");
+    r2.mode = Role::Mode::Primary;
+    r2.name = QStringLiteral("ATwo");
+    r2.systemPrompt = QJsonValue(QStringLiteral("s"));
+
+    Specialist s1; s1.id = QStringLiteral("x1"); s1.roleId = r1.id;
+    s1.modelId = QStringLiteral("anthropic/claude-sonnet-4-6");
+    Specialist s2; s2.id = QStringLiteral("x2"); s2.roleId = r2.id;
+    s2.modelId = QStringLiteral("anthropic/claude-sonnet-4-6");
+
+    Team team;
+    team.id = QStringLiteral("t1");
+    team.primarySpecialistIds.append(s1.id);
+    QJsonObject m;
+    m.insert(QStringLiteral("default_agent"), QStringLiteral("a-two"));
+    team.metadata = m;
+    Team::SpecialistBinding b1; b1.roleId = r1.id; b1.specialistId = s1.id;
+    team.specialists.append(b1);
+    Team::SpecialistBinding b2; b2.roleId = r2.id; b2.specialistId = s2.id;
+    team.specialists.append(b2);
+
+    QMap<QString, Specialist> specs; specs.insert(s1.id, s1); specs.insert(s2.id, s2);
+    QMap<QString, Role> roles; roles.insert(r1.id, r1); roles.insert(r2.id, r2);
+    const QJsonObject out = TeamRenderer::render(team, specs, roles);
+    QCOMPARE(out.value(QStringLiteral("default_agent")).toString(),
+             QStringLiteral("a-two"));
+    QCOMPARE(out.value(QStringLiteral("defaultAgent")).toString(),
+             QStringLiteral("a-two"));
+}
+
+void TestTeamRenderer::metadataLiftsDefaultAgentViaSubKey()
+{
+    // Phase D2-4 / §5.9: a Team with `metadata.defaultAgent` (camelCase
+    // sub-key) ALSO produces the same top-level + v2 mirror lift. Both
+    // snake and camel sub-keys are accepted; if both are set, the
+    // camel one runs last and wins (last-write-wins across Teams,
+    // same merge semantics as the C6-1 *Entries keys).
+    Role r;
+    r.id = QStringLiteral("build");
+    r.mode = Role::Mode::Primary;
+    r.name = QStringLiteral("Build");
+    r.systemPrompt = QJsonValue(QStringLiteral("s"));
+
+    Specialist spec;
+    spec.id = QStringLiteral("s");
+    spec.roleId = r.id;
+    spec.modelId = QStringLiteral("anthropic/claude-sonnet-4-6");
+
+    Team team;
+    team.id = QStringLiteral("t1");
+    QJsonObject m;
+    m.insert(QStringLiteral("defaultAgent"), QStringLiteral("build"));
+    team.metadata = m;
+    Team::SpecialistBinding b;
+    b.roleId = r.id;
+    b.specialistId = spec.id;
+    team.specialists.append(b);
+    QMap<QString, Specialist> specs; specs.insert(spec.id, spec);
+    QMap<QString, Role> roles; roles.insert(r.id, r);
+    const QJsonObject out = TeamRenderer::render(team, specs, roles);
+    QCOMPARE(out.value(QStringLiteral("default_agent")).toString(),
+             QStringLiteral("build"));
 }
 
 QTEST_MAIN(TestTeamRenderer)

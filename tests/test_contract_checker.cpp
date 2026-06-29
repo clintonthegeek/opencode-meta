@@ -14,13 +14,17 @@ class TestContractChecker : public QObject
 {
     Q_OBJECT
 
-private slots:
+ private slots:
     void validMinimalConfig_passes();
     void missingSchema_failsWithUsefulMessage();
     void unknownTopLevelKey_fails();
     void illegalPermissionKey_fails();
     void illegalAgentField_fails();
     void malformedModelString_fails();
+
+    // Phase D2-3 / D-11: top-level default_agent type-check.
+    void acceptsDefaultAgent_topLevelString();
+    void rejectsDefaultAgent_nonString();
 };
 
 namespace {
@@ -154,6 +158,36 @@ void TestContractChecker::malformedModelString_fails()
     QVERIFY2(err.contains(QStringLiteral("model")) || err.contains(QStringLiteral("provider/model")),
              qPrintable(QStringLiteral(
                  "error message should mention the model field; got: %1").arg(err)));
+}
+
+void TestContractChecker::acceptsDefaultAgent_topLevelString()
+{
+    // Phase D2-3 / D-11: a top-level `default_agent` carrying a
+    // string scalar (e.g. "build") is accepted. This matches the
+    // v1 schema at `core/src/v1/config/config.ts:80` and the
+    // runtime reject path at `agent.ts:330-340` (which throws only
+    // when the referenced agent is subagent / hidden / missing).
+    QJsonObject cfg = minimalValidConfig();
+    cfg.insert(QStringLiteral("default_agent"), QStringLiteral("build"));
+    QString err;
+    QVERIFY2(ContractChecker::validate(cfg, &err),
+             qPrintable(QStringLiteral("validation failed: %1").arg(err)));
+}
+
+void TestContractChecker::rejectsDefaultAgent_nonString()
+{
+    // Phase D2-3 / D-11: a non-string `default_agent` (array, number,
+    // object, etc.) is rejected with a single clear warning so the
+    // source Role can be fixed.
+    QJsonObject cfg = minimalValidConfig();
+    QJsonArray wrong;
+    wrong.append(QStringLiteral("build"));
+    wrong.append(QStringLiteral("plan"));
+    cfg.insert(QStringLiteral("default_agent"), wrong);
+    QString err;
+    QVERIFY(!ContractChecker::validate(cfg, &err));
+    QVERIFY2(err.contains(QStringLiteral("default_agent")),
+             qPrintable(QStringLiteral("error message should mention default_agent; got: %1").arg(err)));
 }
 
 QTEST_MAIN(TestContractChecker)
