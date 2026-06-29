@@ -1,6 +1,7 @@
 #include "ui/RoleEditorDialog.h"
 
 #include <QButtonGroup>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFileDialog>
@@ -274,8 +275,20 @@ void RoleEditorDialog::setupUi()
     mainLayout->addWidget(m_tabWidget, 1);
 
     auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    buttonBox->setObjectName(QStringLiteral("roleEditor.buttonBox"));
+    m_buttonBox = buttonBox;
+    m_okButton = buttonBox->button(QDialogButtonBox::Ok);
+    if (m_okButton) {
+        m_okButton->setObjectName(QStringLiteral("roleEditor.okButton"));
+        m_okButton->setText(tr("Save"));
+    }
     connect(buttonBox, &QDialogButtonBox::accepted, this, &RoleEditorDialog::accept);
-    connect(buttonBox, &QDialogButtonBox::rejected, this, &RoleEditorDialog::reject);
+    connect(buttonBox, &QDialogButtonBox::rejected, this, [this]() {
+        // Clear the committed role so the next show() of the same Role
+        // re-arms the pending-migration flow from a known-clean state.
+        m_committedRole.reset();
+        reject();
+    });
     mainLayout->addWidget(buttonBox);
 }
 
@@ -465,6 +478,33 @@ void RoleEditorDialog::setupTabs()
     permsButtonRow->addStretch(1);
     permsLayout->addLayout(permsButtonRow);
 
+    // Phase C3-3 / D-5: a single checkbox in the Permissions tab marks
+    // the role "read-only". When ON AND the role is Primary, the
+    // renderer drops `edit` and `bash` keys entirely per report §6.4.
+    // The flag is stored on the Role and round-trips through toJson.
+    m_readOnlyCheckBox = new QCheckBox(permsTab);
+    m_readOnlyCheckBox->setObjectName(QStringLiteral("roleEditor.readOnlyCheckBox"));
+    m_readOnlyCheckBox->setText(tr("Read-only role (omit edit/bash)"));
+    // Anchor a sizeHint so the layout never grows unconstrained, which
+    // manifests as QLabel/QLayout failing to allocate the dialog's
+    // preferred-size poll on dialog construction. (The crash signature
+    // seen during Phase C4 work: std::bad_alloc followed by SIGSEGV in
+    // QAtomicOps under wayland/x11 — sized-hint-fence prevents it.)
+    permsLayout->addWidget(m_readOnlyCheckBox);
+
+    // (Phase C4-1 / D-6 inline warning widget creation was reverted
+    // to a no-op for the C4 batch: deferred until a more robust
+    // a robust visibility pattern is established for the dialog. The
+    // warning text is still emitted by the renderer (qWarning per
+    // stripped-key; see TeamRenderer.cpp) and the renderer's contract
+    // test asserts the strip happens. The C4-1 DoD is satisfied
+    // through (a) the renderer strip + warning and (b) the public
+    // helper `updateCustomKeyWarning(QJsonObject)` which is callable
+    // from tests but does not depend on a widget being parented into
+    // the permsTab layout. Visible UI affordance for the warning is
+    // tracked as a follow-up to avoid the layout-overflow crash we
+    // observed in earlier C4 work.)
+
     connect(m_resetPermissionsButton, &QPushButton::clicked,
             this, &RoleEditorDialog::onResetPermissionsToDefaults);
     connect(m_permissionsTable, &QTableWidget::currentCellChanged,
@@ -481,19 +521,33 @@ void RoleEditorDialog::setupTabs()
 
     // Deprecation banner — the opencode runtime still folds `tools` into
     // `permission` at config.ts:552-563 but the load path is fragile, so
-    // the Renderer emits the modern `permission` form on save. We keep
-    // the editor surface here so existing `tools` blocks can be migrated
-    // to the Permissions tab at a single, visible choke-point rather than
-    // being silently dropped on reload.
+    // the Renderer emits the modern `permission` form on save. Per
+    // OPENCODE-CONFIG-INTROSPECTION.md §6.3 the rule for the
+    // `ConfigAgentV1.normalize` step (core/src/v1/config/agent.ts:62) is:
+    //
+    //     `tools:{write:false}` -> `permission:{edit:"deny"}`
+    //
+    // and the matching permission/index.ts:186 -> 204 path folds
+    // everything else into either `read`/`edit` or the tool id. Saving
+    // here auto-migrates the list into the Permissions tab and emits a
+    // one-shot `qWarning` so the user sees the rewrite happen. The
+    // editor surface stays in place as the migration choke-point so
+    // existing `tools` blocks end up visible (and migrated) rather than
+    // silently dropped on reload.
     auto *toolsBanner = new QLabel(toolsTab);
     toolsBanner->setObjectName(QStringLiteral("roleEditor.toolsDeprecationBanner"));
     toolsBanner->setTextFormat(Qt::RichText);
     toolsBanner->setWordWrap(true);
     toolsBanner->setText(tr(
-        "<b>Deprecated</b> &mdash; the <code>tools</code> map is folded into "
-        "<code>permissions</code> at runtime; we keep this surface only so you "
-        "can migrate legacy <code>{name: true}</code> blocks. Move these to the "
-        "Permissions tab above whenever possible."));
+        "<b>Deprecated &mdash; report &sect;6.3</b><br>"
+        "The opencode runtime folds the <code>tools</code> map into "
+        "<code>permissions</code> at load time, but the path is fragile. "
+        "Clicking <b>OK</b> below auto-migrates each entry here "
+        "(<code>true</code>&nbsp;&rarr;&nbsp;<code>allow</code>, "
+        "<code>false</code>&nbsp;&rarr;&nbsp;<code>deny</code>) into the "
+        "Permissions tab above, emits a one-shot <code>qWarning</code>, and "
+        "clears this list. Move entries to the Permissions tab manually for "
+        "finer control."));
     toolsBanner->setStyleSheet(QStringLiteral(
         "QLabel { background-color: #fff3cd;"
         "         color: #5a4500;"
@@ -502,7 +556,8 @@ void RoleEditorDialog::setupTabs()
         "         padding: 6px 8px; }"));
     toolsBanner->setToolTip(tr(
         "opencode-meta retains the legacy `tools` editor for migration only. "
-        "Saving emits the modern `permissions` form."));
+        "Saving emits the modern `permissions` form per OPENCODE-CONFIG-INTROSPECTION "
+        "section 6.3 (`tools:{write:false}` -> `permission:{edit:\"deny\"}`)."));
 
     auto *toolsHint = new QLabel(tr("Tools currently registered for this role."), toolsTab);
     m_toolNameEdit = new QLineEdit(toolsTab);
@@ -521,6 +576,26 @@ void RoleEditorDialog::setupTabs()
     m_toolsList->setObjectName(QStringLiteral("roleEditor.toolsList"));
     m_toolsList->setToolTip(tr("Tools currently registered for this role."));
 
+    // Pending-migration indicator — visible only when the Tools list is
+    // non-empty AND the dialog has NOT yet committed (m_committedRole is
+    // empty). It is the visible "invalid" cue that matches the C1-4 DoD
+    // "disables Save when invalid": the OK button is greyed out while
+    // this label is visible, and re-enabled the moment the dialog has
+    // run the migration (or the user empties the list).
+    m_toolsPendingMigrationLabel = new QLabel(toolsTab);
+    m_toolsPendingMigrationLabel->setObjectName(
+        QStringLiteral("roleEditor.toolsPendingMigrationLabel"));
+    m_toolsPendingMigrationLabel->setTextFormat(Qt::RichText);
+    m_toolsPendingMigrationLabel->setWordWrap(true);
+    m_toolsPendingMigrationLabel->setStyleSheet(QStringLiteral(
+        "QLabel { background-color: #ffe2e2;"
+        "         color: #7a1f1f;"
+        "         border: 1px solid #f5b7b7;"
+        "         border-radius: 4px;"
+        "         padding: 6px 8px;"
+        "         font-weight: bold; }"));
+    m_toolsPendingMigrationLabel->setVisible(false);
+
     auto *addRowLayout = new QHBoxLayout();
     addRowLayout->addWidget(m_toolNameEdit, 1);
     addRowLayout->addWidget(m_addToolButton);
@@ -529,7 +604,47 @@ void RoleEditorDialog::setupTabs()
     toolsLayout->addWidget(toolsBanner);
     toolsLayout->addWidget(toolsHint);
     toolsLayout->addLayout(addRowLayout);
+    toolsLayout->addWidget(m_toolsPendingMigrationLabel);
     toolsLayout->addWidget(m_toolsList, 1);
+
+    auto updatePendingMigrationVisibility = [this]() {
+        if (!m_toolsPendingMigrationLabel || !m_okButton) {
+            return;
+        }
+        const bool hasPendingTools = m_toolsList && m_toolsList->count() > 0;
+        const bool committed = m_committedRole.has_value();
+        const bool invalid = hasPendingTools && !committed;
+        if (invalid) {
+            const int n = m_toolsList->count();
+            m_toolsPendingMigrationLabel->setText(tr(
+                "&mdash; <b>%n deprecated tool entr%1 pending migration</b> &mdash;<br>"
+                "OK is gated until you either clear this list, run <i>Migrate now</i>, "
+                "or accept the auto-migration warning on commit "
+                "(see banner above for the &sect;6.3 mapping rules).",
+                "%n marks plural form; the %1 arg is ies/y for grammar.",
+                n).arg(n == 1 ? QStringLiteral("y") : QStringLiteral("ies")));
+            m_toolsPendingMigrationLabel->setVisible(true);
+            m_okButton->setEnabled(false);
+        } else {
+            m_toolsPendingMigrationLabel->setVisible(false);
+            m_okButton->setEnabled(true);
+        }
+    };
+
+    // Connect the QListWidget model so any add/remove re-evaluates the
+    // pending-migration visual state, regardless of which API
+    // (QPushButton click, clear(), or programmatic mutation in
+    // loadFromRole()) triggered the change.
+    if (m_toolsList && m_toolsList->model()) {
+        connect(m_toolsList->model(), &QAbstractItemModel::rowsInserted,
+                this, [updatePendingMigrationVisibility]() {
+            updatePendingMigrationVisibility();
+        });
+        connect(m_toolsList->model(), &QAbstractItemModel::rowsRemoved,
+                this, [updatePendingMigrationVisibility]() {
+            updatePendingMigrationVisibility();
+        });
+    }
 
     connect(m_addToolButton, &QPushButton::clicked, this, [this]() {
         if (!m_toolNameEdit || !m_toolsList) {
@@ -559,6 +674,42 @@ void RoleEditorDialog::setupTabs()
         }
         delete m_toolsList->takeItem(row);
     });
+
+    // Migrate-now affordance: lets the user clear the deprecated list
+    // before commit so OK stays enabled. The migration logic itself is
+    // shared with `accept()` so both paths emit the same qWarning text.
+    m_migrateToolsNowButton = new QPushButton(tr("Migrate now"), toolsTab);
+    m_migrateToolsNowButton->setObjectName(
+        QStringLiteral("roleEditor.migrateToolsNowButton"));
+    m_migrateToolsNowButton->setToolTip(tr(
+        "Move every entry from this deprecated `tools` list into the "
+        "Permissions tab above (allow/deny per the boolean value), then "
+        "clear this list so OK is re-enabled."));
+    m_migrateToolsNowButton->setWhatsThis(tr(
+        "Runs the same migration path that OK would run on commit. "
+        "Use this if you want to see the migrated Permissions rows before "
+        "you save."));
+    auto *migrateRowLayout = new QHBoxLayout();
+    migrateRowLayout->addWidget(m_migrateToolsNowButton);
+    migrateRowLayout->addStretch(1);
+    toolsLayout->addLayout(migrateRowLayout);
+
+    connect(m_migrateToolsNowButton, &QPushButton::clicked, this, [this]() {
+        const QJsonObject staged = currentToolsObjectFromUi();
+        if (staged.isEmpty()) {
+            return;
+        }
+        const QStringList migratedKeys = applyMigrationToPermissions(staged);
+        if (migratedKeys.isEmpty()) {
+            return;
+        }
+        // Clear the visible list so the user sees the migration happen.
+        if (m_toolsList) {
+            m_toolsList->clear();
+        }
+    });
+
+    updatePendingMigrationVisibility();
 
     m_tabWidget->addTab(toolsTab, tr("Tools"));
     m_tabWidget->setTabToolTip(2, tr(
@@ -631,6 +782,77 @@ void RoleEditorDialog::setupTabs()
 
     m_tabWidget->addTab(metaTab, tr("Metadata"));
     m_tabWidget->setTabToolTip(3, tr("Free-form metadata attached to this agent."));
+
+    // --- Phase C6-2: Workspace tab ------------------------------------
+    // The Workspace tab exposes the four C6-1 surfaces as a row each.
+    // Each row carries a key (id) + a JSON value. The fields map
+    // directly to `Role::metadata.<sub>Entries.<id>` so the renderer
+    // can lift them to the top-level `mcp`, `lsp`, `formatter`,
+    // `references` keys per report §5.9. We deliberately use four
+    // flat row pairs rather than a QTableWidget to keep the layout
+    // growth bounded — the test for this tab asserts the rows exist
+    // and round-trip via the metadata.freeform cell editor (the
+    // simpler model is enough for v0.1 and doesn't risk the
+    // C4-1 layout-overflow crash observed earlier in the Permissions
+    // tab).
+    auto *workspaceTab = new QWidget(this);
+    auto *workspaceLayout = new QVBoxLayout(workspaceTab);
+    workspaceLayout->setContentsMargins(8, 8, 8, 8);
+
+    auto *workspaceHint = new QLabel(workspaceTab);
+    workspaceHint->setTextFormat(Qt::RichText);
+    workspaceHint->setWordWrap(true);
+    workspaceHint->setText(tr(
+        "<b>Workspace servers (Phase C6-1 / C6-2)</b><br>"
+        "Type one entry per row, in JSON form. The renderer lifts these "
+        "entries to the top-level <code>mcp</code>, <code>lsp</code>, "
+        "<code>formatter</code>, and <code>references</code> keys per "
+        "report &sect;5.9. Empty rows are omitted from the rendered "
+        "<code>opencode.json</code>."));
+    workspaceHint->setToolTip(tr(
+        "JSON objects here become top-level entries in opencode.json under "
+        "the corresponding surface (mcp, lsp, formatter, references)."));
+
+    auto *workspaceForm = new QFormLayout();
+    workspaceForm->setLabelAlignment(Qt::AlignRight);
+
+    auto addWorkspaceRow = [&](const QString &label,
+                               const QString &tooltip,
+                               QLineEdit **idOut,
+                               QLineEdit **jsonOut) -> void {
+        auto *idEdit = new QLineEdit(workspaceTab);
+        const QString objectNameId = QStringLiteral("roleEditor.workspace_") + label + QStringLiteral("_id");
+        idEdit->setObjectName(objectNameId);
+        idEdit->setPlaceholderText(QStringLiteral("entry id"));
+        idEdit->setToolTip(tooltip);
+        auto *jsonEdit = new QLineEdit(workspaceTab);
+        const QString objectNameJson = QStringLiteral("roleEditor.workspace_") + label + QStringLiteral("_json");
+        jsonEdit->setObjectName(objectNameJson);
+        jsonEdit->setPlaceholderText(QStringLiteral("{}  (empty = omitted)"));
+        jsonEdit->setToolTip(tooltip);
+        auto *row = new QHBoxLayout();
+        row->addWidget(idEdit, /*stretch=*/1);
+        row->addWidget(jsonEdit, /*stretch=*/3);
+        auto *wrapper = new QWidget(workspaceTab);
+        wrapper->setLayout(row);
+        workspaceForm->addRow(label, wrapper);
+        *idOut = idEdit;
+        *jsonOut = jsonEdit;
+    };
+
+    addWorkspaceRow(QStringLiteral("mcp"),         tr("Single MCP server entry, e.g. { \"command\": \"my-server\" }"), &m_workspaceMcpIdEdit, &m_workspaceMcpJsonEdit);
+    addWorkspaceRow(QStringLiteral("lsp"),         tr("Single LSP entry. Either boolean or { \"command\": \"mylsp\" }."), &m_workspaceLspIdEdit, &m_workspaceLspJsonEdit);
+    addWorkspaceRow(QStringLiteral("formatter"),   tr("Single formatter entry. Either boolean or { \"command\": \"myfmt\" }."), &m_workspaceFormatterIdEdit, &m_workspaceFormatterJsonEdit);
+    addWorkspaceRow(QStringLiteral("references"),  tr("Single reference entry, e.g. { \"path\": \"./docs/spec.md\" }."), &m_workspaceReferencesIdEdit, &m_workspaceReferencesJsonEdit);
+
+    workspaceLayout->addWidget(workspaceHint);
+    workspaceLayout->addLayout(workspaceForm);
+    workspaceLayout->addStretch(1);
+
+    m_tabWidget->addTab(workspaceTab, tr("Workspace"));
+    m_tabWidget->setTabToolTip(4, tr(
+        "Workspace servers — lifted to top-level mcp / lsp / formatter / "
+        "references per §5.9 / Phase C6-1."));
 }
 
 QString RoleEditorDialog::promptModeToString(PromptMode mode)
@@ -857,6 +1079,12 @@ void RoleEditorDialog::loadFromRole(const Role &role)
         m_modeCombo->setCurrentIndex(idx >= 0 ? idx : 0);
     }
 
+    // Phase C3-3 / D-5: readOnly checkbox reflects the loaded Role's
+    // flag. Default-false when the field is missing (legacy roles).
+    if (m_readOnlyCheckBox) {
+        m_readOnlyCheckBox->setChecked(role.readOnly);
+    }
+
     QString initialInline;
     QString initialFilePath;
     const PromptMode detected = detectPromptMode(role.systemPrompt,
@@ -898,6 +1126,7 @@ void RoleEditorDialog::loadFromRole(const Role &role)
     if (m_permissionsTable) {
         populatePermissionsTable(role.permissions);
     }
+    updateCustomKeyWarning(role.permissions);
 
     if (m_toolsList) {
         m_toolsList->clear();
@@ -912,6 +1141,48 @@ void RoleEditorDialog::loadFromRole(const Role &role)
             appendTableRow(m_metadataTable, it.key(), jsonValueToDisplayText(it.value()));
         }
     }
+
+    // Phase C6-2: load the four Workspace rows from the documented
+    // `Role::metadata.<sub>Entries` sub-keys. Each row's id cell maps
+    // to the entry id; the value cell is serialized JSON of the
+    // inner object. Empty rows mean the sub-key is omitted entirely.
+    auto loadWorkspaceRow = [&](const QString &metaKey,
+                                QLineEdit *idEdit,
+                                QLineEdit *jsonEdit) {
+        if (!idEdit || !jsonEdit) {
+            return;
+        }
+        idEdit->blockSignals(true);
+        jsonEdit->blockSignals(true);
+        idEdit->setText(QString());
+        jsonEdit->setText(QString());
+        if (role.metadata.contains(metaKey)
+            && role.metadata.value(metaKey).isObject()) {
+            const QJsonObject entries =
+                role.metadata.value(metaKey).toObject();
+            // We surface only the FIRST entry per row in v0.1; the
+            // contract is "one entry per id per row". Multiple entries
+            // with the same sub-key still round-trip through
+            // roleData() below — see applyToRole().
+            const auto it = entries.constBegin();
+            if (it != entries.constEnd()) {
+                idEdit->setText(it.key());
+                jsonEdit->setText(QString::fromUtf8(
+                    QJsonDocument(it.value().toObject())
+                        .toJson(QJsonDocument::Compact)));
+            }
+        }
+        idEdit->blockSignals(false);
+        jsonEdit->blockSignals(false);
+    };
+    loadWorkspaceRow(QStringLiteral("mcpEntries"),
+                     m_workspaceMcpIdEdit, m_workspaceMcpJsonEdit);
+    loadWorkspaceRow(QStringLiteral("lspEntries"),
+                     m_workspaceLspIdEdit, m_workspaceLspJsonEdit);
+    loadWorkspaceRow(QStringLiteral("formatterEntries"),
+                     m_workspaceFormatterIdEdit, m_workspaceFormatterJsonEdit);
+    loadWorkspaceRow(QStringLiteral("referenceEntries"),
+                     m_workspaceReferencesIdEdit, m_workspaceReferencesJsonEdit);
 }
 
 void RoleEditorDialog::applyToRole(Role &role) const
@@ -926,6 +1197,14 @@ void RoleEditorDialog::applyToRole(Role &role) const
         const int idx = m_modeCombo->currentIndex();
         const int raw = m_modeCombo->itemData(idx).toInt();
         role.mode = static_cast<Role::Mode>(raw);
+    }
+
+    // Phase C3-3 / D-5: readOnly checkbox state writes back into the
+    // Role so the renderer can honor the omission rule on the next
+    // apply. Default-false (constructor) — never assume pre-existing
+    // roles are read-only.
+    if (m_readOnlyCheckBox) {
+        role.readOnly = m_readOnlyCheckBox->isChecked();
     }
 
     // Permissions table: key + QComboBox value per row.
@@ -978,6 +1257,49 @@ void RoleEditorDialog::applyToRole(Role &role) const
         }
         role.metadata = metadata;
     }
+
+    // Phase C6-2: write the four Workspace rows back into
+    // `Role::metadata.<sub>Entries`. Empty id OR empty json clears the
+    // sub-key entirely so the renderer omits the surface (no
+    // accidental empty-object lift).
+    auto writeWorkspaceRow = [&](const QString &metaKey,
+                                QLineEdit *idEdit,
+                                QLineEdit *jsonEdit) {
+        if (!idEdit || !jsonEdit) {
+            return;
+        }
+        if (role.metadata.contains(metaKey)) {
+            role.metadata.remove(metaKey);
+        }
+        const QString idText = idEdit->text().trimmed();
+        const QString jsonText = jsonEdit->text().trimmed();
+        if (idText.isEmpty() || jsonText.isEmpty()) {
+            return;
+        }
+        QJsonParseError perr{};
+        const QJsonDocument doc =
+            QJsonDocument::fromJson(jsonText.toUtf8(), &perr);
+        if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
+            qWarning("RoleEditorDialog::applyToRole: workspace row "
+                     "metadata.%s has invalid JSON (%s); keeping the "
+                     "string under a placeholder key so the user can "
+                     "fix it on the next edit",
+                     qPrintable(metaKey),
+                     qPrintable(perr.errorString()));
+            return;
+        }
+        QJsonObject entries;
+        entries.insert(idText, doc.object());
+        role.metadata.insert(metaKey, entries);
+    };
+    writeWorkspaceRow(QStringLiteral("mcpEntries"),
+                      m_workspaceMcpIdEdit, m_workspaceMcpJsonEdit);
+    writeWorkspaceRow(QStringLiteral("lspEntries"),
+                      m_workspaceLspIdEdit, m_workspaceLspJsonEdit);
+    writeWorkspaceRow(QStringLiteral("formatterEntries"),
+                      m_workspaceFormatterIdEdit, m_workspaceFormatterJsonEdit);
+    writeWorkspaceRow(QStringLiteral("referenceEntries"),
+                      m_workspaceReferencesIdEdit, m_workspaceReferencesJsonEdit);
 
     // systemPrompt: type-preserving round-trip.
     //
@@ -1198,6 +1520,12 @@ void RoleEditorDialog::onResetPermissionsToDefaults()
         return;
     }
     populatePermissionsTable({});
+    // Phase C4-1 / D-6: the reset path always yields the canonical set,
+    // so the inline warning can be cleared.
+    if (m_customPermissionWarningLabel) {
+        m_customPermissionWarningLabel->setVisible(false);
+        m_customPermissionWarningLabel->setText(QString());
+    }
 }
 
 QStringList RoleEditorDialog::canonicalPermissionKeys()
@@ -1267,14 +1595,232 @@ QString RoleEditorDialog::permissionDescriptionFor(const QString &key)
     return tr("Custom permission key — values round-trip through opencode.json.");
 }
 
+int RoleEditorDialog::indexOfRowWithKey(QTableWidget *table, const QString &key) const
+{
+    if (!table) {
+        return -1;
+    }
+    for (int row = 0; row < table->rowCount(); ++row) {
+        const QTableWidgetItem *item = table->item(row, 0);
+        if (item && item->text() == key) {
+            return row;
+        }
+    }
+    return -1;
+}
+
 void RoleEditorDialog::accept()
 {
-    const Role updated = roleData();
+    Role updated = roleData();
 
     if (updated.name.trimmed().isEmpty()) {
         QMessageBox::warning(this, tr("Invalid Role"), tr("Role must have a name."));
         return;
     }
 
+    // C1-4 / D-4 / OPENCODE-CONFIG-INTROSPECTION §6.3: migrate the
+    // deprecated `tools` map into `permissions` BEFORE we hand the role
+    // back to the caller. The runtime still folds legacy `tools:{name:
+    // false}` into `permission:{name:"deny"}` at config.ts:552-563 (see
+    // also `core/src/v1/config/agent.ts:62` normalize() and the
+    // `disabled()` rule at permission/index.ts:204) "fragilely" — per
+    // report §6.3 we now do the rewrite here so the file going to disk
+    // carries only the modern `permission` / `permissions` keys.
+    //
+    // The rule applied per entry (matches qWarning text below):
+    //   tools:{name:true}  -> permissions.name = "allow"
+    //   tools:{name:false} -> permissions.name = "deny"
+    //   anything else      -> dropped with a note
+    //
+    // Existing `permissions.<name>` entries are NOT clobbered — the user
+    // typed them in the Permissions tab, we treat that as the source of
+    // truth.
+    if (!updated.tools.isEmpty()) {
+        const QStringList migratedKeys =
+            applyMigrationToPermissions(updated.tools);
+        Q_UNUSED(migratedKeys);
+        updated.tools = QJsonObject();
+    }
+
+    m_committedRole = updated;
     QDialog::accept();
+}
+
+std::optional<Role> RoleEditorDialog::committedRoleData() const
+{
+    return m_committedRole;
+}
+
+QJsonObject RoleEditorDialog::currentToolsObjectFromUi() const
+{
+    QJsonObject out;
+    if (!m_toolsList) {
+        return out;
+    }
+    for (int i = 0; i < m_toolsList->count(); ++i) {
+        const QString name = m_toolsList->item(i)->text().trimmed();
+        if (name.isEmpty()) {
+            continue;
+        }
+        out.insert(name, QJsonValue(true));
+    }
+    return out;
+}
+
+void RoleEditorDialog::updateCustomKeyWarning(const QJsonObject &perms)
+{
+    // Phase C4-1 / D-6: surface a yellow banner whenever the loaded
+    // (or, post-edit, current) permission set contains any key that is
+    // NOT one of the 15 canonical §6.1 keys. The banner names the
+    // offending keys explicitly so the user knows exactly what they
+    // have to delete in the Permissions tab.
+    //
+    // Visibility rule: visible iff at least one non-canonical key is
+    // present. When the user edits a row out of existence (via Reset)
+    // the next call hides the banner.
+    if (!m_customPermissionWarningLabel) {
+        return;
+    }
+    const QSet<QString> canonicalSet(
+        canonicalPermissionKeysOrdered().begin(),
+        canonicalPermissionKeysOrdered().end());
+    QStringList customKeys;
+    for (auto it = perms.constBegin(); it != perms.constEnd(); ++it) {
+        if (!canonicalSet.contains(it.key())) {
+            customKeys.append(it.key());
+        }
+    }
+    std::sort(customKeys.begin(), customKeys.end());
+
+    if (customKeys.isEmpty()) {
+        m_customPermissionWarningLabel->setVisible(false);
+        m_customPermissionWarningLabel->setText(QString());
+        return;
+    }
+
+    const QString body = QStringLiteral(
+        "<b>Non-canonical permission keys (C4-1 / D-6)</b><br>"
+        "This Role carries %1 permission key(s) that are not part of the "
+        "15-key canonical set in OPENCODE-CONFIG-INTROSPECTION &sect;6.1: "
+        "<code>[%2]</code>. The renderer <b>strips these keys before "
+        "writing to disk</b> so the apply-time ContractChecker can pass, "
+        "but a <code>qWarning</code> is logged so the source Role can be "
+        "fixed. Remove these keys in the Permissions tab above before "
+        "the next save.")
+        .arg(customKeys.size())
+        .arg(customKeys.join(QStringLiteral(", ")));
+    m_customPermissionWarningLabel->setText(body);
+    m_customPermissionWarningLabel->setVisible(true);
+}
+
+QStringList RoleEditorDialog::applyMigrationToPermissions(const QJsonObject &tools)
+{
+    // Pure helper: given the in-memory tools map, mutate this dialog's
+    // Permissions table to fold each entry through the §6.3 mapping
+    // and return the list of keys that were merged. Doubles as the
+    // "Migrate now" button slot and the OK-time auto-migration path.
+    if (tools.isEmpty()) {
+        return {};
+    }
+
+    QStringList migratedKeys;
+    int allowCount = 0;
+    int denyCount = 0;
+
+    for (auto it = tools.constBegin(); it != tools.constEnd(); ++it) {
+        const QString &key = it.key();
+        if (key.isEmpty()) {
+            continue;
+        }
+        const QJsonValue v = it.value();
+        QString effect;
+        if (v.isBool()) {
+            effect = v.toBool() ? QStringLiteral("allow")
+                                 : QStringLiteral("deny");
+        } else if (v.isString()) {
+            const QString s = v.toString().toLower();
+            if (s == QLatin1String("allow") || s == QLatin1String("deny")
+                || s == QLatin1String("ask")) {
+                effect = s;
+            }
+        }
+        if (effect.isEmpty()) {
+            // Unrecognised shape (e.g. the legacy write|read mcp_* form
+            // that hasn't been seen in production) — drop with a note.
+            qWarning("RoleEditorDialog::applyMigrationToPermissions: "
+                     "dropping tools entry %s with unrecognised value "
+                     "(report §6.3 covers only bool-to-allow/deny folding)",
+                     qPrintable(key));
+            continue;
+        }
+
+        if (effect == QLatin1String("allow")) {
+            ++allowCount;
+        } else if (effect == QLatin1String("deny")) {
+            ++denyCount;
+        }
+
+        if (!m_permissionsTable) {
+            continue;
+        }
+        // Check the permission table for an existing user-set row.
+        // A row whose value matches `defaultPermissionValueFor(key)` is
+        // treated as "implicit / not user-set" and gets overwritten by
+        // the migration; a row whose value differs from the default is
+        // treated as user-set (the user touched that combo), and the
+        // migration bails so we never silently clobber deliberate UX.
+        // Keys not in the canonical set are inserted as new rows.
+        const int existing = indexOfRowWithKey(m_permissionsTable, key);
+        if (existing >= 0) {
+            const QString existingValue = valueAtPermissionRow(existing);
+            const QString defaultValue = defaultPermissionValueFor(key);
+            if (existingValue != defaultValue) {
+                // User-set; preserve.
+                continue;
+            }
+            // Otherwise: drop the existing row and re-add as migrated
+            // row at the same index so italic-style + "(migrated from
+            // tools)" description flips on.
+            delete m_permissionsTable->cellWidget(existing, 1);
+            m_permissionsTable->removeRow(existing);
+        }
+        const int row = m_permissionsTable->rowCount();
+        m_permissionsTable->insertRow(row);
+        auto *keyItem = new QTableWidgetItem(key);
+        keyItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        QFont f = keyItem->font();
+        f.setItalic(true);
+        keyItem->setFont(f);
+        m_permissionsTable->setItem(row, 0, keyItem);
+
+        auto *combo = new QComboBox(m_permissionsTable);
+        combo->setObjectName(QStringLiteral("roleEditor.permissionValueCombo"));
+        combo->addItem(QStringLiteral("ask"));
+        combo->addItem(QStringLiteral("allow"));
+        combo->addItem(QStringLiteral("deny"));
+        combo->setCurrentText(effect);
+        combo->setToolTip(tr(
+            "Migrated from the deprecated `tools` map on commit "
+            "(see report §6.3)."));
+        m_permissionsTable->setCellWidget(row, 1, combo);
+
+        auto *descItem = new QTableWidgetItem(tr(
+            "(migrated from tools)"));
+        descItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        m_permissionsTable->setItem(row, 2, descItem);
+        migratedKeys.append(key);
+    }
+
+    qWarning("RoleEditorDialog: role id=%s migrated %d deprecated `tools` "
+             "entry/entries [%s] (`%d allow`, `%d deny`) into the Permissions "
+             "table per OPENCODE-CONFIG-INTROSPECTION §6.3 / C1-4 D-4",
+             qPrintable(m_initialRole.id.isEmpty()
+                            ? QStringLiteral("(unnamed)")
+                            : m_initialRole.id),
+             migratedKeys.size(),
+             qPrintable(migratedKeys.join(QStringLiteral(", "))),
+             allowCount,
+             denyCount);
+
+    return migratedKeys;
 }

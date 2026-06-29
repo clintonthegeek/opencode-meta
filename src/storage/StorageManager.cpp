@@ -1,15 +1,20 @@
 #include "storage/StorageManager.h"
 
+#include <QCoreApplication>
+#include <QDateTime>
 #include <QDebug>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSet>
-#include <QDateTime>
+#include <QSettings>
 
 #include "apply_helpers.h"
+#include "generation/AgentMarkdown.h"
+#include "generation/ProviderCatalog.h"
 #include "generation/TeamRenderer.h"
 
 StorageManager::StorageManager(const QString &rootOverride)
@@ -19,13 +24,50 @@ StorageManager::StorageManager(const QString &rootOverride)
 
 QString StorageManager::rootPath() const
 {
-    // All data is stored under ~/.opencode-meta/ by default. Tests may inject
-    // a different root via m_rootOverride to avoid touching real user data.
+    // 1. Tests / explicit callers: constructor-injected override always wins
+    //    so unit tests stay isolated from any user-level preference.
     if (!m_rootOverride.isEmpty()) {
         return m_rootOverride;
     }
 
+    // 2. Optional override from Preferences (QSettings key
+    //    "settings/storage_root_path"). Falls back silently when missing,
+    //    empty, malformed, or pointing at a non-existent directory so a
+    //    bad value never breaks seeding or first-run behavior.
+    const QString prefRoot = readPreferencesOverride();
+    if (!prefRoot.isEmpty()) {
+        return prefRoot;
+    }
+
+    // 3. Default location under the user's HOME directory.
     return QDir::homePath() + QStringLiteral("/.opencode-meta");
+}
+
+QString StorageManager::readPreferencesOverride()
+{
+    // QSettings() with no args requires a QCoreApplication (e.g. tests that
+    // never construct one). Without this guard we would crash instead of
+    // gracefully falling back to the default root.
+    if (QCoreApplication::instance() == nullptr) {
+        return QString();
+    }
+
+    const QSettings settings;
+    const QString raw = settings
+                            .value(QStringLiteral("settings/storage_root_path"))
+                            .toString()
+                            .trimmed();
+    if (raw.isEmpty()) {
+        return QString();
+    }
+
+    const QString cleaned = QDir::cleanPath(raw);
+    if (!QDir(cleaned).exists()) {
+        // Silent fallback: the override is not a usable directory.
+        return QString();
+    }
+
+    return cleaned;
 }
 
 void StorageManager::ensureRoot() const
@@ -725,9 +767,41 @@ bool StorageManager::applyTeamToProject(const QString &projectPath,
     }
 
     const QString configPath = projectDir.filePath(QStringLiteral("opencode.json"));
-    const ApplyResult applyResult = applyConfigWithBackup(configPath, config);
+    // C0-1: validate-then-write via apply_helpers::commit (the
+    // pre-write contract gate per report §12.3).
+    // C0-2 / D-2: also thread the process-wide ProviderCatalog through
+    // production apply so every emitted model string is checked against
+    // the live catalog. When the singleton fails to load (no
+    // `<Global.Path.cache>/models.json` on disk, unparseable cache,
+    // etc.), apply_helpers::commit REFUSES to write the file and
+    // surfaces a clear "provider catalog not loaded" error in
+    // `applyResult.errorString`. There is no silent fallback to the
+    // structural §8.3 check on the production path per D-2 — "files
+    // that nobody can run are useless to users".
+    //
+    // C2-2: refresh-on-stale gate. We try `ensureReadyForApply(60)` once
+    // before handing the catalog to `commit()`. If the cache is
+    // already fresh the helper is a no-op (Phase C2-1). If it is stale
+    // we shell out to `opencode models --refresh` and reload. A failed
+    // refresh degrades to whatever is already on disk; the helper
+    // surfaces the truth via `applyResult` so the user sees the real
+    // diagnostic ("provider catalog not loaded" / "model not in live
+    // catalog") rather than a phantom structural-pass.
+    ProviderCatalog &catalog = ProviderCatalog::instance();
+    if (!catalog.ensureReadyForApply(/*maxAgeMinutes=*/60)) {
+        // Even if stale-cache was the cause, the surface error has to
+        // come from `commit()` so the user always sees the same
+        // "provider catalog not loaded" wording (D-2 + apply_helpers).
+        // The helper log above already noted the refresh path.
+        qDebug() << "StorageManager::applyTeamToProject: ensureReadyForApply "
+                    "returned false; deferring error to commit() for unified "
+                    "user-facing wording";
+    }
+    const ApplyResult applyResult = commit(configPath,
+                                           config,
+                                           &catalog);
     if (!applyResult.success) {
-        qDebug() << "StorageManager::applyTeamToProject: applyConfigWithBackup failed" << applyResult.errorString;
+        qDebug() << "StorageManager::applyTeamToProject: commit failed" << applyResult.errorString;
         return false;
     }
 
@@ -775,6 +849,51 @@ bool StorageManager::applyTeamToProject(const QString &projectPath,
 
     if (!saveProjects(projects)) {
         qDebug() << "StorageManager::applyTeamToProject: failed to save projects.json";
+    }
+
+    // Phase C5-2 / D-8: optional agent-side `.md` emission. Default
+    // OFF (the user has not toggled "Also write agent `.md` files" in
+    // the Settings dialog). When the toggle is on we drop a
+    // `<specialistId>.md` next to `opencode.json` so a future flag
+    // flip can pick up the agent bodies without revisiting the apply
+    // path. The `.md` is a sidecar — it is NOT loaded by the opencode
+    // runtime and never affects `opencode debug config`. Failures are
+    // logged but do NOT invalidate the JSON apply (the `.md` emission
+    // is best-effort).
+    if (QCoreApplication::instance() != nullptr
+        && QSettings().value(
+               QStringLiteral("settings/write_agent_markdown"),
+               QVariant(false)).toBool()) {
+        QDir specDir(projectPath);
+        const QString mdDirName = QStringLiteral(".opencode/agent");
+        if (!specDir.exists(mdDirName)) {
+            specDir.mkpath(mdDirName);
+        }
+        for (auto it = specialists.constBegin(); it != specialists.constEnd(); ++it) {
+            const Specialist &s = it.value();
+            const QMap<QString, Role>::const_iterator roleIt =
+                roles.constFind(s.roleId);
+            if (roleIt == roles.constEnd()) {
+                continue;
+            }
+            const QString mdPath =
+                QDir(projectPath)
+                    .filePath(mdDirName
+                              + QStringLiteral("/")
+                              + (s.id.isEmpty() ? QStringLiteral("agent")
+                                                 : s.id)
+                              + QStringLiteral(".md"));
+            QFile mdFile(mdPath);
+            if (!mdFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                qDebug() << "StorageManager::applyTeamToProject: "
+                            "could not open" << mdPath << "for agent .md write";
+                continue;
+            }
+            const QString body =
+                AgentMarkdown::render(s, roleIt.value());
+            mdFile.write(body.toUtf8());
+            mdFile.close();
+        }
     }
 
     return true;

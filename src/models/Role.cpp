@@ -14,6 +14,12 @@ Role Role::fromJson(const QJsonObject &obj)
     const QString modeStr = obj.value(QStringLiteral("mode")).toString();
     role.mode = modeFromString(modeStr);
 
+    // Phase C3-1 / D-5: readOnly round-trips from JSON as a bare bool.
+    // Absent or non-bool values fall back to the default (false), so
+    // legacy Role files written before this field existed still load
+    // cleanly.
+    role.readOnly = obj.value(QStringLiteral("readOnly")).toBool(false);
+
     if (obj.contains(QStringLiteral("permissions")) && obj.value(QStringLiteral("permissions")).isObject()) {
         role.permissions = obj.value(QStringLiteral("permissions")).toObject();
     }
@@ -42,6 +48,12 @@ QJsonObject Role::toJson() const
     }
 
     obj.insert(QStringLiteral("mode"), modeToString(mode));
+
+    // Phase C3-1 / D-5: emit the flag as a bare bool so a downstream
+    // tool can read it without ceremony. Always emitted (true OR
+    // false); absence-vs-explicit-false isn't useful here because we
+    // have no legacy schema to coexist with.
+    obj.insert(QStringLiteral("readOnly"), readOnly);
 
     if (!permissions.isEmpty()) {
         obj.insert(QStringLiteral("permissions"), permissions);

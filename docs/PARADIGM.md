@@ -249,6 +249,31 @@ These surface in the GUI but the renderer maps directly to the v1 union shapes:
 
 Report §12.2 item 8 governs the reference shape; we expose a toggle on the Roles (or Team) view that lifts `references` to the top level of the rendered `opencode.json`.
 
+**Metadata subkeys (Phase C6-1):** the source of truth for these
+surfaces inside `Role::metadata` is documented as four sub-keys:
+
+| `Role::metadata.<sub>` | Top-level lift | Shape |
+|---|---|---|
+| `mcpEntries` | `mcp` | `Record<id, ConfigMCPV1.Info \| {enabled}>` |
+| `lspEntries` | `lsp` | `boolean \| Record<id, Entry>` |
+| `formatterEntries` | `formatter` | `boolean \| Record<id, Entry>` |
+| `referenceEntries` | `references` | `ConfigReference.Info` |
+
+A Role whose `metadata` carries `{ "mcpEntries": { "myMcp": { ... } } }`
+lifts to a top-level `mcp.myMcp` entry on render. Multiple Roles
+with disjoint ids merge; collisions are last-write-wins per id. The
+renderer skips (with `qWarning`) any sub-value that is not a JSON
+object, leaving the ContractChecker to surface the load-time
+InvalidError if the merge result is structurally invalid.
+
+**Provider options (Phase C6-3):** `Role::metadata.providerOptions` is
+a `Record<id, ConfigProviderV1.Info>` that lifts to top-level
+`provider` AND the v2 `providers` 1:1 mirror (per D-1 — same shape
+in both universes since `packages/core/src/v1/config/provider.ts:76`
+and `packages/core/src/config/provider.ts:65` both use
+`Record<id, ...Entry>`). Multiple Roles merge by id; collisions are
+last-write-wins.
+
 ---
 
 ## 6. GUI / UX Implications (Detailed Specification)

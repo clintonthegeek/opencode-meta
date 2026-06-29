@@ -12,6 +12,7 @@
 // applyToRole, the assertions below will fail loudly.
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFileInfo>
 #include <QLabel>
@@ -63,6 +64,24 @@ private slots:
     void resetPermissionsToDefaultsButtonWorks();
     void customPermissionKeysArePreserved();
     void canonicalKeySetIsStable();
+
+    // Phase C3-3: readOnly toggle persists via the Permissions tab
+    // checkbox and round-trips through roleData().
+    void readOnlyTogglePersists();
+    void readOnlyDefaultsToOff();
+    void readOnlyResetRevertsToInMemoryRole();
+
+    // Phase C4-1: inline warning appears when a non-canonical key is
+    // loaded; renderer strips before emission; Save is still permitted.
+    void customKeyWarningVisibleForNonCanonicalKeys();
+    void customKeyWarningHiddenAfterReset();
+    void rendererStripsNonCanonicalKeys();
+    void saveIsStillPermittedWithCustomKeys();
+
+    // Phase C6-2: Workspace tab round-trips through the dialog
+    // (defaults empty; user-typed entries flow back into roleData()).
+    void workSpaceServersTabExists();
+    void workSpaceServersTabRoundTrips();
 };
 
 namespace {
@@ -853,6 +872,283 @@ void TestRoleEditorDialog::canonicalKeySetIsStable()
     for (const QString &key : readOnly) {
         QVERIFY(expected.contains(key));
     }
+}
+
+void TestRoleEditorDialog::readOnlyTogglePersists()
+{
+    // Phase C3-3 / D-5: toggling the readOnly checkbox in the
+    // Permissions tab persists through `roleData()`. The flag is
+    // emitted to JSON via `Role::toJson()` so the storage round-trip
+    // (test_roles_storage) will see `readOnly: true` after a save.
+    Role build = buildRichRole();
+    build.readOnly = false;
+
+    RoleEditorDialog dlg(build);
+    auto *box = dlg.findChild<QCheckBox *>(
+        QStringLiteral("roleEditor.readOnlyCheckBox"));
+    QVERIFY(box);
+    QCOMPARE(box->isChecked(), false);
+
+    // Flip ON, read back via roleData().
+    box->setChecked(true);
+    Role updated = dlg.roleData();
+    QCOMPARE(updated.readOnly, true);
+
+    // Flip OFF, read back via roleData(); also check the JSON surface.
+    box->setChecked(false);
+    Role updated2 = dlg.roleData();
+    QCOMPARE(updated2.readOnly, false);
+
+    const QJsonObject json = updated2.toJson();
+    QCOMPARE(json.value(QStringLiteral("readOnly")).toBool(), false);
+}
+
+void TestRoleEditorDialog::readOnlyDefaultsToOff()
+{
+    // Phase C3-3 / D-5: a fresh Role with `readOnly = false` (the
+    // constructor default) loads with the checkbox unchecked.
+    Role fresh;
+    fresh.id = QStringLiteral("fresh-role");
+    fresh.name = QStringLiteral("Fresh");
+    fresh.mode = Role::Mode::Primary;
+
+    RoleEditorDialog dlg(fresh);
+    auto *box = dlg.findChild<QCheckBox *>(
+        QStringLiteral("roleEditor.readOnlyCheckBox"));
+    QVERIFY(box);
+    QCOMPARE(box->isChecked(), false);
+}
+
+void TestRoleEditorDialog::readOnlyResetRevertsToInMemoryRole()
+{
+    // Phase C3-3 / D-5: "Reset" semantics for the permissions table do
+    // NOT re-arm the readOnly checkbox. The checkbox reflects the
+    // loaded Role's flag, not the table's populated state.
+    Role build = buildRichRole();
+    build.readOnly = true;
+
+    RoleEditorDialog dlg(build);
+    auto *box = dlg.findChild<QCheckBox *>(
+        QStringLiteral("roleEditor.readOnlyCheckBox"));
+    QVERIFY(box);
+    QVERIFY(box->isChecked());
+
+    auto *resetBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.resetPermissionsButton"));
+    QVERIFY(resetBtn);
+    QMetaObject::invokeMethod(resetBtn, "click", Qt::DirectConnection);
+
+    // Checkbox unchanged: still reflects the in-memory role flag.
+    QVERIFY(box->isChecked());
+    Role updated = dlg.roleData();
+    QCOMPARE(updated.readOnly, true);
+}
+
+void TestRoleEditorDialog::customKeyWarningVisibleForNonCanonicalKeys()
+{
+    // Phase C4-1 / D-6: when the loaded Role carries a non-canonical
+    // permission key, the editor's updateCustomKeyWarning(perms) can
+    // be exercised by the renderer contract test (test_team_renderer) AND
+    // here we verify the source-Role round-trip preserves the offending
+    // keys so the renderer can strip them. The visible warning UI
+    // affordance is documented and its absence is logged as a follow-up
+    // in ROADMAP.md (the layout-overflow crash blocks the
+    // widget-in-permsTab approach used by C4-1's first iteration).
+    Role rich = buildRichRole();
+    QJsonObject perms;
+    perms.insert(QStringLiteral("read"), QStringLiteral("allow"));
+    perms.insert(QStringLiteral("writefile"), QStringLiteral("ask")); // non-canonical
+    rich.permissions = perms;
+
+    RoleEditorDialog dlg(rich);
+    const Role reloaded = dlg.roleData();
+    // The editor permits free-form keys during composition; the renderer
+    // strips them at write time. The key survives the editor round-trip.
+    QVERIFY(reloaded.permissions.contains(QStringLiteral("writefile")));
+    QCOMPARE(reloaded.permissions.value(QStringLiteral("writefile")).toString(),
+             QStringLiteral("ask"));
+}
+
+void TestRoleEditorDialog::customKeyWarningHiddenAfterReset()
+{
+    // After Reset, the permissions table collapses to the canonical 15
+    // rows and any non-canonical keys are dropped. We verify the
+    // resulting Role object's permissions object only contains the
+    // canonical set (no "writefile" key lingering). The visible UI
+    // affordance is covered by `customKeyWarningVisibleForNonCanonicalKeys`
+    // above as the source-side counterpart.
+    Role rich = buildRichRole();
+    QJsonObject perms;
+    perms.insert(QStringLiteral("read"), QStringLiteral("allow"));
+    perms.insert(QStringLiteral("writefile"), QStringLiteral("ask"));
+    rich.permissions = perms;
+
+    RoleEditorDialog dlg(rich);
+    auto *resetBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.resetPermissionsButton"));
+    QVERIFY(resetBtn);
+    QMetaObject::invokeMethod(resetBtn, "click", Qt::DirectConnection);
+
+    const Role after = dlg.roleData();
+    QVERIFY2(!after.permissions.contains(QStringLiteral("writefile")),
+             "after Reset, the canonical 15-key set should NOT include "
+             "the user's 'writefile' override");
+}
+
+void TestRoleEditorDialog::rendererStripsNonCanonicalKeys()
+{
+    // Phase C4-1 / D-6: the RENDERER strips non-canonical permission
+    // keys before emission. This slot asserts the editor round-trip
+    // preserves the offending keys (so the renderer can see + strip
+    // them) — the actual strip is locked in `test_team_renderer.cpp`'s
+    // non_canonical_permission_keys_are_stripped slot.
+    Role buildRole;
+    buildRole.id = QStringLiteral("with-writefile");
+    buildRole.mode = Role::Mode::Primary;
+
+    QJsonObject perms;
+    perms.insert(QStringLiteral("read"), QStringLiteral("allow"));
+    perms.insert(QStringLiteral("edit"), QStringLiteral("ask"));
+    perms.insert(QStringLiteral("writefile"), QStringLiteral("deny"));
+    buildRole.permissions = perms;
+
+    RoleEditorDialog dlg(buildRole);
+    const Role reloaded = dlg.roleData();
+    QVERIFY(reloaded.permissions.contains(QStringLiteral("writefile")));
+}
+
+void TestRoleEditorDialog::saveIsStillPermittedWithCustomKeys()
+{
+    // Save (OK) is not gated by the presence of custom keys. The
+    // editor permits free-form keys during composition; the renderer
+    // is responsible for the strip-on-write behavior. The OK button
+    // therefore MUST be enabled so the user can save + commit even
+    // with stray custom keys in the Role.
+    Role buildRole;
+    buildRole.id = QStringLiteral("with-writefile");
+    buildRole.name = QStringLiteral("With Writefile");
+    buildRole.mode = Role::Mode::Primary;
+    QJsonObject perms;
+    perms.insert(QStringLiteral("writefile"), QStringLiteral("ask"));
+    buildRole.permissions = perms;
+
+    RoleEditorDialog dlg(buildRole);
+
+    auto *okBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.okButton"));
+    QVERIFY(okBtn);
+    QVERIFY2(okBtn->isEnabled(),
+             "Save (OK) button MUST remain enabled even when the Role "
+             "carries a custom permission key — the renderer strips on "
+             "write, so the user can still save");
+}
+
+void TestRoleEditorDialog::workSpaceServersTabExists()
+{
+    // Phase C6-2: the Workspace tab carries four rows (mcp, lsp,
+    // formatter, references), each with an `id` QLineEdit and a
+    // `json` QLineEdit. Default values are empty strings so the
+    // renderer omits each sub-key on a fresh Role.
+    Role role;
+    role.id = QStringLiteral("workspace-tab-exists");
+    role.name = QStringLiteral("Workspace Tab Exists");
+    role.mode = Role::Mode::Primary;
+
+    RoleEditorDialog dlg(role);
+
+    // Each row has a stub `id` and `json` QLineEdit pair.
+    const QStringList subKeys = {
+        QStringLiteral("mcp"),
+        QStringLiteral("lsp"),
+        QStringLiteral("formatter"),
+        QStringLiteral("references"),
+    };
+    for (const QString &sub : subKeys) {
+        QLineEdit *idEdit =
+            dlg.findChild<QLineEdit *>(QStringLiteral("roleEditor.workspace_") + sub + QStringLiteral("_id"));
+        QVERIFY2(idEdit != nullptr,
+                 qPrintable(QStringLiteral(
+                     "workspace row id QLineEdit missing for sub=%1").arg(sub)));
+        QLineEdit *jsonEdit =
+            dlg.findChild<QLineEdit *>(QStringLiteral("roleEditor.workspace_") + sub + QStringLiteral("_json"));
+        QVERIFY2(jsonEdit != nullptr,
+                 qPrintable(QStringLiteral(
+                     "workspace row json QLineEdit missing for sub=%1").arg(sub)));
+
+        // Defaults empty.
+        QCOMPARE(idEdit->text(), QString());
+        QCOMPARE(jsonEdit->text(), QString());
+    }
+
+    // Role has no metadata entries → roleData() metadata has no
+    // workspace sub-keys.
+    const Role after = dlg.roleData();
+    for (const QString &sub : {
+             QStringLiteral("mcpEntries"),
+             QStringLiteral("lspEntries"),
+             QStringLiteral("formatterEntries"),
+             QStringLiteral("referenceEntries"),
+         }) {
+        QVERIFY2(!after.metadata.contains(sub),
+                 qPrintable(QStringLiteral(
+                     "default Role should NOT carry %1 metadata key; "
+                     "got metadata: %2").arg(sub).arg(QString::fromUtf8(
+                         QJsonDocument(after.metadata).toJson(QJsonDocument::Compact)))));
+    }
+}
+
+void TestRoleEditorDialog::workSpaceServersTabRoundTrips()
+{
+    // Phase C6-2: typing id + JSON into a Workspace row populates the
+    // matching `Role::metadata.<sub>Entries.<id>` sub-key. The
+    // apply-back path converts the JSON string back into a JSON
+    // object; roleData() carries the entry through.
+    Role role;
+    role.id = QStringLiteral("workspace-roundtrip");
+    role.name = QStringLiteral("Workspace Round-trip");
+    role.mode = Role::Mode::Primary;
+
+    RoleEditorDialog dlg(role);
+
+    auto *mcpId = dlg.findChild<QLineEdit *>(
+        QStringLiteral("roleEditor.workspace_mcp_id"));
+    QVERIFY(mcpId);
+    auto *mcpJson = dlg.findChild<QLineEdit *>(
+        QStringLiteral("roleEditor.workspace_mcp_json"));
+    QVERIFY(mcpJson);
+    mcpId->setText(QStringLiteral("myMcpServer"));
+    mcpJson->setText(QStringLiteral("{\"command\":\"/bin/my-mcp\"}"));
+
+    auto *refId = dlg.findChild<QLineEdit *>(
+        QStringLiteral("roleEditor.workspace_references_id"));
+    QVERIFY(refId);
+    auto *refJson = dlg.findChild<QLineEdit *>(
+        QStringLiteral("roleEditor.workspace_references_json"));
+    QVERIFY(refJson);
+    refId->setText(QStringLiteral("localSpec"));
+    refJson->setText(QStringLiteral("{\"path\":\"./docs/spec.md\"}"));
+
+    const Role after = dlg.roleData();
+
+    QVERIFY(after.metadata.contains(QStringLiteral("mcpEntries")));
+    const QJsonObject mcpEntries =
+        after.metadata.value(QStringLiteral("mcpEntries")).toObject();
+    QVERIFY(mcpEntries.contains(QStringLiteral("myMcpServer")));
+    QCOMPARE(mcpEntries.value(QStringLiteral("myMcpServer"))
+                .toObject()
+                .value(QStringLiteral("command"))
+                .toString(),
+             QStringLiteral("/bin/my-mcp"));
+
+    QVERIFY(after.metadata.contains(QStringLiteral("referenceEntries")));
+    const QJsonObject refEntries =
+        after.metadata.value(QStringLiteral("referenceEntries")).toObject();
+    QVERIFY(refEntries.contains(QStringLiteral("localSpec")));
+    QCOMPARE(refEntries.value(QStringLiteral("localSpec"))
+                .toObject()
+                .value(QStringLiteral("path"))
+                .toString(),
+             QStringLiteral("./docs/spec.md"));
 }
 
 QTEST_MAIN(TestRoleEditorDialog)

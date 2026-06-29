@@ -13,6 +13,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Test)
 
 # Core library: models, storage, and generation — no UI, testable independently
  set(LIB_SOURCES
+ 	src/generation/AgentMarkdown.cpp
  	src/generation/ContractChecker.cpp
  	src/generation/ProviderCatalog.cpp
  	src/generation/TeamRenderer.cpp
@@ -25,6 +26,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Test)
  )
 
  set(LIB_HEADERS
+ 	src/generation/AgentMarkdown.h
  	src/generation/ContractChecker.h
  	src/generation/ProviderCatalog.h
  	src/generation/TeamRenderer.h

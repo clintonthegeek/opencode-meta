@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 
 #include "generation/ContractChecker.h"
+#include "generation/ProviderCatalog.h"
 
 ApplyResult applyConfigWithBackup(const QString &targetPath,
                                   const QJsonObject &config)
@@ -92,14 +93,51 @@ ApplyResult applyConfigWithBackup(const QString &targetPath,
 
 ApplyResult commit(const QString &targetPath, const QJsonObject &config)
 {
+    return commit(targetPath, config, nullptr);
+}
+
+ApplyResult commit(const QString &targetPath,
+                   const QJsonObject &config,
+                   const ProviderCatalog *catalog)
+{
     // Pre-write contract gate (Phase G3 spec). The check is the
     // ContractChecker::validate() that mirrors opencode's
     // ConfigParse.schema (report §12.3 + parse.ts:74–78): unknown keys
     // trip the topLevelExtraKeys check at load time. We surface the
     // first violation here so the user never sees a runtime
     // InvalidError from a Team / Trial / manual-export apply.
+    //
+    // D-2 / C0-2: live-catalog enforcement. Production calls
+    // (StorageManager::applyTeamToProject, ConfirmApplyDialog, etc.)
+    // always pass `&ProviderCatalog::instance()` as `catalog`. When
+    // the caller hands us a non-null catalog pointer, the live-catalog
+    // check is in force: if the catalog is not yet loaded (e.g. the
+    // user has never run `opencode models --refresh`, or the cache
+    // file is missing / unparseable), we REFUSE to write and return
+    // a clear "provider catalog not loaded" error. The historical
+    // silent fallback to the structural-only §8.3 check has been
+    // removed per the D-2 rejection rationale ("files that nobody
+    // can run are useless to users"). The structural-only path is
+    // still available via the `commit(targetPath, config)` overload
+    // for callers who knowingly have no catalog (e.g. test fixtures
+    // that exercise `apply_helpers::commit` directly).
+    if (catalog && !catalog->isLoaded()) {
+        ApplyResult result;
+        result.success = false;
+        result.errorString = QStringLiteral(
+            "provider catalog not loaded; refusing to write %1. "
+            "Run `opencode models --refresh` to populate the catalog, "
+            "or use the structural-only commit(target, config) overload.")
+            .arg(targetPath.isEmpty() ? QStringLiteral("<empty path>") : targetPath);
+        qWarning() << "apply_helpers::commit:" << result.errorString;
+        return result;
+    }
+
     QString contractError;
-    if (!ContractChecker::validate(config, &contractError)) {
+    const bool ok = catalog
+        ? ContractChecker::validate(config, catalog, &contractError)
+        : ContractChecker::validate(config, &contractError);
+    if (!ok) {
         ApplyResult result;
         result.success = false;
         result.errorString = QStringLiteral(

@@ -17,6 +17,8 @@
 #include <QMap>
 #include <QString>
 
+#include "models/Role.h"
+
 class Team;
 class Specialist;
 class Role;
@@ -32,4 +34,12 @@ public:
     static QJsonObject render(const Team &team,
                               const QMap<QString, Specialist> &specialists,
                               const QMap<QString, Role> &roles);
+
+    // Phase C1-2 / D-3: per OPENCODE-CONFIG-INTROSPECTION §6.4,
+    // `deriveSubagentSessionPermission` force-denies any subagent
+    // that does not carry a `task: allow` rule. This helper injects
+    // `task: "allow"` into `*perms` when the agent's mode is
+    // subagent/all AND the user has not already set `task` explicitly.
+    // Explicit values (including "deny") are preserved verbatim.
+    static void ensureSubagentTaskRule(QJsonObject *perms, Role::Mode m);
 };

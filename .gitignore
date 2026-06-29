@@ -4,6 +4,7 @@ compile_commands.json
 build.log
 Testing/
 .claude/
+.lcm/
 cl.sh
 dist/
 opencode-meta-linux-x86_64.tar.gz

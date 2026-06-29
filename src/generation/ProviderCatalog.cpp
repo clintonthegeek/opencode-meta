@@ -1,6 +1,7 @@
 #include "generation/ProviderCatalog.h"
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -142,6 +143,12 @@ bool ProviderCatalog::loadFromCache(const QString &path)
     if (!f.open(QIODevice::ReadOnly)) {
         // Missing cache is fine — UI just shows empty until refresh runs.
         // We do NOT mark m_loaded = true because there is no catalog.
+        // Per Phase C2-3, this routine stays tolerant of a missing /
+        // stale / unparseable cache: apply_helpers::commit() treats
+        // an unloaded-catalog result as a hard refusal (D-2), but the
+        // apply-time path is responsible for surfacing that decision,
+        // not for forcing a refresh on every read. The read API here
+        // just answers "is the cache something I can use right now".
         m_loaded = false;
         return false;
     }
@@ -151,12 +158,102 @@ bool ProviderCatalog::loadFromCache(const QString &path)
     QJsonParseError perr{};
     const QJsonDocument doc = QJsonDocument::fromJson(data, &perr);
     if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
+        // Unparseable cache: same tolerance as missing — keeps callers
+        // from having to special-case partial-write / interrupted-update
+        // states that happen in the wild when `opencode models --refresh`
+        // is killed mid-write.
         m_loaded = false;
         return false;
     }
     rebuildIndex(doc.object());
     m_loaded = true;
     return true;
+}
+
+bool ProviderCatalog::ensureReadyForApply(int maxAgeMinutes,
+                                          const QString &path)
+{
+    // Phase C2-1 / D-2: prepare the live catalog for an apply-time gate.
+    //
+    // Algorithm (the contract `StorageManager::applyTeamToProject` and
+    // `test_provider_catalog_refreshesWhenStale` rely on):
+    //   (1) Resolve the cache path (parameter fallback to default).
+    //   (2) If the cache file is younger than `maxAgeMinutes`, call
+    //       `loadFromCache(path)` and return its result. We deliberately
+    //       do NOT clobber an already-loaded catalog in this branch.
+    //   (3) If the cache file is stale (or absent) AND an `opencode`
+    //       binary is reachable, run `opencode models --refresh` (best
+    //       effort), then re-load the file. A failed refresh does NOT
+    //       fail the helper — we still let `loadFromCache()` decide
+    //       whether the existing file is usable.
+    //   (4) Stale + no binary + existing file still present: reload
+    //       whatever is on disk (apply-helpers will then complain when
+    //       the file's contents are out of date, which is fine).
+    //   (5) Stale + no binary + no file: loadFromCache() returns false,
+    //       helper returns false. Caller treats that as "catalog
+    //       unloadable" per D-2 and refuses the write.
+    const QString resolvedPath = path.isEmpty() ? defaultCachePath() : path;
+
+    const QFileInfo info(resolvedPath);
+    const bool exists = info.exists();
+    // Cache is "fresh enough" for skipping the refresh iff:
+    //   * the cache file exists, AND
+    //   * `maxAgeMinutes > 0` (positive freshness window), AND
+    //   * the elapsed minutes since the cache's mtime <= `maxAgeMinutes`.
+    // `maxAgeMinutes <= 0` is a sentinel for "no freshness budget" — we
+    // always refresh in that case so callers get strict fresh-by-call
+    // semantics.
+    const bool freshEnough =
+        exists
+        && (maxAgeMinutes > 0)
+        && (info.lastModified().msecsTo(QDateTime::currentDateTime())
+            <= qint64(maxAgeMinutes) * 60 * 1000);
+
+    if (freshEnough) {
+        // No refresh needed. Reload only if we're not already loaded —
+        // a previously-loaded catalog stays as-is (its m_root etc. are
+        // the same shape as the on-disk file when both exist).
+        if (!m_loaded) {
+            return loadFromCache(resolvedPath);
+        }
+        return true;
+    }
+
+    // Stale or missing — try the refresh path. We don't gate on resolveOpencodeBinary():
+    // it's cheap (just a handful of QFileInfo::exists probes), and we
+    // want the test to be able to stub it via OPENCODE_BIN. If the
+    // refresh fails (binary missing, non-zero exit, timeout), fall back
+    // to a loadFromCache() against whatever the cache already has —
+    // better-than-nothing semantics so a transient opencode outage
+    // doesn't take down every apply.
+    const QString envBin = QString::fromLocal8Bit(qgetenv("OPENCODE_BIN"));
+    // For tests stubbing via OPENCODE_BIN we ALWAYS want to attempt the
+    // refresh so a CLI logger hooks the launch (refreshFromCli() below
+    // logs the resolved path). For the no-env case we only attempt when
+    // the well-known install path exists; otherwise we'd silently thrash
+    // QProcess::start against a missing executable.
+    const bool shouldAttemptRefresh = !envBin.isEmpty()
+        || QFileInfo::exists(QDir::homePath() + QStringLiteral("/.opencode/bin/opencode"))
+        || QFileInfo::exists(QStringLiteral("/usr/local/bin/opencode"))
+        || QFileInfo::exists(QStringLiteral("/usr/bin/opencode"));
+
+    if (shouldAttemptRefresh) {
+        qInfo("ProviderCatalog::ensureReadyForApply: cache at %s is stale "
+              "(or missing) — running `opencode models --refresh` (maxAge=%d min)",
+              qPrintable(resolvedPath), maxAgeMinutes);
+        // We swallow the QProcess exit code here on purpose: a failed
+        // refresh is recoverable (loadFromCache() below).
+        refreshFromCli(/*override*/ QString(), /*timeoutMs*/ 30000);
+    } else if (!exists) {
+        qInfo("ProviderCatalog::ensureReadyForApply: no cache at %s and no "
+              "opencode binary on PATH; caller must surface a hard failure",
+              qPrintable(resolvedPath));
+    }
+
+    // Re-load regardless of refresh outcome: if the refresh succeeded,
+    // this picks up the fresh data; if it failed, we degrade to whatever
+    // was already on disk (possibly stale but better than nothing).
+    return loadFromCache(resolvedPath);
 }
 
 void ProviderCatalog::clear()

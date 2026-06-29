@@ -26,6 +26,14 @@ public:
 
     Mode mode = Mode::Primary;  // primary / subagent / all
 
+    // Phase C3-1 / D-5: mark the role as read-only. Combined with
+    // `mode == Primary` this lets the renderer cleanly omit `edit` /
+    // `bash` permission keys (report §6.4 second-class fix: weak-model
+    // tool-call failures). Default false. The flag is NOT consulted
+    // when `mode == Subagent` / `All` — subagents may legitimately
+    // need narrow write access.
+    bool readOnly = false;
+
     // Raw permission/tool/metadata objects, kept flexible per PARADIGM.md.
     QJsonObject permissions;    // e.g. { "edit": "ask", "bash": "deny", ... }
     QJsonObject tools;          // Optional fine-grained tool overrides

@@ -87,4 +87,11 @@ public:
 private:
      QString m_rootOverride; // empty = use default under home directory
      QString rootPath() const;
+
+     // Read the optional storage root override from QSettings
+     // (key "settings/storage_root_path"). Returns a usable directory path
+     // if the value is non-empty and points to an existing directory;
+     // otherwise returns an empty string so callers can fall back silently
+     // to the default (~/.opencode-meta).
+     static QString readPreferencesOverride();
 };

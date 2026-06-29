@@ -77,6 +77,31 @@ public:
     bool refreshFromCli(const QString &opencodeBinaryPath = QString(),
                         int timeoutMs = 30000);
 
+    // Phase C2-1 / D-8: ensure the in-memory catalog is fresh enough for
+    // an apply-time validation. If the on-disk cache file at `path`
+    // (default = defaultCachePath()) is older than `maxAgeMinutes`, AND
+    // an `opencode` binary is available, shells out to
+    // `opencode models --refresh` and reloads the resulting file.
+    //
+    // Returns true if the catalog is now loaded AND its `mtime` is within
+    // the freshness window (this is the bar callers should rely on — it
+    // means "loadFromCache() succeeded AFTER any refresh we did"). When
+    // `maxAgeMinutes` is `<= 0` the freshness check is skipped, i.e. the
+    // function behaves the same as `loadFromCache(path)` plus a best-
+    // effort refresh on startup.
+    //
+    // Side-effect free on the in-memory catalog when no refresh happened
+    // AND the cache was already loaded: a stale-cache branch that judges
+    // the file "fresh enough" leaves the existing `m_root`, `m_providers`,
+    // `m_providerModels`, etc. untouched.
+    //
+    // The helper is the production entry point called by `StorageManager::
+    // applyTeamToProject` per D-2 / C2-2; its sole purpose is to push the
+    // live catalog closer to "now" before the apply-path ContractChecker
+    // gate rejects unseen models.
+    bool ensureReadyForApply(int maxAgeMinutes = 60,
+                             const QString &path = QString());
+
     // Read the opencode-managed cache file at `path` (default =
     // defaultCachePath()). Returns true if the JSON document was parsed
     // successfully. An empty catalog is still considered "loaded" for

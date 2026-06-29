@@ -53,13 +53,16 @@ A Qt6 companion for [opencode](https://opencode.ai) that lets users design reusa
 **Run these after every meaningful change**, in this order:
 
 ```bash
-# 1. Configure + build (dev preset)
-cmake -S . -B build-dev
-cmake --build build-dev --parallel
+# 1. Configure + build
+cmake -S . -B build
+cmake --build build --parallel
 
-# 2. Run the smoke-test trio (apply-path correctness)
-ctest --test-dir build-dev --output-on-failure \
-      -R "test_team_renderer|test_apply_team|test_starter_team_apply"
+# 2. Run the Phase C0 smoke-trio script (apply-path correctness)
+scripts/ci_smoke_trio.sh
+#   – internally pins the canonical regex
+#     test_team_renderer|test_apply_team|test_starter_team_apply|test_contract_checker
+#   – defaults to build/; override with BUILD_DIR=build-dev for the preset path.
+#   – exits non-zero on any missing target or any failing test.
 
 # 3. Validate any emitted opencode.json against the live runtime
 opencode debug config  # in a tempdir that contains the generated file
@@ -67,7 +70,7 @@ opencode debug config  # in a tempdir that contains the generated file
 
 `.clangd` already points at `build-dev/compile_commands.json`. If clangd shows red squiggles, regenerate with `cmake -S . -B build-dev` first.
 
-The full test list is in `tests/CMakeLists.txt`. The apply-path trio is the minimum bar; expand it whenever the milestone touches generation, storage, or apply.
+The full test list is in `tests/CMakeLists.txt`. The apply-path trio is the minimum bar; expand it whenever the milestone touches generation, storage, or apply. `scripts/ci_smoke_trio.sh` (Phase C0-4) is the authoritative runner for the regression bar — call it from CI instead of inlining the regex.
 
 ## Handoff Expectation
 

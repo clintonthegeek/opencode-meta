@@ -54,6 +54,49 @@ add_test(NAME test_cross_view_smoke COMMAND test_cross_view_smoke)
    add_qt_test(test_roles_storage           test_roles_storage.cpp)
    add_qt_test(test_trials_storage          test_trials_storage.cpp)
    add_qt_test(test_contract_checker        test_contract_checker.cpp)
+   add_qt_test(test_provider_catalog        test_provider_catalog.cpp)
+   # Phase C5-1 / D-8: deferred per ROADMAP. Module + tests are
+   # scaffolded so the toggle can be flipped in a follow-up. Not in
+   # the smoke-trio regex on purpose.
+   add_qt_test(test_agent_markdown          test_agent_markdown.cpp)
+
+# C0-3: opencode debug config runtime gate. Uses QSKIP when the
+# binary is missing so dev boxes without opencode installed stay
+# green, but flips to "must not skip" mode when CI is set: CI sets
+# CI=1 (or OPENCODE_REQUIRED_FOR_CI=1) in the environment and CMake
+# wires FAIL_REGULAR_EXPRESSION so any QSKIP / QFAIL marker in the
+# output reverses the ctest verdict. This matches the C0-3 DoD in
+# ROADMAP.md (`scripts/check_opencode_debug.sh`-style skip detector)
+# without depending on a separate wrapper script.
+add_qt_test(test_runtime_opencode_debug   test_runtime_opencode_debug.cpp)
+if(DEFINED ENV{CI} OR DEFINED ENV{OPENCODE_REQUIRED_FOR_CI})
+    set_tests_properties(test_runtime_opencode_debug PROPERTIES
+        LABELS "ci_runtime_gate"
+        FAIL_REGULAR_EXPRESSION "SKIP|QSKIP|no opencode binary"
+    )
+else()
+    set_tests_properties(test_runtime_opencode_debug PROPERTIES
+        LABELS "ci_runtime_gate"
+    )
+endif()
+
+# C7-1 / D-2 / D-8: compliance sign-off — every seeded Team round-trips
+# through `opencode debug config`. Same skip-then-fail CMake semantics
+# as test_runtime_opencode_debug. Deliberately OUT of the smoke-trio
+# regex because (a) the smoke-trio runs on every commit and we don't
+# want to fail CI for missing opencode binary every time, and (b)
+# the explicit C7-3 sign-off review owns the inclusion decision.
+add_qt_test(test_compliance_signoff test_compliance_signoff.cpp)
+if(DEFINED ENV{CI} OR DEFINED ENV{OPENCODE_REQUIRED_FOR_CI})
+    set_tests_properties(test_compliance_signoff PROPERTIES
+        LABELS "ci_runtime_gate"
+        FAIL_REGULAR_EXPRESSION "SKIP|QSKIP|no opencode binary"
+    )
+else()
+    set_tests_properties(test_compliance_signoff PROPERTIES
+        LABELS "ci_runtime_gate"
+    )
+endif()
 
 # RoleEditorDialog pulls in the QDialog UI surface; the test target needs
 # the matching .cpp to satisfy the linker (the static lib deliberately
@@ -68,6 +111,21 @@ target_link_libraries(test_role_editor_dialog PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test opencode-meta-lib
 )
 add_test(NAME test_role_editor_dialog COMMAND test_role_editor_dialog)
+
+# Phase C1-1 / D-4: the Tools deprecation banner lives on the
+# RoleEditorDialog Tools tab. This targeted test asserts the banner
+# exists with the right textual content AND that the legacy
+# QListWidget migration surface still loads `role.tools` entries.
+add_executable(test_team_renderer_toolsDeprecationBannerInEditor
+    test_team_renderer_tools_deprecation_banner_in_editor.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/RoleEditorDialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/RoleEditorDialog.h
+)
+target_include_directories(test_team_renderer_toolsDeprecationBannerInEditor PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_team_renderer_toolsDeprecationBannerInEditor PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test opencode-meta-lib
+)
+add_test(NAME test_team_renderer_toolsDeprecationBannerInEditor COMMAND test_team_renderer_toolsDeprecationBannerInEditor)
 
 # EditSpecialistDialog (P1-4) also needs its QDialog UI source linked
 # alongside the test target, plus ModelsBrowserWidget + PromptPreview
