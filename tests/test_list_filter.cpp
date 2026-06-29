@@ -17,6 +17,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QHBoxLayout>
+#include <QCheckBox>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -43,7 +44,9 @@ class TestListFilter : public QObject
 
 private slots:
     void roles_filtersAcrossAllColumns_caseInsensitive();
+    void roles_hidesStockByDefault_andToggleShowsIt();
     void teams_appliesOnIdAndName_clearsOnEscape();
+    void teams_hidesStockByDefault_andToggleShowsIt();
     void teams_disablesDeleteForStockTeam();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
     void projects_hidesFilteredListItems_andDisablesActions();
@@ -208,6 +211,58 @@ void TestListFilter::roles_filtersAcrossAllColumns_caseInsensitive()
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("refactor"))), false);
 }
 
+void TestListFilter::roles_hidesStockByDefault_andToggleShowsIt()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveRole(storage, QStringLiteral("build"), QStringLiteral("Build"),
+                    QStringLiteral("Primary build agent"), Role::Mode::Primary);
+    Role stockRole;
+    stockRole.id = QStringLiteral("stock-review");
+    stockRole.name = QStringLiteral("Stock Review");
+    stockRole.description = QStringLiteral("Seeded review role");
+    stockRole.mode = Role::Mode::Subagent;
+    stockRole.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY2(storage.saveRole(stockRole), "saveRole(stock-review) failed");
+
+    RolesWidget widget(storage);
+
+    QTableWidget *table = widget.findChild<QTableWidget *>();
+    QVERIFY2(table, "RolesWidget has no QTableWidget");
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("rolesWidget.showStock"));
+    QVERIFY2(showStock, "RolesWidget has no Show stock checkbox");
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("build"))), false);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), true);
+
+    showStock->setChecked(true);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), false);
+
+    showStock->setChecked(false);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), true);
+}
+
 void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
 {
     QTemporaryDir tmpRoot;
@@ -280,6 +335,53 @@ void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("gamma"))), false);
 }
 
+void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveTeam(storage, QStringLiteral("custom-team"),
+                    QStringLiteral("Custom Team"), QStringLiteral("User team"));
+    makeAndSaveStockTeam(storage, QStringLiteral("starter-team"),
+                         QStringLiteral("Starter Team"), QStringLiteral("Seeded team"));
+
+    TeamsWidget widget(storage);
+
+    QTableWidget *table = widget.findChild<QTableWidget *>();
+    QVERIFY2(table, "TeamsWidget has no QTableWidget");
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+    QVERIFY2(showStock, "TeamsWidget has no Show stock checkbox");
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("custom-team"))), false);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), true);
+
+    showStock->setChecked(true);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), false);
+
+    showStock->setChecked(false);
+    QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), true);
+}
+
 void TestListFilter::teams_disablesDeleteForStockTeam()
 {
     QTemporaryDir tmpRoot;
@@ -300,12 +402,15 @@ void TestListFilter::teams_disablesDeleteForStockTeam()
     QVERIFY2(deleteButton, "TeamsWidget has no delete button");
     auto *deleteAction = widget.findChild<QAction *>(QStringLiteral("teamsWidget.deleteAction"));
     QVERIFY2(deleteAction, "TeamsWidget has no delete action");
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+    QVERIFY2(showStock, "TeamsWidget has no Show stock checkbox");
 
     widget.selectTeamById(QStringLiteral("custom-team"));
     QApplication::processEvents();
     QVERIFY(deleteButton->isEnabled());
     QVERIFY(deleteAction->isEnabled());
 
+    showStock->setChecked(true);
     widget.selectTeamById(QStringLiteral("starter-team"));
     QApplication::processEvents();
     QVERIFY2(!deleteButton->isEnabled(), "delete button should be disabled for stock teams");

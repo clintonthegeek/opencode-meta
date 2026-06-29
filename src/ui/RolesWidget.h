@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class FilterProxyModel;
+class QCheckBox;
 class QLineEdit;
 class QSortFilterProxyModel;
 class QTableWidget;
@@ -44,11 +45,13 @@ private slots:
 private:
     QString selectedRoleId() const;
     bool selectedRoleIsStock() const;
+    bool rowIsStock(int row) const;
 
     StorageManager &m_storageManager;
 
     QTableWidget *m_table = nullptr;
     QLineEdit *m_filterEdit = nullptr;
+    QCheckBox *m_showStockCheck = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_createButton = nullptr;
     QPushButton *m_editButton = nullptr;

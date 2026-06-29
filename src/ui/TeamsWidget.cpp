@@ -2,7 +2,7 @@
 
 #include <QAction>
 #include <QDateTime>
-#include <QFont>
+#include <QCheckBox>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -23,6 +23,38 @@
 #include "ui/TeamEditorWidget.h"
 
 namespace {
+
+QLabel *makeStockBadge(const QString &text, QWidget *parent)
+{
+    auto *badge = new QLabel(text, parent);
+    badge->setObjectName(QStringLiteral("stockBadge"));
+    badge->setAlignment(Qt::AlignCenter);
+    badge->setStyleSheet(QStringLiteral(
+        "QLabel#stockBadge {"
+        " background-color: #eef2ff;"
+        " color: #4338ca;"
+        " border: 1px solid #c7d2fe;"
+        " border-radius: 8px;"
+        " padding: 1px 6px;"
+        " font-size: 10px;"
+        " font-weight: 600;"
+        " }"));
+    return badge;
+}
+
+QWidget *makeStockNameCell(const QString &name, QWidget *parent)
+{
+    auto *cell = new QWidget(parent);
+    auto *layout = new QHBoxLayout(cell);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(6);
+
+    auto *nameLabel = new QLabel(name, cell);
+    layout->addWidget(nameLabel);
+    layout->addWidget(makeStockBadge(QObject::tr("Stock"), cell));
+    layout->addStretch(1);
+    return cell;
+}
 
 // Slugify a user-typed Team name into a filesystem-safe id candidate.
 // Falls back to "team" if the result would be empty.
@@ -87,9 +119,19 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     auto *leftColumn = new QWidget(this);
     auto *leftLayout = new QVBoxLayout(leftColumn);
     leftLayout->setContentsMargins(0, 0, 0, 0);
-    auto *filterBar = new FilterBar(tr("Filter teams..."), leftColumn);
+    auto *filterRow = new QWidget(leftColumn);
+    auto *filterRowLayout = new QHBoxLayout(filterRow);
+    filterRowLayout->setContentsMargins(0, 0, 0, 0);
+    filterRowLayout->setSpacing(6);
+    auto *filterBar = new FilterBar(tr("Filter teams..."), filterRow);
     m_filterEdit = filterBar->findChild<QLineEdit *>();
-    leftLayout->addWidget(filterBar);
+    filterRowLayout->addWidget(filterBar, 1);
+    m_showStockCheck = new QCheckBox(tr("Show stock"), filterRow);
+    m_showStockCheck->setObjectName(QStringLiteral("teamsWidget.showStock"));
+    m_showStockCheck->setChecked(false);
+    m_showStockCheck->setToolTip(tr("Show stock Teams in the list"));
+    filterRowLayout->addWidget(m_showStockCheck);
+    leftLayout->addWidget(filterRow);
 
     m_table = new QTableWidget(leftColumn);
     m_table->setColumnCount(4);
@@ -121,7 +163,10 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     m_filterProxy->setFilterKeyColumn(-1); // every column
 
     connect(filterBar, &FilterBar::filterChanged,
-            this, &TeamsWidget::applyFilter);
+             this, &TeamsWidget::applyFilter);
+    connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
+        applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+    });
 
     connect(m_editor,
             &TeamEditorWidget::teamVariantCreated,
@@ -222,16 +267,15 @@ void TeamsWidget::refreshTeams()
 
         auto *idItem = new QTableWidgetItem(team.id);
         idItem->setData(Qt::UserRole, team.id);
+        idItem->setData(Qt::UserRole + 1, m_storageManager.isStockTeam(team));
         m_table->setItem(row, 0, idItem);
 
         auto *nameItem = new QTableWidgetItem(team.name);
         if (m_storageManager.isStockTeam(team)) {
             const QString displayName = team.name.isEmpty() ? team.id : team.name;
-            nameItem->setText(QStringLiteral("%1 (%2)").arg(displayName, tr("stock")));
-            QFont font = nameItem->font();
-            font.setItalic(true);
-            nameItem->setFont(font);
+            nameItem->setText(displayName);
             nameItem->setToolTip(tr("Stock team"));
+            m_table->setCellWidget(row, 1, makeStockNameCell(displayName, m_table));
         }
         m_table->setItem(row, 1, nameItem);
 
@@ -290,11 +334,21 @@ QString TeamsWidget::selectedTeamId() const
 
 bool TeamsWidget::selectedTeamIsStock() const
 {
-    const QString teamId = selectedTeamId();
-    if (teamId.isEmpty()) {
+    return rowIsStock(m_table ? m_table->currentRow() : -1);
+}
+
+bool TeamsWidget::rowIsStock(int row) const
+{
+    if (!m_table || row < 0 || row >= m_table->rowCount()) {
         return false;
     }
-    return m_storageManager.isStockTeam(m_storageManager.loadTeam(teamId));
+
+    QTableWidgetItem *idItem = m_table->item(row, 0);
+    if (!idItem) {
+        return false;
+    }
+
+    return idItem->data(Qt::UserRole + 1).toBool();
 }
 
 void TeamsWidget::createTeam()
@@ -452,11 +506,28 @@ void TeamsWidget::applyFilter(const QString &text)
 
     const QString needle = text.trimmed();
     m_filterProxy->setFilterFixedString(needle);
+    const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
 
     const QModelIndex parent;
     for (int row = 0; row < m_table->rowCount(); ++row) {
         const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(row, parent);
-        m_table->setRowHidden(row, !match);
+        const bool stockHidden = !showStock && rowIsStock(row);
+        m_table->setRowHidden(row, !match || stockHidden);
+    }
+
+    if (m_table->currentRow() >= 0 && m_table->isRowHidden(m_table->currentRow())) {
+        int firstVisibleRow = -1;
+        for (int row = 0; row < m_table->rowCount(); ++row) {
+            if (!m_table->isRowHidden(row)) {
+                firstVisibleRow = row;
+                break;
+            }
+        }
+        if (firstVisibleRow >= 0) {
+            m_table->setCurrentCell(firstVisibleRow, 0);
+        } else {
+            m_table->setCurrentItem(nullptr);
+        }
     }
 
     // Visibility just changed; make sure the action buttons (Delete,

@@ -1,8 +1,8 @@
 #include "ui/RolesWidget.h"
 
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QFont>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -18,6 +18,38 @@
 #include "ui/RoleEditorDialog.h"
 
 namespace {
+
+QLabel *makeStockBadge(const QString &text, QWidget *parent)
+{
+    auto *badge = new QLabel(text, parent);
+    badge->setObjectName(QStringLiteral("stockBadge"));
+    badge->setAlignment(Qt::AlignCenter);
+    badge->setStyleSheet(QStringLiteral(
+        "QLabel#stockBadge {"
+        " background-color: #eef2ff;"
+        " color: #4338ca;"
+        " border: 1px solid #c7d2fe;"
+        " border-radius: 8px;"
+        " padding: 1px 6px;"
+        " font-size: 10px;"
+        " font-weight: 600;"
+        " }"));
+    return badge;
+}
+
+QWidget *makeStockNameCell(const QString &name, QWidget *parent)
+{
+    auto *cell = new QWidget(parent);
+    auto *layout = new QHBoxLayout(cell);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(6);
+
+    auto *nameLabel = new QLabel(name, cell);
+    layout->addWidget(nameLabel);
+    layout->addWidget(makeStockBadge(QObject::tr("Stock"), cell));
+    layout->addStretch(1);
+    return cell;
+}
 
 QString generateUniqueRoleId(StorageManager &storage, const QString &base)
 {
@@ -54,11 +86,24 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     // ROADMAP P2-2: search/filter bar (placeholder text + clear button +
     // ESC shortcut) sits immediately above the table. State changes
     // here drive QSortFilterProxyModel filtering on the source rows.
-    auto *filterBar = new FilterBar(tr("Filter roles..."), this);
+    auto *filterRow = new QWidget(this);
+    auto *filterRowLayout = new QHBoxLayout(filterRow);
+    filterRowLayout->setContentsMargins(0, 0, 0, 0);
+    filterRowLayout->setSpacing(6);
+    auto *filterBar = new FilterBar(tr("Filter roles..."), filterRow);
     m_filterEdit = filterBar->findChild<QLineEdit *>();
-    layout->addWidget(filterBar);
+    filterRowLayout->addWidget(filterBar, 1);
+    m_showStockCheck = new QCheckBox(tr("Show stock"), filterRow);
+    m_showStockCheck->setObjectName(QStringLiteral("rolesWidget.showStock"));
+    m_showStockCheck->setChecked(false);
+    m_showStockCheck->setToolTip(tr("Show stock Roles in the list"));
+    filterRowLayout->addWidget(m_showStockCheck);
+    layout->addWidget(filterRow);
     connect(filterBar, &FilterBar::filterChanged,
             this, &RolesWidget::applyFilter);
+    connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
+        applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
+    });
 
     m_table = new QTableWidget(this);
     m_table->setColumnCount(4);
@@ -73,6 +118,7 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
+    m_table->setToolTip(tr("Browse, filter, and inspect Roles."));
     layout->addWidget(m_table, 1);
 
     // Drive row visibility from a real FilterProxyModel rather
@@ -125,16 +171,15 @@ void RolesWidget::refreshRoles()
 
         auto *idItem = new QTableWidgetItem(role.id);
         idItem->setData(Qt::UserRole, role.id);
+        idItem->setData(Qt::UserRole + 1, m_storageManager.isStockRole(role));
         m_table->setItem(row, 0, idItem);
 
         auto *nameItem = new QTableWidgetItem(role.name);
         if (m_storageManager.isStockRole(role)) {
             const QString displayName = role.name.isEmpty() ? role.id : role.name;
-            nameItem->setText(QStringLiteral("%1 (%2)").arg(displayName, tr("stock")));
-            QFont font = nameItem->font();
-            font.setItalic(true);
-            nameItem->setFont(font);
+            nameItem->setText(displayName);
             nameItem->setToolTip(tr("Stock role"));
+            m_table->setCellWidget(row, 1, makeStockNameCell(displayName, m_table));
         }
         m_table->setItem(row, 1, nameItem);
 
@@ -175,11 +220,21 @@ QString RolesWidget::selectedRoleId() const
 
 bool RolesWidget::selectedRoleIsStock() const
 {
-    const QString id = selectedRoleId();
-    if (id.isEmpty()) {
+    return rowIsStock(m_table ? m_table->currentRow() : -1);
+}
+
+bool RolesWidget::rowIsStock(int row) const
+{
+    if (!m_table || row < 0 || row >= m_table->rowCount()) {
         return false;
     }
-    return m_storageManager.isStockRole(m_storageManager.loadRole(id));
+
+    QTableWidgetItem *idItem = m_table->item(row, 0);
+    if (!idItem) {
+        return false;
+    }
+
+    return idItem->data(Qt::UserRole + 1).toBool();
 }
 
 void RolesWidget::createRole()
@@ -343,12 +398,29 @@ void RolesWidget::applyFilter(const QString &text)
 
     const QString needle = text.trimmed();
     m_filterProxy->setFilterFixedString(needle);
+    const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
 
     // Mirror the proxy's accept/reject decisions onto QTableWidget's
     // row-visibility flag. Empty needle means "show everything".
     const QModelIndex parent;
     for (int row = 0; row < m_table->rowCount(); ++row) {
         const bool match = needle.isEmpty() || m_filterProxy->acceptsRow(row, parent);
-        m_table->setRowHidden(row, !match);
+        const bool stockHidden = !showStock && rowIsStock(row);
+        m_table->setRowHidden(row, !match || stockHidden);
+    }
+
+    if (m_table->currentRow() >= 0 && m_table->isRowHidden(m_table->currentRow())) {
+        int firstVisibleRow = -1;
+        for (int row = 0; row < m_table->rowCount(); ++row) {
+            if (!m_table->isRowHidden(row)) {
+                firstVisibleRow = row;
+                break;
+            }
+        }
+        if (firstVisibleRow >= 0) {
+            m_table->setCurrentCell(firstVisibleRow, 0);
+        } else {
+            m_table->setCurrentItem(nullptr);
+        }
     }
 }

@@ -9,6 +9,7 @@
 #include <QWidget>
 
 class QAction;
+class QCheckBox;
 class QLabel;
 class QLineEdit;
 class QSortFilterProxyModel;
@@ -72,6 +73,7 @@ private slots:
 private:
     QString selectedTeamId() const;
     bool selectedTeamIsStock() const;
+    bool rowIsStock(int row) const;
     void updateActionStates();
     void installShortcuts();
 
@@ -79,6 +81,7 @@ private:
 
     QTableWidget *m_table = nullptr;
     QLineEdit *m_filterEdit = nullptr;
+    QCheckBox *m_showStockCheck = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_newButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
