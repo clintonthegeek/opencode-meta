@@ -2,7 +2,9 @@
 
 #include <QAction>
 #include <QDateTime>
+#include <QBrush>
 #include <QCheckBox>
+#include <QColor>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -18,6 +20,7 @@
 #include <QSortFilterProxyModel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -27,6 +30,42 @@
 #include "ui/TeamEditorWidget.h"
 
 namespace {
+
+void flashBlockedDeleteRow(QTableWidget *table, int row)
+{
+    if (!table || row < 0 || row >= table->rowCount()) {
+        return;
+    }
+
+    const QColor tint(255, 232, 232);
+    QList<QPair<QTableWidgetItem *, QBrush>> itemBrushes;
+    QList<QPair<QWidget *, QString>> widgetStyles;
+
+    for (int col = 0; col < table->columnCount(); ++col) {
+        if (auto *item = table->item(row, col)) {
+            itemBrushes.append(qMakePair(item, item->background()));
+            item->setBackground(tint);
+        }
+        if (auto *cellWidget = table->cellWidget(row, col)) {
+            widgetStyles.append(qMakePair(cellWidget, cellWidget->styleSheet()));
+            cellWidget->setStyleSheet(QStringLiteral("background-color: rgba(255, 232, 232, 0.85);"));
+        }
+    }
+
+    table->viewport()->update();
+    QTimer::singleShot(250, table, [itemBrushes, widgetStyles]() {
+        for (const auto &entry : itemBrushes) {
+            if (entry.first) {
+                entry.first->setBackground(entry.second);
+            }
+        }
+        for (const auto &entry : widgetStyles) {
+            if (entry.first) {
+                entry.first->setStyleSheet(entry.second);
+            }
+        }
+    });
+}
 
 QLabel *makeStockBadge(const QString &text, QWidget *parent)
 {
@@ -490,6 +529,7 @@ void TeamsWidget::deleteSelectedTeam()
     }
 
     if (m_storageManager.isStockTeam(team)) {
+        flashBlockedDeleteRow(m_table, m_table->currentRow());
         return;
     }
 
@@ -629,7 +669,7 @@ void TeamsWidget::updateActionStates()
 {
     const bool hasSelection = (m_table && m_table->currentRow() >= 0);
     const bool stockSelection = hasSelection && selectedTeamIsStock();
-    const bool deleteEnabled = hasSelection && !stockSelection;
+    const bool deleteEnabled = hasSelection;
     const QString deleteTooltip = stockSelection
         ? tr("Stock items cannot be deleted")
         : tr("Delete the selected Team");

@@ -49,7 +49,8 @@ private slots:
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
     void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
-    void teams_disablesDeleteForStockTeam();
+    void teams_stockDeleteShowsFlashFeedback();
+    void roles_stockDeleteShowsFlashFeedback();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
     void projects_hidesFilteredListItems_andDisablesActions();
 };
@@ -475,7 +476,7 @@ void TestListFilter::teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecial
     QCOMPARE(table->isRowHidden(stockRow), true);
 }
 
-void TestListFilter::teams_disablesDeleteForStockTeam()
+void TestListFilter::teams_stockDeleteShowsFlashFeedback()
 {
     QTemporaryDir tmpRoot;
     QVERIFY(tmpRoot.isValid());
@@ -497,6 +498,24 @@ void TestListFilter::teams_disablesDeleteForStockTeam()
     QVERIFY2(deleteAction, "TeamsWidget has no delete action");
     auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
     QVERIFY2(showStock, "TeamsWidget has no Show stock checkbox");
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
 
     widget.selectTeamById(QStringLiteral("custom-team"));
     QApplication::processEvents();
@@ -506,9 +525,82 @@ void TestListFilter::teams_disablesDeleteForStockTeam()
     showStock->setChecked(true);
     widget.selectTeamById(QStringLiteral("starter-team"));
     QApplication::processEvents();
-    QVERIFY2(!deleteButton->isEnabled(), "delete button should be disabled for stock teams");
-    QVERIFY2(!deleteAction->isEnabled(), "delete key action should be disabled for stock teams");
+    QVERIFY(deleteButton->isEnabled());
+    QVERIFY(deleteAction->isEnabled());
     QCOMPARE(deleteButton->toolTip(), QStringLiteral("Stock items cannot be deleted"));
+
+    const int stockRow = findRowForId(QStringLiteral("starter-team"));
+    QVERIFY(stockRow >= 0);
+    const QBrush originalBrush = table->item(stockRow, 0)->background();
+
+    deleteButton->click();
+    const QBrush flashBrush = table->item(stockRow, 0)->background();
+    QVERIFY2(flashBrush != originalBrush, "stock team row did not flash");
+
+    QTest::qWait(350);
+    QCOMPARE(table->item(stockRow, 0)->background(), originalBrush);
+}
+
+void TestListFilter::roles_stockDeleteShowsFlashFeedback()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveRole(storage, QStringLiteral("build"), QStringLiteral("Build"),
+                    QStringLiteral("Primary build agent"), Role::Mode::Primary);
+    Role stockRole;
+    stockRole.id = QStringLiteral("stock-review");
+    stockRole.name = QStringLiteral("Stock Review");
+    stockRole.description = QStringLiteral("Seeded review role");
+    stockRole.mode = Role::Mode::Subagent;
+    stockRole.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY2(storage.saveRole(stockRole), "saveRole(stock-review) failed");
+
+    RolesWidget widget(storage);
+
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY2(table, "RolesWidget has no QTableWidget");
+    auto *deleteButton = widget.findChild<QPushButton *>(QStringLiteral("rolesWidget.deleteButton"));
+    QVERIFY(deleteButton);
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("rolesWidget.showStock"));
+    QVERIFY(showStock);
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    showStock->setChecked(true);
+    const int stockRow = findRowForId(QStringLiteral("stock-review"));
+    QVERIFY(stockRow >= 0);
+    widget.findChild<QTableWidget *>()->setCurrentCell(stockRow, 0);
+    QApplication::processEvents();
+
+    QVERIFY(deleteButton->isEnabled());
+    QCOMPARE(deleteButton->toolTip(), QStringLiteral("Stock items cannot be deleted"));
+
+    const QBrush originalBrush = table->item(stockRow, 0)->background();
+    deleteButton->click();
+    const QBrush flashBrush = table->item(stockRow, 0)->background();
+    QVERIFY2(flashBrush != originalBrush, "stock role row did not flash");
+
+    QTest::qWait(350);
+    QCOMPARE(table->item(stockRow, 0)->background(), originalBrush);
 }
 
 void TestListFilter::trials_hidesNonMatchingRows_andPreservesIdForActions()

@@ -1,7 +1,9 @@
 #include "ui/RolesWidget.h"
 
 #include <QAction>
+#include <QBrush>
 #include <QCheckBox>
+#include <QColor>
 #include <QMenu>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -15,6 +17,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QToolButton>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "models/Role.h"
@@ -23,6 +26,42 @@
 #include "ui/RoleEditorDialog.h"
 
 namespace {
+
+void flashBlockedDeleteRow(QTableWidget *table, int row)
+{
+    if (!table || row < 0 || row >= table->rowCount()) {
+        return;
+    }
+
+    const QColor tint(255, 232, 232);
+    QList<QPair<QTableWidgetItem *, QBrush>> itemBrushes;
+    QList<QPair<QWidget *, QString>> widgetStyles;
+
+    for (int col = 0; col < table->columnCount(); ++col) {
+        if (auto *item = table->item(row, col)) {
+            itemBrushes.append(qMakePair(item, item->background()));
+            item->setBackground(tint);
+        }
+        if (auto *cellWidget = table->cellWidget(row, col)) {
+            widgetStyles.append(qMakePair(cellWidget, cellWidget->styleSheet()));
+            cellWidget->setStyleSheet(QStringLiteral("background-color: rgba(255, 232, 232, 0.85);"));
+        }
+    }
+
+    table->viewport()->update();
+    QTimer::singleShot(250, table, [itemBrushes, widgetStyles]() {
+        for (const auto &entry : itemBrushes) {
+            if (entry.first) {
+                entry.first->setBackground(entry.second);
+            }
+        }
+        for (const auto &entry : widgetStyles) {
+            if (entry.first) {
+                entry.first->setStyleSheet(entry.second);
+            }
+        }
+    });
+}
 
 QLabel *makeStockBadge(const QString &text, QWidget *parent)
 {
@@ -412,6 +451,7 @@ void RolesWidget::deleteSelectedRole()
     }
 
     if (m_storageManager.isStockRole(role)) {
+        flashBlockedDeleteRow(m_table, m_table->currentRow());
         return;
     }
 
@@ -444,7 +484,7 @@ void RolesWidget::onSelectionChanged()
         m_duplicateButton->setEnabled(hasSelection);
     }
     if (m_deleteButton) {
-        m_deleteButton->setEnabled(hasSelection && !stockSelection);
+        m_deleteButton->setEnabled(hasSelection);
         m_deleteButton->setToolTip(stockSelection
                                         ? tr("Stock items cannot be deleted")
                                         : tr("Delete the selected Role"));
