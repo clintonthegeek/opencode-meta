@@ -121,9 +121,12 @@ private:
 
     QLineEdit *m_toolNameEdit = nullptr;
     QPushButton *m_addToolButton = nullptr;
+    QPushButton *m_removeToolButton = nullptr;
     QListWidget *m_toolsList = nullptr;
 
     QTableWidget *m_metadataTable = nullptr;
+    QPushButton *m_addMetadataRowButton = nullptr;
+    QPushButton *m_removeMetadataRowButton = nullptr;
 
     QString m_cachedInlineText;
     QString m_cachedFilePath;

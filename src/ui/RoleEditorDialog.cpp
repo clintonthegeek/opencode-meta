@@ -478,7 +478,33 @@ void RoleEditorDialog::setupTabs()
     auto *toolsTab = new QWidget(this);
     auto *toolsLayout = new QVBoxLayout(toolsTab);
     toolsLayout->setContentsMargins(8, 8, 8, 8);
-    auto *toolsHint = new QLabel(tr("Tools exposed to this role."), toolsTab);
+
+    // Deprecation banner — the opencode runtime still folds `tools` into
+    // `permission` at config.ts:552-563 but the load path is fragile, so
+    // the Renderer emits the modern `permission` form on save. We keep
+    // the editor surface here so existing `tools` blocks can be migrated
+    // to the Permissions tab at a single, visible choke-point rather than
+    // being silently dropped on reload.
+    auto *toolsBanner = new QLabel(toolsTab);
+    toolsBanner->setObjectName(QStringLiteral("roleEditor.toolsDeprecationBanner"));
+    toolsBanner->setTextFormat(Qt::RichText);
+    toolsBanner->setWordWrap(true);
+    toolsBanner->setText(tr(
+        "<b>Deprecated</b> &mdash; the <code>tools</code> map is folded into "
+        "<code>permissions</code> at runtime; we keep this surface only so you "
+        "can migrate legacy <code>{name: true}</code> blocks. Move these to the "
+        "Permissions tab above whenever possible."));
+    toolsBanner->setStyleSheet(QStringLiteral(
+        "QLabel { background-color: #fff3cd;"
+        "         color: #5a4500;"
+        "         border: 1px solid #ffe69c;"
+        "         border-radius: 4px;"
+        "         padding: 6px 8px; }"));
+    toolsBanner->setToolTip(tr(
+        "opencode-meta retains the legacy `tools` editor for migration only. "
+        "Saving emits the modern `permissions` form."));
+
+    auto *toolsHint = new QLabel(tr("Tools currently registered for this role."), toolsTab);
     m_toolNameEdit = new QLineEdit(toolsTab);
     m_toolNameEdit->setObjectName(QStringLiteral("roleEditor.toolNameEdit"));
     m_toolNameEdit->setPlaceholderText(tr("e.g. bash, read, edit"));
@@ -487,6 +513,10 @@ void RoleEditorDialog::setupTabs()
     m_addToolButton = new QPushButton(tr("Add"), toolsTab);
     m_addToolButton->setObjectName(QStringLiteral("roleEditor.addToolButton"));
     m_addToolButton->setToolTip(tr("Append the typed tool name to the list."));
+    m_removeToolButton = new QPushButton(tr("Remove"), toolsTab);
+    m_removeToolButton->setObjectName(QStringLiteral("roleEditor.removeToolButton"));
+    m_removeToolButton->setToolTip(tr("Remove the selected tool from the list."));
+    m_removeToolButton->setWhatsThis(tr("Deletes the highlighted list entry; no-op if nothing selected."));
     m_toolsList = new QListWidget(toolsTab);
     m_toolsList->setObjectName(QStringLiteral("roleEditor.toolsList"));
     m_toolsList->setToolTip(tr("Tools currently registered for this role."));
@@ -494,7 +524,9 @@ void RoleEditorDialog::setupTabs()
     auto *addRowLayout = new QHBoxLayout();
     addRowLayout->addWidget(m_toolNameEdit, 1);
     addRowLayout->addWidget(m_addToolButton);
+    addRowLayout->addWidget(m_removeToolButton);
 
+    toolsLayout->addWidget(toolsBanner);
     toolsLayout->addWidget(toolsHint);
     toolsLayout->addLayout(addRowLayout);
     toolsLayout->addWidget(m_toolsList, 1);
@@ -517,8 +549,21 @@ void RoleEditorDialog::setupTabs()
         m_toolNameEdit->clear();
     });
 
+    connect(m_removeToolButton, &QPushButton::clicked, this, [this]() {
+        if (!m_toolsList) {
+            return;
+        }
+        const int row = m_toolsList->currentRow();
+        if (row < 0 || row >= m_toolsList->count()) {
+            return;
+        }
+        delete m_toolsList->takeItem(row);
+    });
+
     m_tabWidget->addTab(toolsTab, tr("Tools"));
-    m_tabWidget->setTabToolTip(2, tr("List the tools this agent is allowed to call."));
+    m_tabWidget->setTabToolTip(2, tr(
+        "Legacy `tools` map — deprecated in favour of Permissions. "
+        "Surface kept for migration only."));
 
     // --- Metadata tab ------------------------------------------------
     auto *metaTab = new QWidget(this);
@@ -526,7 +571,8 @@ void RoleEditorDialog::setupTabs()
     metaLayout->setContentsMargins(8, 8, 8, 8);
     auto *metaHint = new QLabel(
         tr("Metadata — one row per key. Values can be plain strings, numbers (e.g. 7), "
-           "booleans (true / false) or nested JSON ({...} / [...])."),
+           "booleans (true / false) or nested JSON ({...} / [...]). Empty rows are "
+           "ignored on save."),
         metaTab);
     metaHint->setWordWrap(true);
     m_metadataTable = new QTableWidget(0, 2, metaTab);
@@ -535,10 +581,54 @@ void RoleEditorDialog::setupTabs()
     m_metadataTable->horizontalHeader()->setStretchLastSection(true);
     m_metadataTable->verticalHeader()->setVisible(false);
     m_metadataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_metadataTable->setToolTip(tr("Free-form metadata for this role (tags, notes, timestamps)."));
+    m_metadataTable->setEditTriggers(QAbstractItemView::DoubleClicked
+                                     | QAbstractItemView::EditKeyPressed
+                                     | QAbstractItemView::AnyKeyPressed);
+    m_metadataTable->setToolTip(tr("Free-form metadata for this role (tags, notes, timestamps). "
+                                   "Double-click a cell to edit."));
     m_metadataTable->setWhatsThis(tr("Key/value pairs written to opencode.json `metadata` on the agent entry."));
+
+    auto *metaButtonRow = new QHBoxLayout();
+    metaButtonRow->setContentsMargins(0, 0, 0, 0);
+    m_addMetadataRowButton = new QPushButton(tr("Add Row"), metaTab);
+    m_addMetadataRowButton->setObjectName(QStringLiteral("roleEditor.addMetadataRowButton"));
+    m_addMetadataRowButton->setToolTip(tr("Append a new empty key/value row to the metadata table."));
+    m_addMetadataRowButton->setWhatsThis(tr("Adds a row at the bottom so you can fill in a new key/value pair."));
+    m_removeMetadataRowButton = new QPushButton(tr("Remove Row"), metaTab);
+    m_removeMetadataRowButton->setObjectName(QStringLiteral("roleEditor.removeMetadataRowButton"));
+    m_removeMetadataRowButton->setToolTip(tr("Remove the selected row from the metadata table."));
+    m_removeMetadataRowButton->setWhatsThis(tr("No-op if no row is selected."));
+    metaButtonRow->addWidget(m_addMetadataRowButton);
+    metaButtonRow->addWidget(m_removeMetadataRowButton);
+    metaButtonRow->addStretch(1);
+
     metaLayout->addWidget(metaHint);
     metaLayout->addWidget(m_metadataTable, 1);
+    metaLayout->addLayout(metaButtonRow);
+
+    connect(m_addMetadataRowButton, &QPushButton::clicked, this, [this]() {
+        if (!m_metadataTable) {
+            return;
+        }
+        const int row = m_metadataTable->rowCount();
+        m_metadataTable->insertRow(row);
+        m_metadataTable->setItem(row, 0, new QTableWidgetItem(QString()));
+        m_metadataTable->setItem(row, 1, new QTableWidgetItem(QString()));
+        m_metadataTable->setCurrentCell(row, 0);
+        m_metadataTable->editItem(m_metadataTable->item(row, 0));
+    });
+
+    connect(m_removeMetadataRowButton, &QPushButton::clicked, this, [this]() {
+        if (!m_metadataTable) {
+            return;
+        }
+        const int row = m_metadataTable->currentRow();
+        if (row < 0 || row >= m_metadataTable->rowCount()) {
+            return;
+        }
+        m_metadataTable->removeRow(row);
+    });
+
     m_tabWidget->addTab(metaTab, tr("Metadata"));
     m_tabWidget->setTabToolTip(3, tr("Free-form metadata attached to this agent."));
 }
