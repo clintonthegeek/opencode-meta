@@ -22,6 +22,7 @@ class TestTeamEditorWidget : public QObject
 private slots:
     void initTestCase();
     void revertButtonTracksDirtyStateAndEmitsSignal();
+    void defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidden();
 
 private:
     static void seedTeam(StorageManager &storage, const QString &teamId);
@@ -37,6 +38,12 @@ void TestTeamEditorWidget::seedTeam(StorageManager &storage, const QString &team
     role.name = QStringLiteral("Build");
     QVERIFY(storage.saveRole(role));
 
+    Role stockRole;
+    stockRole.id = QStringLiteral("stock-review");
+    stockRole.name = QStringLiteral("Stock Review");
+    stockRole.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY(storage.saveRole(stockRole));
+
     Specialist spec;
     spec.id = QStringLiteral("spec-build");
     spec.roleId = role.id;
@@ -44,16 +51,30 @@ void TestTeamEditorWidget::seedTeam(StorageManager &storage, const QString &team
     spec.name = QStringLiteral("Build Specialist");
     QVERIFY(storage.saveSpecialist(spec));
 
+    Specialist stockSpec;
+    stockSpec.id = QStringLiteral("spec-stock");
+    stockSpec.roleId = stockRole.id;
+    stockSpec.modelId = QStringLiteral("model-b");
+    stockSpec.name = QStringLiteral("Stock Specialist");
+    stockSpec.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY(storage.saveSpecialist(stockSpec));
+
     Team team;
     team.id = teamId;
     team.name = QStringLiteral("Widget Team");
     team.version = QStringLiteral("1.0.0");
     team.description = QStringLiteral("initial");
+    team.metadata.insert(QStringLiteral("default_agent"), spec.id);
     team.primarySpecialistIds.append(spec.id);
     Team::SpecialistBinding binding;
     binding.roleId = role.id;
     binding.specialistId = spec.id;
     team.specialists.append(binding);
+
+    Team::SpecialistBinding stockBinding;
+    stockBinding.roleId = stockRole.id;
+    stockBinding.specialistId = stockSpec.id;
+    team.specialists.append(stockBinding);
     QVERIFY(storage.saveTeam(team));
 }
 
@@ -113,6 +134,55 @@ void TestTeamEditorWidget::revertButtonTracksDirtyStateAndEmitsSignal()
 
     const Team reloaded = storage.loadTeam(teamId);
     QCOMPARE(reloaded.description, QStringLiteral("changed on disk"));
+}
+
+void TestTeamEditorWidget::defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidden()
+{
+    StorageManager storage(m_storageRoot);
+    const QString teamId = QStringLiteral("team-editor-widget-badge");
+    seedTeam(storage, teamId);
+
+    TeamEditorWidget widget(storage);
+    widget.setTeamId(teamId);
+
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int defaultRow = findRowForId(QStringLiteral("spec-build"));
+    const int stockRow = findRowForId(QStringLiteral("spec-stock"));
+    QVERIFY(defaultRow >= 0);
+    QVERIFY(stockRow >= 0);
+
+    auto *nameCell = table->cellWidget(defaultRow, 1);
+    QVERIFY(nameCell);
+    const auto badges = nameCell->findChildren<QLabel *>(QStringLiteral("defaultAgentBadge"));
+    QVERIFY(!badges.isEmpty());
+    QCOMPARE(badges.first()->text(), QStringLiteral("★"));
+
+    QCOMPARE(table->isRowHidden(defaultRow), false);
+    QCOMPARE(table->isRowHidden(stockRow), true);
+
+    widget.setShowStock(true);
+    QCOMPARE(table->isRowHidden(stockRow), false);
+
+    widget.setShowStock(false);
+    QCOMPARE(table->isRowHidden(stockRow), true);
 }
 
 QTEST_MAIN(TestTeamEditorWidget)

@@ -35,6 +35,7 @@
 #include "ui/FilterBar.h"
 #include "ui/ProjectsWidget.h"
 #include "ui/RolesWidget.h"
+#include "ui/TeamEditorWidget.h"
 #include "ui/TeamsWidget.h"
 #include "ui/TrialsWidget.h"
 
@@ -47,6 +48,7 @@ private slots:
     void roles_hidesStockByDefault_andToggleShowsIt();
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
+    void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
     void teams_disablesDeleteForStockTeam();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
     void projects_hidesFilteredListItems_andDisablesActions();
@@ -103,6 +105,24 @@ void makeAndSaveStockTeam(StorageManager &storage,
     team.metadata.insert(QStringLiteral("stock"), true);
     QVERIFY2(storage.saveTeam(team),
              qPrintable(QStringLiteral("saveTeam(%1) failed").arg(id)));
+}
+
+void makeAndSaveSpecialist(StorageManager &storage,
+                           const QString &id,
+                           const QString &roleId,
+                           const QString &name,
+                           bool stock = false)
+{
+    Specialist spec;
+    spec.id = id;
+    spec.roleId = roleId;
+    spec.modelId = QStringLiteral("model-a");
+    spec.name = name;
+    if (stock) {
+        spec.metadata.insert(QStringLiteral("stock"), true);
+    }
+    QVERIFY2(storage.saveSpecialist(spec),
+             qPrintable(QStringLiteral("saveSpecialist(%1) failed").arg(id)));
 }
 
 // Build a Trial that points at an existing Team so the TrialsWidget
@@ -380,6 +400,79 @@ void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
 
     showStock->setChecked(false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), true);
+}
+
+void TestListFilter::teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveRole(storage, QStringLiteral("build"), QStringLiteral("Build"),
+                    QStringLiteral("Primary build agent"), Role::Mode::Primary);
+    makeAndSaveRole(storage, QStringLiteral("review"), QStringLiteral("Review"),
+                    QStringLiteral("Reviews diffs"), Role::Mode::Subagent);
+
+    makeAndSaveSpecialist(storage, QStringLiteral("spec-build"), QStringLiteral("build"),
+                          QStringLiteral("Build Specialist"));
+    makeAndSaveSpecialist(storage, QStringLiteral("spec-stock"), QStringLiteral("review"),
+                          QStringLiteral("Stock Specialist"), true);
+
+    Team team;
+    team.id = QStringLiteral("custom-team");
+    team.name = QStringLiteral("Custom Team");
+    team.description = QStringLiteral("User team");
+    team.version = QStringLiteral("0.1.0");
+    Team::SpecialistBinding a;
+    a.roleId = QStringLiteral("build");
+    a.specialistId = QStringLiteral("spec-build");
+    team.specialists.append(a);
+    Team::SpecialistBinding b;
+    b.roleId = QStringLiteral("review");
+    b.specialistId = QStringLiteral("spec-stock");
+    team.specialists.append(b);
+    QVERIFY(storage.saveTeam(team));
+
+    TeamsWidget widget(storage);
+
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+    QVERIFY(showStock);
+    auto *editor = widget.findChild<TeamEditorWidget *>();
+    QVERIFY(editor);
+    auto *table = editor->findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    widget.selectTeamById(QStringLiteral("custom-team"));
+    editor->setTeamId(QStringLiteral("custom-team"));
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int stockRow = findRowForId(QStringLiteral("spec-stock"));
+    QVERIFY(stockRow >= 0);
+    QCOMPARE(table->isRowHidden(stockRow), true);
+
+    showStock->setChecked(true);
+    QCOMPARE(table->isRowHidden(stockRow), false);
+
+    showStock->setChecked(false);
+    QCOMPARE(table->isRowHidden(stockRow), true);
 }
 
 void TestListFilter::teams_disablesDeleteForStockTeam()

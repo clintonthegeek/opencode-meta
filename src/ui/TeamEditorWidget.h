@@ -67,6 +67,10 @@ public slots:
     // the editor to its placeholder state.
     void setTeamId(const QString &teamId);
 
+    // Mirror the TeamsWidget stock toggle so stock Specialists can be
+    // hidden consistently with stock Teams/Roles.
+    void setShowStock(bool showStock);
+
 private slots:
     // React to user toggling the primary checkbox column.
     void onPrimaryItemChanged(QTableWidgetItem *item);
@@ -88,6 +92,7 @@ private:
     void refreshSpecialistsTable();
     QString formatModelDisplay(const QString &modelId) const;
     QString formatCostBadge(const QString &modelId) const;
+    bool rowIsStock(int row) const;
     void updateActionButtons();
     bool hasDirtyChanges() const;
     int currentSpecialistRow() const;
@@ -113,5 +118,6 @@ private:
     QPushButton *m_revertButton = nullptr;
     QPushButton *m_applyButton = nullptr; // F1 footer "Apply Team..."
 
+    bool m_showStockSpecialists = false;
     bool m_updatingTable = false; // guard to avoid feedback loops while populating
 };

@@ -165,6 +165,9 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     connect(filterBar, &FilterBar::filterChanged,
              this, &TeamsWidget::applyFilter);
     connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
+        if (m_editor) {
+            m_editor->setShowStock(m_showStockCheck && m_showStockCheck->isChecked());
+        }
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
     });
 
@@ -196,6 +199,10 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
             this, &TeamsWidget::applyTeamRequested);
 
     layout->addLayout(contentLayout, 1);
+
+    if (m_editor) {
+        m_editor->setShowStock(m_showStockCheck && m_showStockCheck->isChecked());
+    }
 
     auto *buttonRow = new QHBoxLayout();
     m_newButton = new QPushButton(tr("New Team"), this);

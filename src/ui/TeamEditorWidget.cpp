@@ -85,6 +85,32 @@ QString generateUniqueTeamId(StorageManager &storage, const QString &base)
     return candidate;
 }
 
+QWidget *makeDefaultAgentCell(const QString &name, QWidget *parent)
+{
+    auto *cell = new QWidget(parent);
+    auto *layout = new QHBoxLayout(cell);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    auto *nameLabel = new QLabel(name, cell);
+    layout->addWidget(nameLabel);
+
+    auto *badge = new QLabel(QStringLiteral("★"), cell);
+    badge->setObjectName(QStringLiteral("defaultAgentBadge"));
+    badge->setToolTip(QObject::tr("Default agent"));
+    badge->setStyleSheet(QStringLiteral(
+        "QLabel#defaultAgentBadge { color: #d97706; font-weight: 700; }"));
+    layout->addWidget(badge);
+    layout->addStretch(1);
+    return cell;
+}
+
+bool specialistIsStock(const Specialist &spec)
+{
+    return spec.metadata.value(QStringLiteral("stock")).toBool(false)
+        || spec.metadata.value(QStringLiteral("native")).toBool(false);
+}
+
 QString contextWindowString(int tokens)
 {
     if (tokens <= 0) {
@@ -326,12 +352,24 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     updateActionButtons();
 }
 
+void TeamEditorWidget::setShowStock(bool showStock)
+{
+    if (m_showStockSpecialists == showStock) {
+        return;
+    }
+
+    m_showStockSpecialists = showStock;
+    refreshSpecialistsTable();
+    updateActionButtons();
+}
+
 void TeamEditorWidget::refreshSpecialistsTable()
 {
     if (!m_table) {
         return;
     }
 
+    const QString previouslySelectedId = specialistIdAtRow(m_table->currentRow());
     m_updatingTable = true;
 
     if (m_team.id.isEmpty()) {
@@ -381,12 +419,14 @@ void TeamEditorWidget::refreshSpecialistsTable()
 
         const Specialist spec = specialistCache.value(binding.specialistId);
         const Role role = roleCache.value(binding.roleId);
+        const bool stockSpecialist = m_storageManager.isStockTeam(m_team) || specialistIsStock(spec);
 
         // Column 0: primary checkbox. The specialist id is stored in the
         // UserRole so onPrimaryItemChanged() can locate the binding.
         auto *primaryItem = new QTableWidgetItem();
         primaryItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
         primaryItem->setData(Qt::UserRole, binding.specialistId);
+        primaryItem->setData(Qt::UserRole + 1, stockSpecialist);
         primaryItem->setCheckState(
             m_team.primarySpecialistIds.contains(binding.specialistId)
                 ? Qt::Checked
@@ -409,6 +449,9 @@ void TeamEditorWidget::refreshSpecialistsTable()
             }
         }
         nameItem->setToolTip(nameToolTip);
+        if (binding.specialistId == m_team.metadata.value(QStringLiteral("default_agent")).toString()) {
+            m_table->setCellWidget(row, 1, makeDefaultAgentCell(nameText, m_table));
+        }
         m_table->setItem(row, 1, nameItem);
 
         // Column 2: Role (display name + id).
@@ -438,10 +481,33 @@ void TeamEditorWidget::refreshSpecialistsTable()
             costItem->setToolTip(QStringLiteral("Model: %1\nCost badge: %2").arg(spec.modelId, costText));
         }
         m_table->setItem(row, 4, costItem);
+
+        m_table->setRowHidden(row, !m_showStockSpecialists && rowIsStock(row));
     }
 
     m_table->resizeColumnsToContents();
     m_table->horizontalHeader()->setStretchLastSection(true);
+
+    if (!previouslySelectedId.isEmpty()) {
+        int desiredRow = -1;
+        int firstVisibleRow = -1;
+        for (int row = 0; row < m_table->rowCount(); ++row) {
+            if (firstVisibleRow < 0 && !m_table->isRowHidden(row)) {
+                firstVisibleRow = row;
+            }
+            if (!m_table->isRowHidden(row) && specialistIdAtRow(row) == previouslySelectedId) {
+                desiredRow = row;
+                break;
+            }
+        }
+        if (desiredRow >= 0) {
+            m_table->setCurrentCell(desiredRow, 0);
+        } else if (firstVisibleRow >= 0) {
+            m_table->setCurrentCell(firstVisibleRow, 0);
+        } else {
+            m_table->setCurrentItem(nullptr);
+        }
+    }
 
     m_updatingTable = false;
 }
@@ -562,6 +628,20 @@ QString TeamEditorWidget::specialistIdAtRow(int row) const
         return QString();
     }
     return item->data(Qt::UserRole).toString();
+}
+
+bool TeamEditorWidget::rowIsStock(int row) const
+{
+    if (!m_table || row < 0 || row >= m_table->rowCount()) {
+        return false;
+    }
+
+    QTableWidgetItem *item = m_table->item(row, 0);
+    if (!item) {
+        return false;
+    }
+
+    return item->data(Qt::UserRole + 1).toBool();
 }
 
 void TeamEditorWidget::setTeamId(const QString &teamId)
