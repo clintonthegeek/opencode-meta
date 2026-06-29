@@ -1,7 +1,10 @@
 #include "ui/RoleEditorDialog.h"
 
+#include <QButtonGroup>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -16,6 +19,8 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QRadioButton>
+#include <QStackedWidget>
 #include <QStringList>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -43,6 +48,25 @@ void appendListEntry(QListWidget *list, const QString &text)
     list->addItem(new QListWidgetItem(text));
 }
 
+int approxTokenCount(const QString &text)
+{
+    if (text.isEmpty()) {
+        return 0;
+    }
+    return (text.size() + 3) / 4;
+}
+
+QString renderFileReferenceDisplay(const QString &filePath)
+{
+    return QStringLiteral("{\"file\": \"%1\"}").arg(filePath);
+}
+
+QString renderPlainObjectDisplay(const QJsonObject &obj)
+{
+    const QJsonDocument doc(obj);
+    return QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+}
+
 } // namespace
 
 QString RoleEditorDialog::jsonValueToDisplayText(const QJsonValue &value)
@@ -54,11 +78,15 @@ QString RoleEditorDialog::jsonValueToDisplayText(const QJsonValue &value)
         return value.toBool() ? QStringLiteral("true") : QStringLiteral("false");
     }
     if (value.isDouble()) {
-        // Use QString::number so 7 prints as "7" (not "7.0").
         return QString::number(value.toDouble(), 'g', 15);
     }
     if (value.isObject()) {
-        const QJsonDocument doc(value.toObject());
+        const QJsonObject obj = value.toObject();
+        const QJsonValue fileValue = obj.value(QStringLiteral("file"));
+        if (obj.size() == 1 && fileValue.isString()) {
+            return renderFileReferenceDisplay(fileValue.toString());
+        }
+        const QJsonDocument doc(obj);
         return QString::fromUtf8(doc.toJson(QJsonDocument::Indented));
     }
     if (value.isArray()) {
@@ -66,7 +94,6 @@ QString RoleEditorDialog::jsonValueToDisplayText(const QJsonValue &value)
         return QString::fromUtf8(doc.toJson(QJsonDocument::Indented));
     }
 
-    // Null / undefined -> empty cell so the table still shows the row.
     return QString();
 }
 
@@ -77,7 +104,6 @@ QJsonValue RoleEditorDialog::parseMetadataValue(const QString &text)
         return QJsonValue(QString());
     }
 
-    // Booleans.
     if (trimmed == QLatin1String("true")) {
         return QJsonValue(true);
     }
@@ -85,8 +111,6 @@ QJsonValue RoleEditorDialog::parseMetadataValue(const QString &text)
         return QJsonValue(false);
     }
 
-    // Numbers: integer or rational. Use std::isdigit via manual scan to
-    // avoid pulling <cctype> for the sake of one check.
     auto isAllDigitsWithOptionalSign = [](const QString &s) {
         int i = 0;
         if (s.startsWith(QLatin1Char('-')) || s.startsWith(QLatin1Char('+'))) {
@@ -112,7 +136,6 @@ QJsonValue RoleEditorDialog::parseMetadataValue(const QString &text)
         }
     }
 
-    // Try to parse as JSON object or array.
     if ((trimmed.startsWith(QLatin1Char('{')) && trimmed.endsWith(QLatin1Char('}')))
         || (trimmed.startsWith(QLatin1Char('[')) && trimmed.endsWith(QLatin1Char(']')))) {
         QJsonParseError err;
@@ -125,7 +148,6 @@ QJsonValue RoleEditorDialog::parseMetadataValue(const QString &text)
         }
     }
 
-    // Default: treat as plain string.
     return QJsonValue(trimmed);
 }
 
@@ -136,6 +158,7 @@ RoleEditorDialog::RoleEditorDialog(const Role &role, QWidget *parent)
     setupUi();
     setupTabs();
     loadFromRole(role);
+    rebuildPromptPreview();
 }
 
 void RoleEditorDialog::setupUi()
@@ -145,7 +168,6 @@ void RoleEditorDialog::setupUi()
 
     auto *mainLayout = new QVBoxLayout(this);
 
-    // Header area: id (read-only label) + name + description + mode.
     auto *formLayout = new QFormLayout();
     formLayout->setLabelAlignment(Qt::AlignRight);
 
@@ -194,16 +216,128 @@ void RoleEditorDialog::setupTabs()
     auto *promptTab = new QWidget(this);
     auto *promptLayout = new QVBoxLayout(promptTab);
     promptLayout->setContentsMargins(8, 8, 8, 8);
-    auto *promptHint = new QLabel(tr("System prompt (string form)"), promptTab);
+    promptLayout->setSpacing(8);
+
+    auto *modeHint = new QLabel(tr("Prompt form"), promptTab);
+    promptLayout->addWidget(modeHint);
+
+    auto *modeRow = new QHBoxLayout();
+    modeRow->setContentsMargins(0, 0, 0, 0);
+    m_promptInlineRadio = new QRadioButton(tr("Inline text"), promptTab);
+    m_promptInlineRadio->setObjectName(QStringLiteral("roleEditor.promptInlineRadio"));
+    m_promptInlineRadio->setToolTip(tr("Write the system prompt as a plain string in opencode.json."));
+    m_promptFileRadio = new QRadioButton(tr("Reference file"), promptTab);
+    m_promptFileRadio->setObjectName(QStringLiteral("roleEditor.promptFileRadio"));
+    m_promptFileRadio->setToolTip(tr("Store a relative path; opencode will read the prompt from that file."));
+    m_promptModeGroup = new QButtonGroup(this);
+    m_promptModeGroup->setExclusive(true);
+    m_promptModeGroup->addButton(m_promptInlineRadio, static_cast<int>(PromptModeInlineText));
+    m_promptModeGroup->addButton(m_promptFileRadio, static_cast<int>(PromptModeReferenceFile));
+    modeRow->addWidget(m_promptInlineRadio);
+    modeRow->addWidget(m_promptFileRadio);
+    modeRow->addStretch(1);
+    promptLayout->addLayout(modeRow);
+
+    m_promptModeStack = new QStackedWidget(promptTab);
+    m_promptModeStack->setObjectName(QStringLiteral("roleEditor.promptModeStack"));
+
+    auto *inlinePanel = new QWidget(promptTab);
+    auto *inlineLayout = new QVBoxLayout(inlinePanel);
+    inlineLayout->setContentsMargins(0, 0, 0, 0);
+    inlineLayout->setSpacing(6);
     m_systemPromptEdit = new QPlainTextEdit(promptTab);
     m_systemPromptEdit->setObjectName(QStringLiteral("roleEditor.systemPromptEdit"));
     m_systemPromptEdit->setPlaceholderText(tr("Enter system prompt for this role..."));
     m_systemPromptEdit->setToolTip(tr("Inline string system prompt for this agent."));
     m_systemPromptEdit->setWhatsThis(tr("Writes into the opencode.json `system_prompt` field as a plain string."));
-    promptLayout->addWidget(promptHint);
-    promptLayout->addWidget(m_systemPromptEdit, 1);
+    inlineLayout->addWidget(m_systemPromptEdit, 1);
+
+    m_loadFromFileButton = new QPushButton(tr("Load from file..."), inlinePanel);
+    m_loadFromFileButton->setObjectName(QStringLiteral("roleEditor.loadFromFileButton"));
+    m_loadFromFileButton->setToolTip(tr("Pick a prompt file and switch this role into Reference-file mode."));
+    m_loadFromFileButton->setWhatsThis(tr("Opens a file picker, switches the mode, and stores the relative path as {\"file\": \"...\"}."));
+    auto *inlineButtonRow = new QHBoxLayout();
+    inlineButtonRow->setContentsMargins(0, 0, 0, 0);
+    inlineButtonRow->addWidget(m_loadFromFileButton);
+    inlineButtonRow->addStretch(1);
+    inlineLayout->addLayout(inlineButtonRow);
+
+    m_promptModeStack->addWidget(inlinePanel);
+
+    auto *filePanel = new QWidget(promptTab);
+    auto *fileLayout = new QFormLayout(filePanel);
+    fileLayout->setContentsMargins(0, 0, 0, 0);
+    fileLayout->setLabelAlignment(Qt::AlignRight);
+
+    auto *filePathRow = new QHBoxLayout();
+    filePathRow->setContentsMargins(0, 0, 0, 0);
+    m_filePathEdit = new QLineEdit(filePanel);
+    m_filePathEdit->setObjectName(QStringLiteral("roleEditor.filePathEdit"));
+    m_filePathEdit->setPlaceholderText(tr("./prompts/role.md"));
+    m_filePathEdit->setToolTip(tr("Relative or absolute path written into {\"file\": \"...\"}."));
+    m_filePathEdit->setWhatsThis(tr("The path is persisted verbatim into the opencode.json `system_prompt` object."));
+    m_browseFileButton = new QPushButton(tr("Browse..."), filePanel);
+    m_browseFileButton->setObjectName(QStringLiteral("roleEditor.browseFileButton"));
+    m_browseFileButton->setToolTip(tr("Pick a prompt file from disk."));
+    m_browseFileButton->setWhatsThis(tr("Opens a file picker and copies the chosen path into the File path field."));
+    filePathRow->addWidget(m_filePathEdit, 1);
+    filePathRow->addWidget(m_browseFileButton);
+    auto *filePathHolder = new QWidget(filePanel);
+    filePathHolder->setLayout(filePathRow);
+    fileLayout->addRow(tr("File path"), filePathHolder);
+
+    auto *fileHint = new QLabel(
+        tr("Written as  {\"file\": \"<path>\"}  into the opencode.json `system_prompt` field."),
+        filePanel);
+    fileHint->setWordWrap(true);
+    fileHint->setObjectName(QStringLiteral("roleEditor.filePathHint"));
+    fileLayout->addRow(QString(), fileHint);
+
+    m_promptModeStack->addWidget(filePanel);
+
+    promptLayout->addWidget(m_promptModeStack, 1);
+
+    auto *previewSeparator = new QLabel(tr("Preview"), promptTab);
+    previewSeparator->setStyleSheet(QStringLiteral("QLabel { font-weight: bold; }"));
+    promptLayout->addWidget(previewSeparator);
+
+    m_promptPreviewHeader = new QLabel(promptTab);
+    m_promptPreviewHeader->setObjectName(QStringLiteral("roleEditor.promptPreviewHeader"));
+    m_promptPreviewHeader->setTextFormat(Qt::RichText);
+    m_promptPreviewHeader->setText(tr("<i>The serialized prompt appears here as the opencode.json writer will see it.</i>"));
+    promptLayout->addWidget(m_promptPreviewHeader);
+
+    m_promptPreviewBody = new QPlainTextEdit(promptTab);
+    m_promptPreviewBody->setObjectName(QStringLiteral("roleEditor.promptPreviewBody"));
+    m_promptPreviewBody->setReadOnly(true);
+    m_promptPreviewBody->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+    m_promptPreviewBody->setPlaceholderText(tr(
+        "Pick a prompt mode above and edit the body. This preview updates live to show "
+        "what will be saved into opencode.json."));
+    promptLayout->addWidget(m_promptPreviewBody, 1);
+
+    m_promptPreviewTokenLabel = new QLabel(promptTab);
+    m_promptPreviewTokenLabel->setObjectName(QStringLiteral("roleEditor.promptPreviewTokenLabel"));
+    m_promptPreviewTokenLabel->setTextFormat(Qt::RichText);
+    m_promptPreviewTokenLabel->setText(QStringLiteral("<span style='color: gray;'>"
+                                                     "approx. &mdash; tokens</span>"));
+    promptLayout->addWidget(m_promptPreviewTokenLabel);
+
     m_tabWidget->addTab(promptTab, tr("Prompt"));
-    m_tabWidget->setTabToolTip(0, tr("The body of the agent prompt itself."));
+    m_tabWidget->setTabToolTip(0, tr("System prompt body: pick the form and edit the body. Live preview mirrors the opencode.json output."));
+
+    connect(m_promptInlineRadio, &QRadioButton::toggled,
+            this, &RoleEditorDialog::onPromptModeChanged);
+    connect(m_promptFileRadio, &QRadioButton::toggled,
+            this, &RoleEditorDialog::onPromptModeChanged);
+    connect(m_systemPromptEdit, &QPlainTextEdit::textChanged,
+            this, &RoleEditorDialog::onInlinePromptTextChanged);
+    connect(m_filePathEdit, &QLineEdit::textChanged,
+            this, &RoleEditorDialog::onFilePathChanged);
+    connect(m_browseFileButton, &QPushButton::clicked,
+            this, &RoleEditorDialog::onBrowseFileReference);
+    connect(m_loadFromFileButton, &QPushButton::clicked,
+            this, &RoleEditorDialog::onLoadPromptFromFile);
 
     // --- Permissions tab --------------------------------------------
     auto *permsTab = new QWidget(this);
@@ -259,7 +393,6 @@ void RoleEditorDialog::setupTabs()
         if (name.isEmpty()) {
             return;
         }
-        // Skip duplicates — keep the list tidy and avoid round-trip churn.
         for (int i = 0; i < m_toolsList->count(); ++i) {
             if (m_toolsList->item(i)->text() == name) {
                 m_toolNameEdit->clear();
@@ -296,6 +429,214 @@ void RoleEditorDialog::setupTabs()
     m_tabWidget->setTabToolTip(3, tr("Free-form metadata attached to this agent."));
 }
 
+QString RoleEditorDialog::promptModeToString(PromptMode mode)
+{
+    switch (mode) {
+    case PromptModeInlineText:
+        return QStringLiteral("inline");
+    case PromptModeReferenceFile:
+        return QStringLiteral("file");
+    }
+    return QStringLiteral("inline");
+}
+
+RoleEditorDialog::PromptMode RoleEditorDialog::detectPromptMode(const QJsonValue &value,
+                                                                 QString *inlineText,
+                                                                 QString *filePath)
+{
+    if (inlineText) {
+        *inlineText = QString();
+    }
+    if (filePath) {
+        *filePath = QString();
+    }
+
+    if (value.isString()) {
+        if (inlineText) {
+            *inlineText = value.toString();
+        }
+        return PromptModeInlineText;
+    }
+
+    if (value.isObject()) {
+        const QJsonObject obj = value.toObject();
+        const QJsonValue fileValue = obj.value(QStringLiteral("file"));
+        if (fileValue.isString()) {
+            if (filePath) {
+                *filePath = fileValue.toString();
+            }
+            return PromptModeReferenceFile;
+        }
+
+        if (inlineText) {
+            *inlineText = renderPlainObjectDisplay(obj);
+        }
+        return PromptModeInlineText;
+    }
+
+    if (!value.isNull() && !value.isUndefined()) {
+        if (inlineText) {
+            *inlineText = jsonValueToDisplayText(value);
+        }
+    }
+
+    return PromptModeInlineText;
+}
+
+RoleEditorDialog::PromptMode RoleEditorDialog::currentPromptMode() const
+{
+    if (m_promptFileRadio && m_promptFileRadio->isChecked()) {
+        return PromptModeReferenceFile;
+    }
+    return PromptModeInlineText;
+}
+
+QString RoleEditorDialog::currentInlinePromptText() const
+{
+    return m_systemPromptEdit ? m_systemPromptEdit->toPlainText() : QString();
+}
+
+QString RoleEditorDialog::currentFilePath() const
+{
+    return m_filePathEdit ? m_filePathEdit->text() : QString();
+}
+
+void RoleEditorDialog::onPromptModeChanged()
+{
+    if (!m_promptModeStack) {
+        return;
+    }
+    m_promptModeStack->setCurrentIndex(static_cast<int>(currentPromptMode()));
+    rebuildPromptPreview();
+}
+
+void RoleEditorDialog::onBrowseFileReference()
+{
+    const QString startDir = m_filePathEdit && !m_filePathEdit->text().isEmpty()
+                                 ? QFileInfo(m_filePathEdit->text()).absolutePath()
+                                 : QString();
+    const QString chosen = QFileDialog::getOpenFileName(
+        this,
+        tr("Choose prompt file"),
+        startDir,
+        tr("Prompt files (*.md *.txt *.prompt);;All files (*)"));
+
+    if (chosen.isEmpty()) {
+        return;
+    }
+
+    if (!m_filePathEdit) {
+        return;
+    }
+    m_filePathEdit->setText(chosen);
+    if (m_filePathEdit->text() != chosen) {
+        m_filePathEdit->setText(chosen);
+    }
+}
+
+void RoleEditorDialog::onLoadPromptFromFile()
+{
+    const QString startDir = QString();
+    const QString chosen = QFileDialog::getOpenFileName(
+        this,
+        tr("Choose prompt file"),
+        startDir,
+        tr("Prompt files (*.md *.txt *.prompt);;All files (*)"));
+
+    if (chosen.isEmpty()) {
+        return;
+    }
+
+    if (m_promptFileRadio && !m_promptFileRadio->isChecked()) {
+        if (m_promptModeGroup) {
+            m_promptModeGroup->blockSignals(true);
+        }
+        m_promptFileRadio->setChecked(true);
+        if (m_promptModeGroup) {
+            m_promptModeGroup->blockSignals(false);
+        }
+        if (m_promptModeStack) {
+            m_promptModeStack->setCurrentIndex(static_cast<int>(PromptModeReferenceFile));
+        }
+    }
+
+    if (m_filePathEdit) {
+        m_filePathEdit->setText(chosen);
+    }
+    if (m_promptModeStack) {
+        m_promptModeStack->setCurrentIndex(static_cast<int>(currentPromptMode()));
+    }
+    rebuildPromptPreview();
+}
+
+void RoleEditorDialog::onInlinePromptTextChanged()
+{
+    m_cachedInlineText = currentInlinePromptText();
+    rebuildPromptPreview();
+}
+
+void RoleEditorDialog::onFilePathChanged()
+{
+    m_cachedFilePath = currentFilePath();
+    rebuildPromptPreview();
+}
+
+void RoleEditorDialog::rebuildPromptPreview()
+{
+    if (!m_promptPreviewBody || !m_promptPreviewHeader) {
+        return;
+    }
+
+    const PromptMode mode = currentPromptMode();
+    const QString roleName = m_nameEdit ? m_nameEdit->text().trimmed() : QString();
+    const QString roleId = m_idLabel ? m_idLabel->text().trimmed() : QString();
+
+    QString title = roleName.isEmpty() ? QStringLiteral("(no name)") : roleName;
+    if (!roleId.isEmpty() && roleId != roleName) {
+        title += QStringLiteral(" [") + roleId + QStringLiteral("]");
+    }
+    const QString modeLabel = (mode == PromptModeReferenceFile)
+                                  ? QStringLiteral("Reference file")
+                                  : QStringLiteral("Inline text");
+    const QString header = QStringLiteral("<b>Effective Prompt</b> &mdash; %1<br>"
+                                          "<span style='color: gray;'>form: %2</span>")
+                               .arg(title.toHtmlEscaped(), modeLabel.toHtmlEscaped());
+    m_promptPreviewHeader->setText(header);
+
+    QString body;
+    QString tokenSource;
+
+    if (mode == PromptModeReferenceFile) {
+        const QString path = currentFilePath().trimmed();
+        if (path.isEmpty()) {
+            body = QStringLiteral("(no file path set — {\"file\": \"...\"} will be empty if you save now)");
+            tokenSource = body;
+        } else {
+            body = renderFileReferenceDisplay(path);
+            tokenSource = path;
+        }
+    } else {
+        const QString t = currentInlinePromptText();
+        if (t.trimmed().isEmpty()) {
+            body = QStringLiteral("(no inline prompt set — the system_prompt field will be omitted if you save now)");
+            tokenSource = t;
+        } else {
+            body = t;
+            tokenSource = t;
+        }
+    }
+
+    m_promptPreviewBody->setPlainText(body);
+
+    if (m_promptPreviewTokenLabel) {
+        const int tokens = approxTokenCount(tokenSource);
+        m_promptPreviewTokenLabel->setText(tr("<span style='color: gray;'>"
+                                               "approx. %1 tokens (%2 chars)</span>")
+                                               .arg(tokens)
+                                               .arg(tokenSource.size()));
+    }
+}
+
 void RoleEditorDialog::loadFromRole(const Role &role)
 {
     if (m_idLabel) {
@@ -312,9 +653,42 @@ void RoleEditorDialog::loadFromRole(const Role &role)
         m_modeCombo->setCurrentIndex(idx >= 0 ? idx : 0);
     }
 
+    QString initialInline;
+    QString initialFilePath;
+    const PromptMode detected = detectPromptMode(role.systemPrompt,
+                                                 &initialInline,
+                                                 &initialFilePath);
+
+    m_cachedInlineText = initialInline;
+    m_cachedFilePath = initialFilePath;
+
+    if (m_promptModeGroup) {
+        m_promptModeGroup->blockSignals(true);
+    }
+    if (m_promptInlineRadio) {
+        m_promptInlineRadio->setChecked(detected == PromptModeInlineText);
+    }
+    if (m_promptFileRadio) {
+        m_promptFileRadio->setChecked(detected == PromptModeReferenceFile);
+    }
+    if (m_promptModeStack) {
+        m_promptModeStack->setCurrentIndex(static_cast<int>(detected));
+    }
+    if (m_promptModeGroup) {
+        m_promptModeGroup->blockSignals(false);
+    }
+
     if (m_systemPromptEdit) {
-        m_systemPromptEdit->setPlainText(jsonValueToDisplayText(role.systemPrompt));
+        m_systemPromptEdit->blockSignals(true);
+        m_systemPromptEdit->setPlainText(initialInline);
         m_systemPromptEdit->moveCursor(QTextCursor::Start);
+        m_systemPromptEdit->blockSignals(false);
+    }
+
+    if (m_filePathEdit) {
+        m_filePathEdit->blockSignals(true);
+        m_filePathEdit->setText(initialFilePath);
+        m_filePathEdit->blockSignals(false);
     }
 
     if (m_permissionsTable) {
@@ -404,13 +778,55 @@ void RoleEditorDialog::applyToRole(Role &role) const
         role.metadata = metadata;
     }
 
-    // Preserve the original systemPrompt type unless the user actually
-    // edited the prompt text — same behaviour as the pre-tabbed dialog.
-    if (m_systemPromptEdit) {
-        const QString newPromptText = m_systemPromptEdit->toPlainText();
-        const QString originalPromptText = jsonValueToDisplayText(role.systemPrompt);
-        if (newPromptText.trimmed() != originalPromptText.trimmed()) {
-            role.systemPrompt = QJsonValue(newPromptText);
+    // systemPrompt: type-preserving round-trip.
+    //
+    // Goal: untouched fields must come back with the SAME QJsonValue
+    // (string stays string, {"file": ...} stays {"file": ...}). When the
+    // user actually changes the body we emit the form implied by the
+    // current UI mode.
+    const PromptMode mode = const_cast<RoleEditorDialog *>(this)->currentPromptMode();
+    const QJsonValue original = role.systemPrompt;
+
+    auto unchanged = [&](const QJsonValue &candidate) -> bool {
+        if (original.type() != candidate.type()) {
+            return false;
+        }
+        if (original.isString() && candidate.isString()) {
+            return original.toString() == candidate.toString();
+        }
+        if (original.isObject() && candidate.isObject()) {
+            return original.toObject() == candidate.toObject();
+        }
+        return original == candidate;
+    };
+
+    if (mode == PromptModeReferenceFile) {
+        const QString path = currentFilePath().trimmed();
+        if (path.isEmpty()) {
+            // Empty path under reference-file mode is treated as "drop the
+            // field" so we don't burn the original by writing {"file": ""}.
+            if (!original.isNull() && !original.isUndefined()) {
+                role.systemPrompt = QJsonValue();
+            }
+        } else {
+            QJsonObject obj;
+            obj.insert(QStringLiteral("file"), path);
+            const QJsonValue candidate(obj);
+            if (!unchanged(candidate)) {
+                role.systemPrompt = candidate;
+            }
+        }
+    } else {
+        const QString text = currentInlinePromptText();
+        if (text.isEmpty()) {
+            if (!original.isNull() && !original.isUndefined()) {
+                role.systemPrompt = QJsonValue();
+            }
+        } else {
+            const QJsonValue candidate(text);
+            if (!unchanged(candidate)) {
+                role.systemPrompt = candidate;
+            }
         }
     }
 }
