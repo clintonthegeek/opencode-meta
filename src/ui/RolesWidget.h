@@ -9,6 +9,7 @@ class QSortFilterProxyModel;
 class QTableWidget;
 class QTableWidgetItem;
 class QPushButton;
+class QAction;
 class StorageManager;
 
 // Roles view: library of Role definitions (job descriptions + prompts).
@@ -38,6 +39,7 @@ private slots:
     void deleteSelectedRole();
     void onSelectionChanged();
     void onItemDoubleClicked(QTableWidgetItem *item);
+    void showAboutThisStockItem();
     // ROADMAP P2-2: case-insensitive dynamic filtering across all visible
     // columns. Empty text shows every row.
     void applyFilter(const QString &text);
@@ -57,4 +59,5 @@ private:
     QPushButton *m_editButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
+    QAction *m_aboutStockItemAction = nullptr;
 };

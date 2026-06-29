@@ -47,7 +47,12 @@ target_include_directories(test_cross_view_smoke PRIVATE ${CMAKE_SOURCE_DIR}/src
 target_link_libraries(test_cross_view_smoke PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib)
 add_test(NAME test_cross_view_smoke COMMAND test_cross_view_smoke)
 
-   add_qt_test(test_team_renderer           test_team_renderer.cpp)
+add_executable(test_stock_item_info test_stock_item_info.cpp ${F5_UI_SOURCES})
+target_include_directories(test_stock_item_info PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(test_stock_item_info PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Test opencode-meta-lib)
+add_test(NAME test_stock_item_info COMMAND test_stock_item_info)
+
+add_qt_test(test_team_renderer           test_team_renderer.cpp)
    add_qt_test(test_apply_team              test_apply_team.cpp)
    add_qt_test(test_starter_team_apply      test_starter_team_apply.cpp)
    add_qt_test(test_teams_storage           test_teams_storage.cpp)

@@ -1,0 +1,160 @@
+// Verifies stock-row affordances: the badge tooltip and the tiny info action.
+
+#include <QAction>
+#include <QApplication>
+#include <QCheckBox>
+#include <QLabel>
+#include <QMessageBox>
+#include <QTableWidget>
+#include <QTemporaryDir>
+#include <QTest>
+#include <QToolButton>
+#include <QTimer>
+
+#include "models/Role.h"
+#include "models/Team.h"
+#include "storage/StorageManager.h"
+#include "ui/RolesWidget.h"
+#include "ui/TeamsWidget.h"
+
+namespace {
+
+constexpr const char *kStockTooltip =
+    "Stock seed item - cannot be modified or deleted. Created automatically for new users.";
+
+int findStockRow(QTableWidget *table)
+{
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto *item = table->item(row, 0);
+        if (item && item->data(Qt::UserRole + 1).toBool()) {
+            return row;
+        }
+    }
+    return -1;
+}
+
+void showStockRows(QCheckBox *showStock, QWidget *widget)
+{
+    QVERIFY(showStock);
+    showStock->setChecked(true);
+    widget->show();
+    QApplication::processEvents();
+}
+
+void verifyInfoAction(QAction *action, QWidget *widget, const QString &expectedKind)
+{
+    QVERIFY(action);
+    QCOMPARE(action->text(), QStringLiteral("About this stock item"));
+
+    QString capturedTitle;
+    QString capturedText;
+    bool captured = false;
+
+    QTimer::singleShot(0, widget, [&]() {
+        auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+        QVERIFY(box);
+        capturedTitle = box->windowTitle();
+        capturedText = box->text();
+        captured = true;
+        QMetaObject::invokeMethod(box, "accept", Qt::QueuedConnection);
+    });
+
+    action->trigger();
+
+    QVERIFY(captured);
+    QCOMPARE(capturedTitle, QStringLiteral("About this stock item"));
+    QVERIFY(capturedText.contains(QStringLiteral("stock seed data")));
+    QVERIFY(capturedText.contains(QStringLiteral("settings/seed_stock_defaults")));
+    QVERIFY(capturedText.contains(expectedKind));
+}
+
+template <typename WidgetT>
+void verifyStockBadgeAndAction(WidgetT &widget,
+                               const QString &showStockBoxName,
+                               const QString &actionName,
+                               const QString &kind)
+{
+    auto *showStock = widget.template findChild<QCheckBox *>(showStockBoxName);
+    showStockRows(showStock, &widget);
+
+    auto *table = widget.template findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    const int stockRow = findStockRow(table);
+    QVERIFY(stockRow >= 0);
+    table->setCurrentCell(stockRow, 0);
+    QApplication::processEvents();
+
+    auto *nameCell = table->cellWidget(stockRow, 1);
+    QVERIFY(nameCell);
+
+    auto *badge = nameCell->template findChild<QLabel *>(QStringLiteral("stockBadge"));
+    QVERIFY(badge);
+    QCOMPARE(badge->toolTip(), QString::fromLatin1(kStockTooltip));
+
+    auto *button = nameCell->template findChild<QToolButton *>(QStringLiteral("stockInfoButton"));
+    QVERIFY(button);
+
+    auto *action = widget.template findChild<QAction *>(actionName);
+    verifyInfoAction(action, &widget, kind);
+}
+
+} // namespace
+
+class TestStockItemInfo : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void initTestCase();
+    void rolesStockBadgeAndInfoAction();
+    void teamsStockBadgeAndInfoAction();
+};
+
+void TestStockItemInfo::initTestCase()
+{
+    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+}
+
+void TestStockItemInfo::rolesStockBadgeAndInfoAction()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+
+    StorageManager storage(tmpRoot.path());
+
+    Role role;
+    role.id = QStringLiteral("build");
+    role.name = QStringLiteral("Build");
+    role.metadata.insert(QStringLiteral("native"), true);
+    QVERIFY(storage.saveRole(role));
+
+    RolesWidget widget(storage);
+    verifyStockBadgeAndAction(widget,
+                              QStringLiteral("rolesWidget.showStock"),
+                              QStringLiteral("rolesWidget.aboutStockItemAction"),
+                              QStringLiteral("Role"));
+}
+
+void TestStockItemInfo::teamsStockBadgeAndInfoAction()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+
+    StorageManager storage(tmpRoot.path());
+
+    Team team;
+    team.id = QStringLiteral("starter-team");
+    team.name = QStringLiteral("Starter Team");
+    team.metadata.insert(QStringLiteral("default_agent"), QStringLiteral("starter-build"));
+    QVERIFY(storage.saveTeam(team));
+
+    TeamsWidget widget(storage);
+    verifyStockBadgeAndAction(widget,
+                              QStringLiteral("teamsWidget.showStock"),
+                              QStringLiteral("teamsWidget.aboutStockItemAction"),
+                              QStringLiteral("Team"));
+}
+
+QTEST_MAIN(TestStockItemInfo)
+#include "test_stock_item_info.moc"

@@ -67,6 +67,7 @@ private slots:
     void refreshTeams();
     void onSelectionChanged();
     void onDeleteKeyPressedOnTable();
+    void showAboutThisStockItem();
     // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
     void applyFilter(const QString &text);
 
@@ -88,4 +89,5 @@ private:
     TeamEditorWidget *m_editor = nullptr;
     QAction *m_newAction = nullptr;
     QAction *m_deleteAction = nullptr;
+    QAction *m_aboutStockItemAction = nullptr;
 };

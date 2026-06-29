@@ -1,15 +1,20 @@
 #include "ui/RolesWidget.h"
 
+#include <QAction>
 #include <QCheckBox>
+#include <QMenu>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QSize>
+#include <QStyle>
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include "models/Role.h"
@@ -24,6 +29,7 @@ QLabel *makeStockBadge(const QString &text, QWidget *parent)
     auto *badge = new QLabel(text, parent);
     badge->setObjectName(QStringLiteral("stockBadge"));
     badge->setAlignment(Qt::AlignCenter);
+    badge->setToolTip(QObject::tr("Stock seed item - cannot be modified or deleted. Created automatically for new users."));
     badge->setStyleSheet(QStringLiteral(
         "QLabel#stockBadge {"
         " background-color: #eef2ff;"
@@ -37,7 +43,33 @@ QLabel *makeStockBadge(const QString &text, QWidget *parent)
     return badge;
 }
 
-QWidget *makeStockNameCell(const QString &name, QWidget *parent)
+QToolButton *makeStockInfoButton(int row,
+                                 QTableWidget *table,
+                                 QAction *aboutAction,
+                                 QWidget *parent)
+{
+    auto *button = new QToolButton(parent);
+    button->setObjectName(QStringLiteral("stockInfoButton"));
+    button->setAutoRaise(true);
+    button->setToolTip(QObject::tr("About this stock item"));
+    button->setIcon(parent->style()->standardIcon(QStyle::SP_MessageBoxInformation));
+    button->setIconSize(QSize(12, 12));
+    QObject::connect(button, &QToolButton::clicked, parent, [table, row, aboutAction]() {
+        if (table) {
+            table->setCurrentCell(row, 0);
+        }
+        if (aboutAction) {
+            aboutAction->trigger();
+        }
+    });
+    return button;
+}
+
+QWidget *makeStockNameCell(int row,
+                           const QString &name,
+                           QTableWidget *table,
+                           QAction *aboutAction,
+                           QWidget *parent)
 {
     auto *cell = new QWidget(parent);
     auto *layout = new QHBoxLayout(cell);
@@ -47,8 +79,16 @@ QWidget *makeStockNameCell(const QString &name, QWidget *parent)
     auto *nameLabel = new QLabel(name, cell);
     layout->addWidget(nameLabel);
     layout->addWidget(makeStockBadge(QObject::tr("Stock"), cell));
+    layout->addWidget(makeStockInfoButton(row, table, aboutAction, cell));
     layout->addStretch(1);
     return cell;
+}
+
+QString stockAboutText(const QString &itemKind)
+{
+    return QObject::tr("This %1 came from the stock seed data.\n\n"
+                       "To opt out, turn off the hidden `settings/seed_stock_defaults` flag in your opencode settings.")
+        .arg(itemKind);
 }
 
 QString generateUniqueRoleId(StorageManager &storage, const QString &base)
@@ -119,6 +159,7 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->verticalHeader()->setVisible(false);
     m_table->setToolTip(tr("Browse, filter, and inspect Roles."));
+    m_table->setContextMenuPolicy(Qt::CustomContextMenu);
     layout->addWidget(m_table, 1);
 
     // Drive row visibility from a real FilterProxyModel rather
@@ -155,6 +196,28 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
             this, &RolesWidget::onSelectionChanged);
     connect(m_table, &QTableWidget::itemDoubleClicked,
             this, &RolesWidget::onItemDoubleClicked);
+    connect(m_table, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        if (!m_table) {
+            return;
+        }
+
+        const int row = m_table->rowAt(pos.y());
+        if (row < 0 || !rowIsStock(row)) {
+            return;
+        }
+
+        m_table->setCurrentCell(row, 0);
+
+        QMenu menu(m_table);
+        if (m_aboutStockItemAction) {
+            menu.addAction(m_aboutStockItemAction);
+        }
+        menu.exec(m_table->viewport()->mapToGlobal(pos));
+    });
+
+    m_aboutStockItemAction = new QAction(tr("About this stock item"), this);
+    m_aboutStockItemAction->setObjectName(QStringLiteral("rolesWidget.aboutStockItemAction"));
+    connect(m_aboutStockItemAction, &QAction::triggered, this, &RolesWidget::showAboutThisStockItem);
 
     refreshRoles();
     onSelectionChanged();
@@ -179,7 +242,11 @@ void RolesWidget::refreshRoles()
             const QString displayName = role.name.isEmpty() ? role.id : role.name;
             nameItem->setText(displayName);
             nameItem->setToolTip(tr("Stock role"));
-            m_table->setCellWidget(row, 1, makeStockNameCell(displayName, m_table));
+            m_table->setCellWidget(row, 1, makeStockNameCell(row,
+                                                             displayName,
+                                                             m_table,
+                                                             m_aboutStockItemAction,
+                                                             m_table));
         }
         m_table->setItem(row, 1, nameItem);
 
@@ -388,6 +455,20 @@ void RolesWidget::onItemDoubleClicked(QTableWidgetItem *item)
 {
     Q_UNUSED(item);
     editSelectedRole();
+}
+
+void RolesWidget::showAboutThisStockItem()
+{
+    if (!m_table || !rowIsStock(m_table->currentRow())) {
+        return;
+    }
+
+    QMessageBox box(this);
+    box.setWindowTitle(tr("About this stock item"));
+    box.setIcon(QMessageBox::Information);
+    box.setText(stockAboutText(tr("Role")));
+    box.setStandardButtons(QMessageBox::Ok);
+    box.exec();
 }
 
 void RolesWidget::applyFilter(const QString &text)
