@@ -49,6 +49,7 @@ private slots:
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
     void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
+    void teams_cloneStockTeamSelectsEditableCopy();
     void teams_stockDeleteShowsFlashFeedback();
     void roles_stockDeleteShowsFlashFeedback();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
@@ -474,6 +475,56 @@ void TestListFilter::teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecial
 
     showStock->setChecked(false);
     QCOMPARE(table->isRowHidden(stockRow), true);
+}
+
+void TestListFilter::teams_cloneStockTeamSelectsEditableCopy()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveStockTeam(storage, QStringLiteral("starter-team"),
+                         QStringLiteral("Starter Team"), QStringLiteral("Seeded team"));
+
+    TeamsWidget widget(storage);
+
+    auto *cloneButton = widget.findChild<QPushButton *>(QStringLiteral("teamsWidget.cloneButton"));
+    QVERIFY2(cloneButton, "TeamsWidget has no clone button");
+    auto *editor = widget.findChild<TeamEditorWidget *>();
+    QVERIFY(editor);
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+    QVERIFY(showStock);
+    showStock->setChecked(true);
+
+    widget.selectTeamById(QStringLiteral("starter-team"));
+    QApplication::processEvents();
+    QVERIFY(!cloneButton->isHidden());
+
+    cloneButton->click();
+    QApplication::processEvents();
+
+    QVERIFY(table->currentRow() >= 0);
+    QTableWidgetItem *idItem = table->item(table->currentRow(), 0);
+    QVERIFY(idItem);
+    const QString clonedId = idItem->data(Qt::UserRole).isValid()
+                                 ? idItem->data(Qt::UserRole).toString()
+                                 : idItem->text();
+    QVERIFY2(clonedId != QStringLiteral("starter-team"), "clone did not select a new Team");
+    QCOMPARE(editor->teamId(), clonedId);
+
+    const Team original = storage.loadTeam(QStringLiteral("starter-team"));
+    QVERIFY(storage.isStockTeam(original));
+
+    const Team cloned = storage.loadTeam(clonedId);
+    QVERIFY(!cloned.id.isEmpty());
+    QVERIFY(!storage.isStockTeam(cloned));
+    QCOMPARE(cloned.parentTeamId, QStringLiteral("starter-team"));
 }
 
 void TestListFilter::teams_stockDeleteShowsFlashFeedback()

@@ -68,7 +68,8 @@ public:
        Team loadTeam(const QString &id) const;       // returns empty Team on failure
        QList<Team> listTeams() const;                // scans teams/ directory
        bool deleteTeam(const QString &id) const;     // removes teams/<id>.json; false if missing
-       bool isStockTeam(const Team &team) const;
+        Team cloneTeam(const QString &teamId) const;   // returns cloned Team or empty Team on failure
+        bool isStockTeam(const Team &team) const;
 
   // Trials
   bool saveTrial(const Trial &trial) const;     // trials/<id>.json

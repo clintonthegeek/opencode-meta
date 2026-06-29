@@ -40,6 +40,9 @@ public slots:
     // Delete key shortcut installed on the table.
     void deleteSelectedTeam();
 
+    // Clone the currently selected stock Team into an editable copy.
+    void cloneSelectedStockTeam();
+
     // Select the Team with the given id in the table, if present.
     void selectTeamById(const QString &teamId);
 
@@ -86,6 +89,7 @@ private:
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_newButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
+    QPushButton *m_cloneButton = nullptr;
     TeamEditorWidget *m_editor = nullptr;
     QAction *m_newAction = nullptr;
     QAction *m_deleteAction = nullptr;

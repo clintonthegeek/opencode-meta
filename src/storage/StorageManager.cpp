@@ -980,6 +980,63 @@ bool StorageManager::deleteTeam(const QString &id) const
     return true;
 }
 
+namespace {
+
+QString generateUniqueTeamId(const StorageManager &storage, const QString &base)
+{
+    QString baseId;
+    baseId.reserve(base.size());
+    for (QChar c : base) {
+        if (c.isLetterOrNumber()) {
+            baseId.append(c.toLower());
+        } else if (c.isSpace() || c == QLatin1Char('-') || c == QLatin1Char('_')) {
+            if (!baseId.endsWith(QLatin1Char('-'))) {
+                baseId.append(QLatin1Char('-'));
+            }
+        }
+    }
+    while (baseId.endsWith(QLatin1Char('-'))) {
+        baseId.chop(1);
+    }
+    if (baseId.isEmpty()) {
+        baseId = QStringLiteral("team");
+    }
+
+    QString candidate = baseId;
+    int suffix = 1;
+    while (!storage.loadTeam(candidate).id.isEmpty()) {
+        candidate = QStringLiteral("%1-%2").arg(baseId).arg(suffix++);
+    }
+    return candidate;
+}
+
+} // namespace
+
+Team StorageManager::cloneTeam(const QString &teamId) const
+{
+    if (teamId.isEmpty()) {
+        return Team();
+    }
+
+    const Team source = loadTeam(teamId);
+    if (source.id.isEmpty()) {
+        return Team();
+    }
+
+    Team copy = source;
+    const QString originName = copy.name.isEmpty() ? copy.id : copy.name;
+    copy.parentTeamId = source.id;
+    copy.id = generateUniqueTeamId(*this, originName + QStringLiteral(" copy"));
+    copy.name = originName + QStringLiteral(" (copy)");
+    copy.metadata.remove(QStringLiteral("stock"));
+
+    if (!saveTeam(copy)) {
+        return Team();
+    }
+
+    return copy;
+}
+
 bool StorageManager::isStockTeam(const Team &team) const
 {
     return team.metadata.value(QStringLiteral("stock")).toBool(false)

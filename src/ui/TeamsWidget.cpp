@@ -134,38 +134,28 @@ QString stockAboutText(const QString &itemKind)
         .arg(itemKind);
 }
 
-// Slugify a user-typed Team name into a filesystem-safe id candidate.
-// Falls back to "team" if the result would be empty.
-QString slugifyForTeamId(const QString &raw)
-{
-    QString clean;
-    clean.reserve(raw.size());
-    for (QChar c : raw) {
-        if (c.isLetterOrNumber()) {
-            clean.append(c.toLower());
-        } else if (c.isSpace() || c == QLatin1Char('-') || c == QLatin1Char('_')) {
-            if (!clean.endsWith(QLatin1Char('-'))) {
-                clean.append(QLatin1Char('-'));
-            }
-        }
-    }
-
-    while (clean.endsWith(QLatin1Char('-'))) {
-        clean.chop(1);
-    }
-
-    if (clean.isEmpty()) {
-        return QStringLiteral("team");
-    }
-
-    return clean;
-}
-
 // Produce a unique Team id under the given storage root, starting from
 // the slugified base and appending "-N" as needed.
 QString generateUniqueTeamId(StorageManager &storage, const QString &base)
 {
-    QString baseId = slugifyForTeamId(base);
+    QString baseId;
+    baseId.reserve(base.size());
+    for (QChar c : base) {
+        if (c.isLetterOrNumber()) {
+            baseId.append(c.toLower());
+        } else if (c.isSpace() || c == QLatin1Char('-') || c == QLatin1Char('_')) {
+            if (!baseId.endsWith(QLatin1Char('-'))) {
+                baseId.append(QLatin1Char('-'));
+            }
+        }
+    }
+    while (baseId.endsWith(QLatin1Char('-'))) {
+        baseId.chop(1);
+    }
+    if (baseId.isEmpty()) {
+        baseId = QStringLiteral("team");
+    }
+
     QString candidate = baseId;
     int suffix = 1;
     while (true) {
@@ -286,10 +276,13 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     auto *buttonRow = new QHBoxLayout();
     m_newButton = new QPushButton(tr("New Team"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
+    m_cloneButton = new QPushButton(tr("Clone & edit"), this);
     m_newButton->setObjectName(QStringLiteral("teamsWidget.newButton"));
     m_deleteButton->setObjectName(QStringLiteral("teamsWidget.deleteButton"));
+    m_cloneButton->setObjectName(QStringLiteral("teamsWidget.cloneButton"));
     buttonRow->addWidget(m_newButton);
     buttonRow->addWidget(m_deleteButton);
+    buttonRow->addWidget(m_cloneButton);
     buttonRow->addStretch(1);
     layout->addLayout(buttonRow);
 
@@ -297,6 +290,8 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
             this, &TeamsWidget::createTeam);
     connect(m_deleteButton, &QPushButton::clicked,
             this, &TeamsWidget::deleteSelectedTeam);
+    connect(m_cloneButton, &QPushButton::clicked,
+            this, &TeamsWidget::cloneSelectedStockTeam);
     connect(m_table, &QTableWidget::itemSelectionChanged,
             this, &TeamsWidget::onSelectionChanged);
     connect(m_table, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
@@ -573,6 +568,35 @@ void TeamsWidget::deleteSelectedTeam()
     emit teamDeleted(teamId);
 }
 
+void TeamsWidget::cloneSelectedStockTeam()
+{
+    const QString teamId = selectedTeamId();
+    if (teamId.isEmpty()) {
+        return;
+    }
+
+    const Team selected = m_storageManager.loadTeam(teamId);
+    if (selected.id.isEmpty() || !m_storageManager.isStockTeam(selected)) {
+        return;
+    }
+
+    const Team cloned = m_storageManager.cloneTeam(teamId);
+    if (cloned.id.isEmpty()) {
+        QMessageBox::warning(this,
+                             tr("Clone Team"),
+                             tr("Failed to clone the selected stock Team."));
+        return;
+    }
+
+    refreshTeams();
+    selectTeamById(cloned.id);
+    if (m_editor) {
+        m_editor->setTeamId(cloned.id);
+    }
+
+    emit teamCreated(cloned.id);
+}
+
 void TeamsWidget::onDeleteKeyPressedOnTable()
 {
     // Only act on Delete when the table actually holds a selection, so
@@ -670,6 +694,7 @@ void TeamsWidget::updateActionStates()
     const bool hasSelection = (m_table && m_table->currentRow() >= 0);
     const bool stockSelection = hasSelection && selectedTeamIsStock();
     const bool deleteEnabled = hasSelection;
+    const bool cloneEnabled = stockSelection;
     const QString deleteTooltip = stockSelection
         ? tr("Stock items cannot be deleted")
         : tr("Delete the selected Team");
@@ -681,6 +706,11 @@ void TeamsWidget::updateActionStates()
         m_deleteAction->setEnabled(deleteEnabled);
         m_deleteAction->setToolTip(deleteTooltip);
         m_deleteAction->setStatusTip(deleteTooltip);
+    }
+    if (m_cloneButton) {
+        m_cloneButton->setVisible(cloneEnabled);
+        m_cloneButton->setEnabled(cloneEnabled);
+        m_cloneButton->setToolTip(tr("Clone this stock Team into an editable copy"));
     }
 
     if (m_editor) {
