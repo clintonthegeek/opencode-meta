@@ -69,10 +69,9 @@ add_test(NAME test_cross_view_smoke COMMAND test_cross_view_smoke)
    # Phase D4-3: v0-fiction opt-out escape hatch (Settings →
    # Seeding → "Seed stock-aligned defaults on first run" = false).
    add_qt_test(test_seed_opt_out_path      test_seed_opt_out_path.cpp)
-   # Phase C5-1 / D-8: deferred per ROADMAP. Module + tests are
-   # scaffolded so the toggle can be flipped in a follow-up. Not in
-   # the smoke-trio regex on purpose.
-   add_qt_test(test_agent_markdown          test_agent_markdown.cpp)
+    # Phase C5-1 / D-8: Agent Markdown smoke coverage. This target is
+    # now included in the canonical smoke-trio regex.
+    add_qt_test(test_agent_markdown          test_agent_markdown.cpp)
 
 # C0-3: opencode debug config runtime gate. Uses QSKIP when the
 # binary is missing so dev boxes without opencode installed stay

@@ -3,8 +3,8 @@
 // v2-frontmatter `.md` body. Per ROADMAP D-8, `.md` emission is
 // DEFERRED to after C0-C4 — the module is scaffolded + tested here so
 // future flipping of the toggle is mechanical. The smoke-trio regex
-// (`scripts/ci_smoke_trio.sh`) intentionally excludes this test name
-// until D-8 is reversed (see ROADMAP §2 C5 status note).
+// (`scripts/ci_smoke_trio.sh`) now includes this test name as part of
+// the D-8 reversal (see ROADMAP §2 C5 status note).
 //
 // What we assert:
 //   * frontmatter delimiters (`---`) book-end the YAML block;

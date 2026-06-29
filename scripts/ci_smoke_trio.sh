@@ -20,7 +20,7 @@
 #   test_seed_opt_out_path        (Phase D4-4 — v0-fiction escape
 #                                  hatch.)
 #
-# 7 tests total. Per Phase D4-4 the hash-update was made in the same
+# 8 tests total. Per Phase D4-4 the hash-update was made in the same
 # commit as the rest of Phase D4 so CI flips in lock-step with the
 # migration contract, not via a separate C5-1 / D-8-style flag flip.
 #
@@ -33,7 +33,7 @@
 #   0   → every smoke test passed.
 #   1   → ctest reported a non-zero exit (one or more tests failed).
 #   2   → toolchain preflight failed (cmake / ctest missing).
-#   3   → the smoke regex matched fewer than the 7 expected targets
+#   3   → the smoke regex matched fewer than the 8 expected targets
 #         (defensive against silent test renames / regex typos).
 #
 # The script is location-aware: it resolves REPO_ROOT from its own
@@ -60,16 +60,17 @@ LOG_FILE="${LOG_FILE:-}"
 
 # Phase D4-4 / C0-4 — D4-4 added test_seed_stock_fidelity +
 # test_legacy_storage_unaffected_by_seed + test_seed_opt_out_path to
-# the canonical regression bar so every CI run asserts the
-# stock-fidelity seed, the migration safety rail, and the v0-fiction
-# opt-out all hold. 7 tests total. The regex is anchored alternation;
+# the canonical regression bar, and D-8 reverses the deferred
+# `test_agent_markdown` hold so CI now exercises the Agent Markdown
+# feature too. 8 tests total. The regex is anchored alternation;
 # ctest -R enumerates this exact set.
-SMOKE_TESTS_REGEX='test_team_renderer|test_apply_team|test_starter_team_apply|test_contract_checker|test_seed_stock_fidelity|test_legacy_storage_unaffected_by_seed|test_seed_opt_out_path'
+SMOKE_TESTS_REGEX='^(test_team_renderer|test_apply_team|test_starter_team_apply|test_contract_checker|test_seed_stock_fidelity|test_legacy_storage_unaffected_by_seed|test_seed_opt_out_path|test_agent_markdown)$'
 REQUIRED_TESTS=(test_team_renderer test_apply_team
                 test_starter_team_apply test_contract_checker
                 test_seed_stock_fidelity
                 test_legacy_storage_unaffected_by_seed
-                test_seed_opt_out_path)
+                test_seed_opt_out_path
+                test_agent_markdown)
 
 # --- Pretty logging (only when stdout is a TTY and no log file is set) -----
 if [ -t 1 ] && [ -z "$LOG_FILE" ]; then
@@ -119,7 +120,7 @@ if ! ctest --test-dir "$BUILD_DIR" \
   fail "ctest returned non-zero for one or more smoke tests"
   exit 1
 fi
-ok "all 7 smoke tests passed"
+ok "all 8 smoke tests passed"
 
 # --- Belt-and-braces: enumerate which tests ctest actually ran --------------
 # Defensive against silent regex typos or future test renames that would
@@ -144,7 +145,7 @@ if [ "${#MISSING[@]}" -ne 0 ]; then
   fail "ctest registry is missing required tests: ${MISSING[*]}"
   exit 3
 fi
-ok "ctest registry covers all 7 required tests"
+ok "ctest registry covers all 8 required tests"
 
 hdr "summary"
 printf '%b== Final verdict: PASS ==%b\n' "$C_GREEN$C_BOLD" "$C_RESET"
