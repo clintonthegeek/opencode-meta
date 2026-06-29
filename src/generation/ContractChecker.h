@@ -1,9 +1,7 @@
 // ContractChecker
 // Validates a candidate opencode.json object against the binding contract
 // pinned by /home/clinton/dev/opencode-meta/docs/OPENCODE-CONFIG-INTROSPECTION.md
-// (the "introspection report"). Replaces the legacy
-// legacy/adapter/OpencodeSchemaAdapter, which used Template/Profile vocabulary
-// and pass-through semantics; this checker enforces the current §12.3
+// (the "introspection report"). This checker enforces the current §12.3
 // one-line rule and refuses to write a file that would trip
 // parseConfig(Schema). REJECT unknown keys.
 #pragma once

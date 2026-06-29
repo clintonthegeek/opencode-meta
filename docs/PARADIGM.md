@@ -235,7 +235,7 @@ The validate step is called from `apply_helpers::commit()` immediately before fi
 |---|---|
 | Top-level `$schema` | Always the literal `"https://opencode.ai/config.json"` (report §3) |
 | `default_agent` | Set to `team.primarySpecialistIds[0]`'s `roleId` |
-| Unknown fields preserved | `OpencodeSchemaAdapter` (legacy/, marked for purge) used to do pass-through; now replaced with a tighter ContractChecker that REJECTS unknown keys (because `parse.ts:74` does anyway) |
+| Unknown fields preserved | `OpencodeSchemaAdapter` used to do pass-through; now replaced with a tighter ContractChecker that REJECTS unknown keys (because `parse.ts:74` does anyway) |
 | `OPENCODE_CONFIG_CONTENT` / `OPENCODE_PERMISSION` env override | We do NOT write inside the opencode process; users who want env layering set it themselves |
 
 ### 5.9 MCP / LSP / formatter / reference
@@ -351,10 +351,10 @@ If a user has pre-Role data on disk:
 1. Detect `schema-version.txt` missing or older than `v2.0-role-team-trial`.
 2. Detect legacy folders `templates/`, `profiles/`, `default-profile.json`.
 3. Auto-convert: each Template → one Role + N Specialists (one per agent with a model pinned). Each Profile → one Team whose Specialists reference those newly minted Specialists.
-4. Move original files to `legacy/` then ask the user to confirm deletion once the new view renders them.
+4. Remove the original files once the new view renders them.
 5. Bump `schema-version.txt`.
 
-`StorageManager` owns this path. `legacy/` files are the only source of the migration logic; once migration runs, those files are purge candidates (Phase A3, ROADMAP.md).
+`StorageManager` owns this path. Those migration files are the only source of the migration logic; once migration runs, they are purge candidates (Phase A3, ROADMAP.md).
 
 ---
 
@@ -376,9 +376,9 @@ This document, the GUI, the tests, and the data model all converge on the Role/S
 | Path | Reason | Trigger |
 |---|---|---|
 | `archive/` | Historical doc dump; will mislead agents | **Never** to be read again. Treated as deleted semantically. |
-| `legacy/ui/ProfilesWidget.*`, `ApplyProfileDialog.*`, `ProfileEditorDialog.*`, `TemplateEditorDialog.*`, `TemplatesWidget.*`, `ProfileCompareDialog.*` | Reference superseded Template/Profile widgets | Phase A3 |
-| `legacy/models/Template.*`, `Profile.*` | Old model classes | Phase A3 |
-| `legacy/adapter/OpencodeSchemaAdapter.*` | Replaced by **ContractChecker** (Phase G3) | Phase A3 |
+| `ProfilesWidget.*`, `ApplyProfileDialog.*`, `ProfileEditorDialog.*`, `TemplateEditorDialog.*`, `TemplatesWidget.*`, `ProfileCompareDialog.*` | Reference superseded Template/Profile widgets | Phase A3 |
+| `Template.*`, `Profile.*` | Old model classes | Phase A3 |
+| `OpencodeSchemaAdapter.*` | Replaced by **ContractChecker** (Phase G3) | Phase A3 |
 | `tests/test_apply.cpp`, `tests/test_generation.cpp`, `tests/test_models.cpp`, `tests/test_opencode_schema_adapter.cpp`, `tests/test_profile_compare.cpp`, `tests/test_templates.cpp`, `tests/test_models_browser.cpp` | Reference the old model or contract | Phase A3 — **Removed 2026-06-28** (test-purge portion; the corresponding subjects were superseded by `test_apply_team`, `test_team_renderer`, `test_contract_checker`, F3's Compare dialog, and G1's live-catalog behavior) |
 | `models-dev.md` (project root) | Live catalog must come from `opencode models` / `GET /provider` | Phase G1 (replaced with `docs/CATALOG-SOURCE.md` reference) |
 | `v1spec.md` (project root) | Superseded by introspection report | Phase A3 |
@@ -393,7 +393,7 @@ When a phase says "purge", the implementing agent MUST:
 
 ### 9.3 The "no resurrection" rule
 
-Once a file is purged, its former purpose is **not** re-introduced under a different name without explicit sign-off in ROADMAP.md. If a future agent is tempted to copy a pattern from `legacy/`, the answer is no; port the *concept* through the ContractChecker or `TeamRenderer`, never through the old code.
+Once a file is purged, its former purpose is **not** re-introduced under a different name without explicit sign-off in ROADMAP.md. If a future agent is tempted to copy a pattern from old code, the answer is no; port the *concept* through the ContractChecker or `TeamRenderer`, never through the old code.
 
 ---
 

@@ -30,8 +30,7 @@
 #include "storage/StorageManager.h"
 #include "ui/ConfirmApplyDialog.h"
 #include "ui/FilterBar.h"
-// ApplyProfileDialog has been moved to legacy/; Team-based switching is
-// gated through ConfirmApplyDialog (ROADMAP P1-5).
+// Team-based switching is gated through ConfirmApplyDialog (ROADMAP P1-5).
 
  namespace {
 

@@ -12,10 +12,10 @@ A Qt6 companion for [opencode](https://opencode.ai) that lets users design reusa
 ## Hard Rules (Read Before Touching Anything)
 
 - **⚠️ PURGE WARNING — DO NOT read anything under `archive/`.** The `archive/` directory holds historical documents from earlier Template/Profile iterations. They are frozen. Reading them is a waste of context and will mislead you about the current model. Treat `archive/` as if it does not exist.
-- **⚠️ LEGACY WARNING — `legacy/` is "do not reason about, do not copy from".** Files under `legacy/` (e.g. `legacy/ui/ProfilesWidget.*`, `legacy/models/Template.*`, `legacy/models/Profile.*`, `legacy/adapter/OpencodeSchemaAdapter.*`) reference the superseded Template/Profile world. They are kept only until purge runs. **Do not import them, do not copy their patterns, and do not add new code paths that reference them.** Once a milestone explicitly says "purge `legacy/`" in ROADMAP.md, also remove them from `CMakeLists.txt` and any test lists.
+- **⚠️ LEGACY WARNING — do not import or copy from superseded adapter/model code.** Once a milestone explicitly says "purge superseded files" in ROADMAP.md, also remove them from `CMakeLists.txt` and any test lists.
 - **Every generated `opencode.json` must satisfy the one-line rule in §12.3 of OPENCODE-CONFIG-INTROSPECTION.md.** No exceptions. If you cannot satisfy it, do not commit the code.
 - **After every generation change, run** `opencode debug config` against the emitted file (or `tmpdir/opencode.json` for tests) and assert exit code 0 + no `InvalidError`. This is non-negotiable.
-- **Never** use the words "Template" or "Profile" in new user-facing UI, new code, new tests, or new docs. The legacy words belong to `legacy/` only.
+- **Never** use the words "Template" or "Profile" in new user-facing UI, new code, new tests, or new docs.
 
 ## Current Reality (as of 2026-06-28)
 
@@ -32,7 +32,7 @@ A Qt6 companion for [opencode](https://opencode.ai) that lets users design reusa
 ## How to Work Here
 
 1. Read `OPENCODE-CONFIG-INTROSPECTION.md` (§1, §3, §4, §6, §7, §8, §11, §12). Read `ROADMAP.md`. Pick the single **In Progress** milestone — only one should be In Progress at a time.
-2. Before implementing, find every file the change will touch and grep them for the superseded terms (`Template`, `Profile`, `oldAdapter`, `OpencodeSchemaAdapter`). Anything that still depends on `legacy/` is a purge candidate.
+2. Before implementing, find every file the change will touch and grep them for the superseded terms (`Template`, `Profile`, `oldAdapter`, `OpencodeSchemaAdapter`). Anything that still depends on superseded code is a purge candidate.
 3. Implement. Then before handoff:
    - Run the **smoke-test trio**: `ctest --test-dir build-dev --output-on-failure -R "test_team_renderer|test_apply_team|test_starter_team_apply"`.
    - Run **`opencode debug config`** against any newly-emitted `opencode.json` (or write a tempdir fixture) and capture the exit code + stderr into the milestone checklist.
