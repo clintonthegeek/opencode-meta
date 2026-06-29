@@ -55,6 +55,14 @@ private slots:
     void browseButtonAcceptsAbsolutePath();
     void previewBodyReflectsCurrentMode();
     void previewTokenLabelUpdates();
+
+    // Phase 3: Permissions tab — canonical keys, combo values, reset, custom rows
+    void permissionsTableIsPrePopulated();
+    void permissionsKeepRichRoleOverrides();
+    void permissionsComboEditRoundTrips();
+    void resetPermissionsToDefaultsButtonWorks();
+    void customPermissionKeysArePreserved();
+    void canonicalKeySetIsStable();
 };
 
 namespace {
@@ -189,7 +197,7 @@ void TestRoleEditorDialog::loadShowsAllFields()
 
     auto *permTable = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
     QVERIFY(permTable);
-    QCOMPARE(permTable->rowCount(), 3);
+    QCOMPARE(permTable->rowCount(), RoleEditorDialog::canonicalPermissionKeys().size());
     QVERIFY(indexOfTableRowWith(permTable, 0, QStringLiteral("edit")) >= 0);
     QVERIFY(indexOfTableRowWith(permTable, 0, QStringLiteral("bash")) >= 0);
     QVERIFY(indexOfTableRowWith(permTable, 0, QStringLiteral("webfetch")) >= 0);
@@ -222,7 +230,23 @@ void TestRoleEditorDialog::roundTripWithoutEdits()
     QCOMPARE(reparsed.name, rich.name);
     QCOMPARE(reparsed.description, rich.description);
     QCOMPARE(reparsed.mode, rich.mode);
-    QCOMPARE(reparsed.permissions, rich.permissions);
+
+    // After Phase 3 the permissions table is pre-populated with all 15
+    // canonical keys. The 3 explicit overrides from the seed role win
+    // over the defaults; the remaining 12 default values also surface.
+    const QStringList canonical = RoleEditorDialog::canonicalPermissionKeys();
+    QCOMPARE(canonical.size(), 15);
+    QCOMPARE(reparsed.permissions.keys().size(), canonical.size());
+    QCOMPARE(reparsed.permissions.value(QStringLiteral("edit")).toString(),
+             rich.permissions.value(QStringLiteral("edit")).toString());
+    QCOMPARE(reparsed.permissions.value(QStringLiteral("bash")).toString(),
+             rich.permissions.value(QStringLiteral("bash")).toString());
+    QCOMPARE(reparsed.permissions.value(QStringLiteral("webfetch")).toString(),
+             rich.permissions.value(QStringLiteral("webfetch")).toString());
+    QCOMPARE(reparsed.permissions.value(QStringLiteral("read")).toString(), QStringLiteral("allow"));
+    QCOMPARE(reparsed.permissions.value(QStringLiteral("glob")).toString(),
+             RoleEditorDialog::defaultPermissionValueFor(QStringLiteral("glob")));
+
     QCOMPARE(reparsed.tools.keys().size(), rich.tools.keys().size());
     QCOMPARE(reparsed.metadata, rich.metadata);
     QCOMPARE(finalRole.systemPrompt, rich.systemPrompt);
@@ -245,13 +269,17 @@ void TestRoleEditorDialog::editsPropagateToRoleData()
     QVERIFY(modeCombo);
     modeCombo->setCurrentIndex(modeCombo->findData(static_cast<int>(Role::Mode::All)));
 
-    // Add a new permission row via a synthetic insert + GUI buttons mimic.
+    // Phase 3: change an existing canonical row's combo to a non-default
+    // value (bash is canonical and defaults to "ask"; bump to "allow").
     auto *permTable = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
     QVERIFY(permTable);
-    const int newRow = permTable->rowCount();
-    permTable->insertRow(newRow);
-    permTable->setItem(newRow, 0, new QTableWidgetItem(QStringLiteral("read")));
-    permTable->setItem(newRow, 1, new QTableWidgetItem(QStringLiteral("allow")));
+    const int bashRow = indexOfTableRowWith(permTable, 0, QStringLiteral("bash"));
+    QVERIFY(bashRow >= 0);
+    auto *bashCombo = qobject_cast<QComboBox *>(permTable->cellWidget(bashRow, 1));
+    QVERIFY(bashCombo);
+    const int allowIdx = bashCombo->findText(QStringLiteral("allow"));
+    QVERIFY(allowIdx >= 0);
+    bashCombo->setCurrentIndex(allowIdx);
 
     // Add a new tool via the Add button flow.
     auto *toolEdit = dlg.findChild<QLineEdit *>(QStringLiteral("roleEditor.toolNameEdit"));
@@ -279,8 +307,11 @@ void TestRoleEditorDialog::editsPropagateToRoleData()
     QCOMPARE(updated.description, QStringLiteral("Renamed description"));
     QCOMPARE(updated.mode, Role::Mode::All);
 
-    QCOMPARE(updated.permissions.value(QStringLiteral("read")).toString(), QStringLiteral("allow"));
+    // After Phase 3 the table is 15 canonical rows by default; user edits
+    // to existing entries overwrite them. "bash" went ask -> allow.
+    QCOMPARE(updated.permissions.value(QStringLiteral("bash")).toString(), QStringLiteral("allow"));
     QVERIFY(updated.permissions.value(QStringLiteral("edit")).toString() == QStringLiteral("ask"));
+    QVERIFY(updated.permissions.value(QStringLiteral("read")).toString() == QStringLiteral("allow"));
 
     QVERIFY(updated.tools.value(QStringLiteral("webfetch")).toBool(true));
     QVERIFY(updated.tools.value(QStringLiteral("bash")).toBool(true));
@@ -563,6 +594,265 @@ void TestRoleEditorDialog::previewTokenLabelUpdates()
     setFilePath(&dlg, QStringLiteral("./prompts/long-path.md"));
     const QString path = QStringLiteral("./prompts/long-path.md");
     expectTokens((path.size() + 3) / 4);
+}
+
+// ----------------------------------------------------------------------------
+// Phase 3: Permissions tab — canonical keys, combos, reset, custom rows
+// ----------------------------------------------------------------------------
+
+namespace {
+
+QString currentPermissionComboValue(const QTableWidget *table, int row)
+{
+    auto *combo = qobject_cast<QComboBox *>(table->cellWidget(row, 1));
+    return combo ? combo->currentText() : QString();
+}
+
+int mustRowForKey(const QTableWidget *table, const QString &key)
+{
+    const int idx = indexOfTableRowWith(table, 0, key);
+    if (idx < 0) {
+        qWarning("missing row for key %s", qPrintable(key));
+    }
+    return idx;
+}
+
+} // namespace
+
+void TestRoleEditorDialog::permissionsTableIsPrePopulated()
+{
+    // Empty role: the table should still carry all 15 canonical rows with
+    // sensible defaults.
+    Role emptyRole;
+    emptyRole.id = QStringLiteral("empty-role");
+    emptyRole.name = QStringLiteral("Empty");
+    emptyRole.description = QStringLiteral("no perms yet");
+    emptyRole.systemPrompt = QJsonValue(QStringLiteral("hello"));
+    emptyRole.mode = Role::Mode::Primary;
+
+    RoleEditorDialog dlg(emptyRole);
+
+    auto *table = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
+    QVERIFY(table);
+    QCOMPARE(table->rowCount(), RoleEditorDialog::canonicalPermissionKeys().size());
+
+    // The reset button must exist and be enabled.
+    auto *resetBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.resetPermissionsButton"));
+    QVERIFY(resetBtn);
+    QVERIFY(resetBtn->isEnabled());
+
+    // For each canonical row, col 0 = key, col 1 = QComboBox carrying
+    // ask/allow/deny, col 2 = description text.
+    const QStringList canonical = RoleEditorDialog::canonicalPermissionKeys();
+    for (int row = 0; row < canonical.size(); ++row) {
+        QCOMPARE(table->item(row, 0)->text(), canonical.at(row));
+        QVERIFY(table->cellWidget(row, 1) != nullptr);
+        const QString val = currentPermissionComboValue(table, row);
+        QVERIFY(val == QStringLiteral("ask") || val == QStringLiteral("allow")
+                || val == QStringLiteral("deny"));
+        QVERIFY(!table->item(row, 2)->text().isEmpty());
+    }
+
+    // Read-only keys default to allow, everything else to ask.
+    for (int row = 0; row < canonical.size(); ++row) {
+        const QString key = canonical.at(row);
+        const QString expected = RoleEditorDialog::defaultPermissionValueFor(key);
+        QCOMPARE(currentPermissionComboValue(table, row), expected);
+    }
+}
+
+void TestRoleEditorDialog::permissionsKeepRichRoleOverrides()
+{
+    // The rich role seeds {edit: ask, bash: deny, webfetch: allow}. After
+    // loading, those exact values must survive in their canonical rows and
+    // all other rows must carry the defaults.
+    RoleEditorDialog dlg(buildRichRole());
+
+    auto *table = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
+    QVERIFY(table);
+
+    const int editRow   = mustRowForKey(table, QStringLiteral("edit"));
+    const int bashRow   = mustRowForKey(table, QStringLiteral("bash"));
+    const int webRow    = mustRowForKey(table, QStringLiteral("webfetch"));
+    const int readRow   = mustRowForKey(table, QStringLiteral("read"));
+    const int grepRow   = mustRowForKey(table, QStringLiteral("grep"));
+    const int qRow      = mustRowForKey(table, QStringLiteral("question"));
+    const int skillRow  = mustRowForKey(table, QStringLiteral("skill"));
+    QVERIFY(editRow >= 0 && bashRow >= 0 && webRow >= 0 && readRow >= 0);
+    QVERIFY(grepRow >= 0 && qRow >= 0 && skillRow >= 0);
+
+    QCOMPARE(currentPermissionComboValue(table, editRow),  QStringLiteral("ask"));
+    QCOMPARE(currentPermissionComboValue(table, bashRow),  QStringLiteral("deny"));
+    QCOMPARE(currentPermissionComboValue(table, webRow),   QStringLiteral("allow"));
+
+    // Spots: read defaults to allow (canonical read-only), grep defaults
+    // to allow, edit defaults to ask — none of these were in the rich role.
+    QCOMPARE(currentPermissionComboValue(table, readRow),  QStringLiteral("allow"));
+    QCOMPARE(currentPermissionComboValue(table, grepRow),  QStringLiteral("allow"));
+    QCOMPARE(currentPermissionComboValue(table, qRow),     QStringLiteral("allow"));
+    QCOMPARE(currentPermissionComboValue(table, skillRow), QStringLiteral("ask"));
+}
+
+void TestRoleEditorDialog::permissionsComboEditRoundTrips()
+{
+    Role rich = buildRichRole();
+    RoleEditorDialog dlg(rich);
+
+    auto *table = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
+    QVERIFY(table);
+
+    // Flip a couple of combos to non-default values and verify both the
+    // backing property and the apply-back result.
+    const int bashRow = indexOfTableRowWith(table, 0, QStringLiteral("bash"));
+    const int grepRow = indexOfTableRowWith(table, 0, QStringLiteral("grep"));
+    QVERIFY(bashRow >= 0 && grepRow >= 0);
+
+    auto *bashCombo = qobject_cast<QComboBox *>(table->cellWidget(bashRow, 1));
+    auto *grepCombo = qobject_cast<QComboBox *>(table->cellWidget(grepRow, 1));
+    QVERIFY(bashCombo && grepCombo);
+
+    bashCombo->setCurrentText(QStringLiteral("allow"));
+    grepCombo->setCurrentText(QStringLiteral("deny"));
+
+    // The dynamic permissionValue property drives the QSS tinting.
+    QCOMPARE(bashCombo->property("permissionValue").toString(), QStringLiteral("allow"));
+    QCOMPARE(grepCombo->property("permissionValue").toString(), QStringLiteral("deny"));
+
+    const Role updated = dlg.roleData();
+    QCOMPARE(updated.permissions.value(QStringLiteral("bash")).toString(),
+             QStringLiteral("allow"));
+    QCOMPARE(updated.permissions.value(QStringLiteral("grep")).toString(),
+             QStringLiteral("deny"));
+    // Untouched: edit must remain ask, webfetch must remain allow.
+    QCOMPARE(updated.permissions.value(QStringLiteral("edit")).toString(),
+             QStringLiteral("ask"));
+    QCOMPARE(updated.permissions.value(QStringLiteral("webfetch")).toString(),
+             QStringLiteral("allow"));
+}
+
+void TestRoleEditorDialog::resetPermissionsToDefaultsButtonWorks()
+{
+    Role rich = buildRichRole();
+    RoleEditorDialog dlg(rich);
+
+    auto *table = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
+    QVERIFY(table);
+    auto *resetBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.resetPermissionsButton"));
+    QVERIFY(resetBtn);
+
+    // Flip several combos to non-default values so we can observe the
+    // reset restoring everything to canonical defaults.
+    auto flipTo = [&](const QString &key, const QString &to) {
+        const int row = indexOfTableRowWith(table, 0, key);
+        QVERIFY(row >= 0);
+        auto *combo = qobject_cast<QComboBox *>(table->cellWidget(row, 1));
+        QVERIFY(combo);
+        combo->setCurrentText(to);
+    };
+
+    flipTo(QStringLiteral("bash"), QStringLiteral("allow"));
+    flipTo(QStringLiteral("read"), QStringLiteral("deny"));
+    flipTo(QStringLiteral("edit"), QStringLiteral("deny"));
+    flipTo(QStringLiteral("grep"), QStringLiteral("deny"));
+
+    QMetaObject::invokeMethod(resetBtn, "click", Qt::DirectConnection);
+
+    // Row count collapses to 15 (no custom rows in the seed role) and
+    // every canonical row returns to its default.
+    QCOMPARE(table->rowCount(), RoleEditorDialog::canonicalPermissionKeys().size());
+
+    for (const QString &key : RoleEditorDialog::canonicalPermissionKeys()) {
+        const int row = indexOfTableRowWith(table, 0, key);
+        QVERIFY(row >= 0);
+        QCOMPARE(currentPermissionComboValue(table, row),
+                 RoleEditorDialog::defaultPermissionValueFor(key));
+    }
+
+    const Role updated = dlg.roleData();
+    QCOMPARE(updated.permissions.value(QStringLiteral("bash")).toString(),
+             QStringLiteral("ask"));
+    QCOMPARE(updated.permissions.value(QStringLiteral("read")).toString(),
+             QStringLiteral("allow"));
+    QCOMPARE(updated.permissions.value(QStringLiteral("edit")).toString(),
+             QStringLiteral("ask"));
+}
+
+void TestRoleEditorDialog::customPermissionKeysArePreserved()
+{
+    // Seed a role with one extra permission alongside canonical keys.
+    Role rich = buildRichRole();
+    QJsonObject extra;
+    extra.insert(QStringLiteral("read"), QStringLiteral("ask"));
+    // Mark a deliberate custom key — keep value as ask so the combo accepts it.
+    extra.insert(QStringLiteral("writefile"), QStringLiteral("ask"));
+    rich.permissions = extra;
+
+    RoleEditorDialog dlg(rich);
+
+    auto *table = dlg.findChild<QTableWidget *>(QStringLiteral("roleEditor.permissionsTable"));
+    QVERIFY(table);
+
+    const QStringList canonical = RoleEditorDialog::canonicalPermissionKeys();
+    const int canonicalRowCount = canonical.size();
+    QCOMPARE(table->rowCount(), canonicalRowCount + 1);
+
+    // The "writefile" custom row sits at the bottom.
+    const int customRow = table->rowCount() - 1;
+    QCOMPARE(table->item(customRow, 0)->text(), QStringLiteral("writefile"));
+    QCOMPARE(currentPermissionComboValue(table, customRow), QStringLiteral("ask"));
+
+    // Edit the custom row's combo and ensure it round-trips.
+    auto *combo = qobject_cast<QComboBox *>(table->cellWidget(customRow, 1));
+    QVERIFY(combo);
+    combo->setCurrentText(QStringLiteral("deny"));
+    QCOMPARE(combo->property("permissionValue").toString(), QStringLiteral("deny"));
+
+    // Reset: custom row should be dropped, all canonical rows back to defaults.
+    auto *resetBtn = dlg.findChild<QPushButton *>(
+        QStringLiteral("roleEditor.resetPermissionsButton"));
+    QVERIFY(resetBtn);
+    QMetaObject::invokeMethod(resetBtn, "click", Qt::DirectConnection);
+
+    QCOMPARE(table->rowCount(), canonicalRowCount);
+    QCOMPARE(indexOfTableRowWith(table, 0, QStringLiteral("writefile")), -1);
+}
+
+void TestRoleEditorDialog::canonicalKeySetIsStable()
+{
+    // The canonical set is the exact 15 from PARADIGM.md §5.4 line 190;
+    // the order exposed by canonicalPermissionKeys() is the render order.
+    const QStringList keys = RoleEditorDialog::canonicalPermissionKeys();
+    const QStringList expected{
+        QStringLiteral("read"),
+        QStringLiteral("edit"),
+        QStringLiteral("glob"),
+        QStringLiteral("grep"),
+        QStringLiteral("list"),
+        QStringLiteral("bash"),
+        QStringLiteral("task"),
+        QStringLiteral("external_directory"),
+        QStringLiteral("lsp"),
+        QStringLiteral("skill"),
+        QStringLiteral("todowrite"),
+        QStringLiteral("question"),
+        QStringLiteral("webfetch"),
+        QStringLiteral("websearch"),
+        QStringLiteral("doom_loop")
+    };
+    QCOMPARE(keys, expected);
+    QCOMPARE(keys.size(), 15);
+
+    // readOnlyPermissionKeys() must be a subset of canonical.
+    const QSet<QString> readOnly = RoleEditorDialog::readOnlyPermissionKeys();
+    QVERIFY(readOnly.contains(QStringLiteral("read")));
+    QVERIFY(readOnly.contains(QStringLiteral("glob")));
+    QVERIFY(!readOnly.contains(QStringLiteral("edit")));
+    QVERIFY(!readOnly.contains(QStringLiteral("bash")));
+    for (const QString &key : readOnly) {
+        QVERIFY(expected.contains(key));
+    }
 }
 
 QTEST_MAIN(TestRoleEditorDialog)

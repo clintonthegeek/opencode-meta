@@ -28,6 +28,10 @@
 #include <QTextCursor>
 #include <QVBoxLayout>
 
+#include <QColor>
+#include <QPalette>
+#include <QStyle>
+
 #include "models/Role.h"
 
 namespace {
@@ -65,6 +69,71 @@ QString renderPlainObjectDisplay(const QJsonObject &obj)
 {
     const QJsonDocument doc(obj);
     return QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+}
+
+QStringList canonicalPermissionKeysOrdered()
+{
+    // Order from PARADIGM.md §5.4 (also matches OPENCODE-CONFIG-INTROSPECTION §6.1).
+    return QStringList{
+        QStringLiteral("read"),
+        QStringLiteral("edit"),
+        QStringLiteral("glob"),
+        QStringLiteral("grep"),
+        QStringLiteral("list"),
+        QStringLiteral("bash"),
+        QStringLiteral("task"),
+        QStringLiteral("external_directory"),
+        QStringLiteral("lsp"),
+        QStringLiteral("skill"),
+        QStringLiteral("todowrite"),
+        QStringLiteral("question"),
+        QStringLiteral("webfetch"),
+        QStringLiteral("websearch"),
+        QStringLiteral("doom_loop")
+    };
+}
+
+QSet<QString> readOnlyPermissionKeysSet()
+{
+    // Considered read-only / safe-by-default operations.
+    return QSet<QString>{
+        QStringLiteral("read"),
+        QStringLiteral("glob"),
+        QStringLiteral("grep"),
+        QStringLiteral("list"),
+        QStringLiteral("webfetch"),
+        QStringLiteral("websearch"),
+        QStringLiteral("question")
+    };
+}
+
+QString valueToPermissionString(const QJsonValue &value)
+{
+    if (!value.isString()) {
+        return QString();
+    }
+    const QString raw = value.toString().trimmed().toLower();
+    if (raw == QLatin1String("ask") || raw == QLatin1String("allow") || raw == QLatin1String("deny")) {
+        return raw;
+    }
+    return QString();
+}
+
+QString valueFromObjectPermission(const QJsonValue &value)
+{
+    // Permission object form: {"<pattern>": "ask"|"allow"|"deny"} — pick the first
+    // recognisable action so the combo box still has something to display.
+    if (!value.isObject()) {
+        return QString();
+    }
+    const QJsonObject obj = value.toObject();
+    for (auto it = obj.constBegin(); it != obj.constEnd(); ++it) {
+        const QString candidate = valueToPermissionString(it.value());
+        if (!candidate.isEmpty()) {
+            return candidate;
+        }
+    }
+    return QString();
 }
 
 } // namespace
@@ -343,22 +412,67 @@ void RoleEditorDialog::setupTabs()
     auto *permsTab = new QWidget(this);
     auto *permsLayout = new QVBoxLayout(permsTab);
     permsLayout->setContentsMargins(8, 8, 8, 8);
+
     auto *permsHint = new QLabel(
-        tr("Permissions — one row per key (e.g. edit / bash / webfetch). Values stay as strings."),
+        tr("Permissions — %1 canonical keys from PARADIGM.md §5.4. "
+           "Pick ask / allow / deny per row. Custom keys are preserved at the bottom.")
+            .arg(canonicalPermissionKeysOrdered().size()),
         permsTab);
     permsHint->setWordWrap(true);
-    m_permissionsTable = new QTableWidget(0, 2, permsTab);
+    permsHint->setObjectName(QStringLiteral("roleEditor.permissionsHint"));
+    permsLayout->addWidget(permsHint);
+
+    // Tint the value column's combo box using a stylesheet that keys off
+    // the dynamic "permissionValue" property we flip in tintPermissionValueCombo.
+    m_permissionsTable = new QTableWidget(0, 3, permsTab);
     m_permissionsTable->setObjectName(QStringLiteral("roleEditor.permissionsTable"));
-    m_permissionsTable->setHorizontalHeaderLabels(QStringList{ tr("Key"), tr("Value") });
-    m_permissionsTable->horizontalHeader()->setStretchLastSection(true);
+    m_permissionsTable->setHorizontalHeaderLabels(
+        QStringList{ tr("Key"), tr("Value"), tr("Description") });
     m_permissionsTable->verticalHeader()->setVisible(false);
     m_permissionsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_permissionsTable->setToolTip(tr("Edit per-tool permission profiles (ask / deny / allow)."));
-    m_permissionsTable->setWhatsThis(tr("Key/value pairs written to opencode.json `permissions` on the agent entry."));
-    permsLayout->addWidget(permsHint);
+    m_permissionsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    if (auto *hh = m_permissionsTable->horizontalHeader()) {
+        hh->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        hh->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        hh->setSectionResizeMode(2, QHeaderView::Stretch);
+    }
+    m_permissionsTable->setColumnWidth(0, 140);
+    m_permissionsTable->setColumnWidth(1, 110);
+    m_permissionsTable->setStyleSheet(
+        QStringLiteral(
+            "QComboBox[permissionValue=\"allow\"] { background-color: #c8e6c9; }"
+            "QComboBox[permissionValue=\"ask\"]   { background-color: #fff59d; }"
+            "QComboBox[permissionValue=\"deny\"]  { background-color: #ffcdd2; }"
+        )
+    );
+    m_permissionsTable->setToolTip(tr(
+        "Canonical opencode permission keys. Use the Reset button to restore defaults."));
+    m_permissionsTable->setWhatsThis(tr(
+        "Each row maps to one entry in the opencode.json `permissions` object on the agent. "
+        "Green = allow, yellow = ask, red = deny, applied via the value combo."));
     permsLayout->addWidget(m_permissionsTable, 1);
+
+    auto *permsButtonRow = new QHBoxLayout();
+    permsButtonRow->setContentsMargins(0, 0, 0, 0);
+    m_resetPermissionsButton = new QPushButton(tr("Reset to defaults"), permsTab);
+    m_resetPermissionsButton->setObjectName(QStringLiteral("roleEditor.resetPermissionsButton"));
+    m_resetPermissionsButton->setToolTip(tr(
+        "Restore all 15 canonical permission rows to ask / allow defaults."));
+    m_resetPermissionsButton->setWhatsThis(tr(
+        "Clears any custom rows and rewrites the value column to ask (write-ish keys) "
+        "or allow (read-only keys such as read, glob, grep, list, webfetch, websearch, question)."));
+    permsButtonRow->addWidget(m_resetPermissionsButton);
+    permsButtonRow->addStretch(1);
+    permsLayout->addLayout(permsButtonRow);
+
+    connect(m_resetPermissionsButton, &QPushButton::clicked,
+            this, &RoleEditorDialog::onResetPermissionsToDefaults);
+    connect(m_permissionsTable, &QTableWidget::currentCellChanged,
+            this, [](int, int, int, int) { /* placeholder: future row actions */ });
+
     m_tabWidget->addTab(permsTab, tr("Permissions"));
-    m_tabWidget->setTabToolTip(1, tr("Per-tool allow / deny / ask overlay."));
+    m_tabWidget->setTabToolTip(1, tr(
+        "Per-tool allow / ask / deny overlay — 15 canonical keys with sensible defaults."));
 
     // --- Tools tab ---------------------------------------------------
     auto *toolsTab = new QWidget(this);
@@ -692,10 +806,7 @@ void RoleEditorDialog::loadFromRole(const Role &role)
     }
 
     if (m_permissionsTable) {
-        m_permissionsTable->setRowCount(0);
-        for (auto it = role.permissions.constBegin(); it != role.permissions.constEnd(); ++it) {
-            appendTableRow(m_permissionsTable, it.key(), jsonValueToDisplayText(it.value()));
-        }
+        populatePermissionsTable(role.permissions);
     }
 
     if (m_toolsList) {
@@ -727,11 +838,12 @@ void RoleEditorDialog::applyToRole(Role &role) const
         role.mode = static_cast<Role::Mode>(raw);
     }
 
-    // Permissions table: key + string value per row.
+    // Permissions table: key + QComboBox value per row.
     if (m_permissionsTable) {
         QJsonObject perms;
-        for (int row = 0; row < m_permissionsTable->rowCount(); ++row) {
-            const QTableWidgetItem *keyItem = m_permissionsTable->item(row, 0);
+        auto *table = const_cast<QTableWidget *>(m_permissionsTable);
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const QTableWidgetItem *keyItem = table->item(row, 0);
             if (!keyItem) {
                 continue;
             }
@@ -739,8 +851,7 @@ void RoleEditorDialog::applyToRole(Role &role) const
             if (key.isEmpty()) {
                 continue;
             }
-            const QTableWidgetItem *valItem = m_permissionsTable->item(row, 1);
-            const QString valueText = valItem ? valItem->text().trimmed() : QString();
+            const QString valueText = valueAtPermissionRow(row);
             perms.insert(key, QJsonValue(valueText));
         }
         role.permissions = perms;
@@ -836,6 +947,234 @@ Role RoleEditorDialog::roleData() const
     Role result = m_initialRole;
     applyToRole(result);
     return result;
+}
+
+void RoleEditorDialog::populatePermissionsTable(const QJsonObject &perms)
+{
+    if (!m_permissionsTable) {
+        return;
+    }
+
+    m_permissionsTable->blockSignals(true);
+    m_permissionsTable->setRowCount(0);
+
+    const QStringList canonical = canonicalPermissionKeysOrdered();
+    const QSet<QString> canonicalSet(canonical.begin(), canonical.end());
+
+    // 1) Lay down the 15 canonical rows with sensible defaults; override
+    //    the value cell from role.permissions when present.
+    for (const QString &key : canonical) {
+        QString value = defaultPermissionValueFor(key);
+        if (perms.contains(key)) {
+            const QString fromString = valueToPermissionString(perms.value(key));
+            const QString fromObject = valueFromObjectPermission(perms.value(key));
+            const QString candidate = !fromString.isEmpty() ? fromString : fromObject;
+            if (!candidate.isEmpty()) {
+                value = candidate;
+            }
+        }
+        appendPermissionRow(key, value, permissionDescriptionFor(key), true);
+    }
+
+    // 2) Append any extra / custom keys at the bottom, sorted for stability.
+    QStringList extraKeys;
+    for (auto it = perms.constBegin(); it != perms.constEnd(); ++it) {
+        if (!canonicalSet.contains(it.key())) {
+            extraKeys.append(it.key());
+        }
+    }
+    std::sort(extraKeys.begin(), extraKeys.end());
+
+    QStringList canonicalDesc;
+    if (!extraKeys.isEmpty()) {
+        canonicalDesc.append(tr("(custom)"));
+    }
+
+    QJsonObject customSectionHeader;
+    Q_UNUSED(customSectionHeader);
+
+    for (const QString &key : extraKeys) {
+        QString value = valueToPermissionString(perms.value(key));
+        if (value.isEmpty()) {
+            value = valueFromObjectPermission(perms.value(key));
+        }
+        if (value.isEmpty()) {
+            value = QStringLiteral("ask");
+        }
+        if (canonicalSet.contains(key)) {
+            continue; // safety: skip if somehow seen twice
+        }
+        appendPermissionRow(key,
+                            value,
+                            permissionDescriptionFor(key),
+                            false);
+    }
+
+    m_permissionsTable->blockSignals(false);
+}
+
+void RoleEditorDialog::appendPermissionRow(const QString &key,
+                                           const QString &value,
+                                           const QString &description,
+                                           bool canonical)
+{
+    if (!m_permissionsTable) {
+        return;
+    }
+    QTableWidget *table = m_permissionsTable;
+    const int row = table->rowCount();
+    table->insertRow(row);
+
+    auto *keyItem = new QTableWidgetItem(key);
+    keyItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    if (!canonical) {
+        QFont f = keyItem->font();
+        f.setItalic(true);
+        keyItem->setFont(f);
+    }
+    table->setItem(row, 0, keyItem);
+
+    auto *combo = new QComboBox(table);
+    combo->setObjectName(QStringLiteral("roleEditor.permissionValueCombo"));
+    combo->addItem(QStringLiteral("ask"));
+    combo->addItem(QStringLiteral("allow"));
+    combo->addItem(QStringLiteral("deny"));
+    const int idx = combo->findText(value);
+    combo->setCurrentIndex(idx >= 0 ? idx : 0);
+    combo->setToolTip(tr("Action: ask (confirm every time), allow (silently execute), deny (block)."));
+    combo->setWhatsThis(tr("Writes into opencode.json as the value for this permission key."));
+    table->setCellWidget(row, 1, combo);
+
+    auto *descItem = new QTableWidgetItem(description);
+    descItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    descItem->setToolTip(description);
+    table->setItem(row, 2, descItem);
+
+    tintPermissionValueCombo(row);
+
+    connect(combo, qOverload<const QString &>(&QComboBox::currentTextChanged),
+            table, [this, row](const QString &) {
+                tintPermissionValueCombo(row);
+            });
+}
+
+QString RoleEditorDialog::valueAtPermissionRow(int row) const
+{
+    if (!m_permissionsTable) {
+        return QString();
+    }
+    if (row < 0 || row >= m_permissionsTable->rowCount()) {
+        return QString();
+    }
+    auto *cell = qobject_cast<QComboBox *>(m_permissionsTable->cellWidget(row, 1));
+    if (!cell) {
+        // Fallback: look for a plain text item (rare — only when the
+        // table is in legacy 2-column mode). Returns trimmed value.
+        const QTableWidgetItem *it = m_permissionsTable->item(row, 1);
+        return it ? it->text().trimmed() : QString();
+    }
+    return cell->currentText().trimmed();
+}
+
+void RoleEditorDialog::tintPermissionValueCombo(int row)
+{
+    if (!m_permissionsTable) {
+        return;
+    }
+    if (row < 0 || row >= m_permissionsTable->rowCount()) {
+        return;
+    }
+    auto *cell = qobject_cast<QComboBox *>(m_permissionsTable->cellWidget(row, 1));
+    if (!cell) {
+        return;
+    }
+    const QString value = cell->currentText();
+    cell->setProperty("permissionValue", value);
+    if (cell->style()) {
+        cell->style()->unpolish(cell);
+        cell->style()->polish(cell);
+        cell->update();
+    }
+}
+
+void RoleEditorDialog::onPermissionComboChanged(int row)
+{
+    tintPermissionValueCombo(row);
+}
+
+void RoleEditorDialog::onResetPermissionsToDefaults()
+{
+    if (!m_permissionsTable) {
+        return;
+    }
+    populatePermissionsTable({});
+}
+
+QStringList RoleEditorDialog::canonicalPermissionKeys()
+{
+    return canonicalPermissionKeysOrdered();
+}
+
+QSet<QString> RoleEditorDialog::readOnlyPermissionKeys()
+{
+    return readOnlyPermissionKeysSet();
+}
+
+QString RoleEditorDialog::defaultPermissionValueFor(const QString &key)
+{
+    return readOnlyPermissionKeysSet().contains(key)
+               ? QStringLiteral("allow")
+               : QStringLiteral("ask");
+}
+
+QString RoleEditorDialog::permissionDescriptionFor(const QString &key)
+{
+    if (key == QLatin1String("read")) {
+        return tr("Read file contents (read-only).");
+    }
+    if (key == QLatin1String("edit")) {
+        return tr("Modify files in the working directory.");
+    }
+    if (key == QLatin1String("glob")) {
+        return tr("Match files by glob patterns.");
+    }
+    if (key == QLatin1String("grep")) {
+        return tr("Search file contents with grep/regex.");
+    }
+    if (key == QLatin1String("list")) {
+        return tr("List directory entries.");
+    }
+    if (key == QLatin1String("bash")) {
+        return tr("Execute shell commands.");
+    }
+    if (key == QLatin1String("task")) {
+        return tr("Delegate work to sub-agents (mandatory `allow` for subagent-mode roles).");
+    }
+    if (key == QLatin1String("external_directory")) {
+        return tr("Access files outside the working directory.");
+    }
+    if (key == QLatin1String("lsp")) {
+        return tr("Query the language server protocol (refactors, go-to-def, etc).");
+    }
+    if (key == QLatin1String("skill")) {
+        return tr("Invoke registered skills.");
+    }
+    if (key == QLatin1String("todowrite")) {
+        return tr("Write and edit the todo list.");
+    }
+    if (key == QLatin1String("question")) {
+        return tr("Present a clarifying question to the user.");
+    }
+    if (key == QLatin1String("webfetch")) {
+        return tr("Fetch content from a URL.");
+    }
+    if (key == QLatin1String("websearch")) {
+        return tr("Search the public web.");
+    }
+    if (key == QLatin1String("doom_loop")) {
+        return tr("Guard against repeated identical tool calls.");
+    }
+    return tr("Custom permission key — values round-trip through opencode.json.");
 }
 
 void RoleEditorDialog::accept()
