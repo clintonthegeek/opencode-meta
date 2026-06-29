@@ -2,6 +2,7 @@
 
 #include <QAction>
 #include <QDateTime>
+#include <QFont>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -154,6 +155,8 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     auto *buttonRow = new QHBoxLayout();
     m_newButton = new QPushButton(tr("New Team"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
+    m_newButton->setObjectName(QStringLiteral("teamsWidget.newButton"));
+    m_deleteButton->setObjectName(QStringLiteral("teamsWidget.deleteButton"));
     buttonRow->addWidget(m_newButton);
     buttonRow->addWidget(m_deleteButton);
     buttonRow->addStretch(1);
@@ -186,6 +189,7 @@ void TeamsWidget::installShortcuts()
     // Delete key on the table also drives the delete path so users do
     // not need to mouse over to the Delete button.
     m_deleteAction = new QAction(tr("Delete Team"), this);
+    m_deleteAction->setObjectName(QStringLiteral("teamsWidget.deleteAction"));
     m_deleteAction->setShortcut(QKeySequence::Delete);
     m_deleteAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
     m_deleteAction->setStatusTip(tr("Delete the selected Team"));
@@ -221,6 +225,14 @@ void TeamsWidget::refreshTeams()
         m_table->setItem(row, 0, idItem);
 
         auto *nameItem = new QTableWidgetItem(team.name);
+        if (m_storageManager.isStockTeam(team)) {
+            const QString displayName = team.name.isEmpty() ? team.id : team.name;
+            nameItem->setText(QStringLiteral("%1 (%2)").arg(displayName, tr("stock")));
+            QFont font = nameItem->font();
+            font.setItalic(true);
+            nameItem->setFont(font);
+            nameItem->setToolTip(tr("Stock team"));
+        }
         m_table->setItem(row, 1, nameItem);
 
         auto *descItem = new QTableWidgetItem(team.description);
@@ -274,6 +286,15 @@ QString TeamsWidget::selectedTeamId() const
     const QVariant userData = idItem->data(Qt::UserRole);
     const QString id = userData.isValid() ? userData.toString() : idItem->text();
     return id.trimmed();
+}
+
+bool TeamsWidget::selectedTeamIsStock() const
+{
+    const QString teamId = selectedTeamId();
+    if (teamId.isEmpty()) {
+        return false;
+    }
+    return m_storageManager.isStockTeam(m_storageManager.loadTeam(teamId));
 }
 
 void TeamsWidget::createTeam()
@@ -336,6 +357,10 @@ void TeamsWidget::deleteSelectedTeam()
         QMessageBox::warning(this,
                              tr("Delete Team"),
                              tr("Could not load the selected Team; nothing to delete."));
+        return;
+    }
+
+    if (m_storageManager.isStockTeam(team)) {
         return;
     }
 
@@ -443,11 +468,19 @@ void TeamsWidget::applyFilter(const QString &text)
 void TeamsWidget::updateActionStates()
 {
     const bool hasSelection = (m_table && m_table->currentRow() >= 0);
+    const bool stockSelection = hasSelection && selectedTeamIsStock();
+    const bool deleteEnabled = hasSelection && !stockSelection;
+    const QString deleteTooltip = stockSelection
+        ? tr("Stock items cannot be deleted")
+        : tr("Delete the selected Team");
     if (m_deleteButton) {
-        m_deleteButton->setEnabled(hasSelection);
+        m_deleteButton->setEnabled(deleteEnabled);
+        m_deleteButton->setToolTip(deleteTooltip);
     }
     if (m_deleteAction) {
-        m_deleteAction->setEnabled(hasSelection);
+        m_deleteAction->setEnabled(deleteEnabled);
+        m_deleteAction->setToolTip(deleteTooltip);
+        m_deleteAction->setStatusTip(deleteTooltip);
     }
 
     if (m_editor) {

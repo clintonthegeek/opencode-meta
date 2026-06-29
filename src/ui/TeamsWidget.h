@@ -71,6 +71,7 @@ private slots:
 
 private:
     QString selectedTeamId() const;
+    bool selectedTeamIsStock() const;
     void updateActionStates();
     void installShortcuts();
 

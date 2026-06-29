@@ -42,7 +42,10 @@ AddSpecialistDialog::AddSpecialistDialog(StorageManager &storageManager,
             const QString labelText = role.name.isEmpty()
                                           ? role.id
                                           : QStringLiteral("%1 (%2)").arg(role.name, role.id);
-            m_roleCombo->addItem(labelText, role.id);
+            const QString displayText = storageManager.isStockRole(role)
+                ? QStringLiteral("%1 (%2)").arg(labelText, tr("stock"))
+                : labelText;
+            m_roleCombo->addItem(displayText, role.id);
             if (defaultIndex < 0 && role.id == QLatin1String("build")) {
                 defaultIndex = i;
             }

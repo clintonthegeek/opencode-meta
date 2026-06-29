@@ -1158,13 +1158,10 @@ void TestRoleEditorDialog::workSpaceServersTabRoundTrips()
 
 void TestRoleEditorDialog::nativeBadge_visibleWhenRoleIsNative()
 {
-    // Phase D3-1 / D-10: when the loaded Role carries
-    // `metadata.native = true`, the badge label hides no longer. The
-    // label itself reads literally "native (stock-defined)" so a
-    // user/glance at the row sees the lock + tooltip explains the
-    // contract. We assert via isHiddenTo (parent-independent) because
-    // the dialog isn't exec()d in the test, so isVisible() would be
-    // gated on the parent's show() state and trivially return false.
+    // When the loaded Role is stock-seeded, the badge label hides no
+    // longer. We assert via isHiddenTo (parent-independent) because the
+    // dialog isn't exec()d in the test, so isVisible() would be gated
+    // on the parent's show() state and trivially return false.
     Role r;
     r.id = QStringLiteral("build");
     r.name = QStringLiteral("Build");
@@ -1178,20 +1175,20 @@ void TestRoleEditorDialog::nativeBadge_visibleWhenRoleIsNative()
         QStringLiteral("roleEditor.nativeBadge"));
     QVERIFY(badge);
     QVERIFY(!badge->isHidden());
-    QVERIFY(badge->text().contains(QStringLiteral("native")));
+    QVERIFY(badge->text().contains(QStringLiteral("stock")));
 }
 
 void TestRoleEditorDialog::nativeBadge_hiddenWhenRoleIsNotNative()
 {
-    // User-authored Roles must NOT show the native badge. This is
-    // the inverse of the slot above and locks the visual contract
-    // for normal Roles.
+    // User-authored Roles must NOT show the stock badge. This is the
+    // inverse of the slot above and locks the visual contract for
+    // normal Roles.
     Role r;
     r.id = QStringLiteral("custom");
     r.name = QStringLiteral("Custom");
     r.mode = Role::Mode::Primary;
-    // No metadata.native — leaves it absent so the check value
-    // defaults to false.
+    // No stock flag — leaves it absent so the check value defaults
+    // to false.
     RoleEditorDialog dlg(r);
     auto *badge = dlg.findChild<QLabel *>(
         QStringLiteral("roleEditor.nativeBadge"));

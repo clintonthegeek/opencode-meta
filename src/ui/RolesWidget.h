@@ -43,6 +43,7 @@ private slots:
 
 private:
     QString selectedRoleId() const;
+    bool selectedRoleIsStock() const;
 
     StorageManager &m_storageManager;
 

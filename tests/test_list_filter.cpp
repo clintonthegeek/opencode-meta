@@ -13,6 +13,7 @@
 #include <QTest>
 #include <QtTest/QTest>
 #include <QApplication>
+#include <QAction>
 #include <QDateTime>
 #include <QDir>
 #include <QHBoxLayout>
@@ -43,6 +44,7 @@ class TestListFilter : public QObject
 private slots:
     void roles_filtersAcrossAllColumns_caseInsensitive();
     void teams_appliesOnIdAndName_clearsOnEscape();
+    void teams_disablesDeleteForStockTeam();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
     void projects_hidesFilteredListItems_andDisablesActions();
 };
@@ -87,6 +89,17 @@ Team makeAndSaveTeam(StorageManager &storage,
         qFatal("saveTeam(%s) failed", qPrintable(id));
     }
     return team;
+}
+
+void makeAndSaveStockTeam(StorageManager &storage,
+                          const QString &id,
+                          const QString &name,
+                          const QString &description)
+{
+    Team team = makeAndSaveTeam(storage, id, name, description);
+    team.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY2(storage.saveTeam(team),
+             qPrintable(QStringLiteral("saveTeam(%1) failed").arg(id)));
 }
 
 // Build a Trial that points at an existing Team so the TrialsWidget
@@ -265,6 +278,39 @@ void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("alpha"))), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("beta-build"))), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("gamma"))), false);
+}
+
+void TestListFilter::teams_disablesDeleteForStockTeam()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveTeam(storage, QStringLiteral("custom-team"),
+                    QStringLiteral("Custom Team"), QStringLiteral("User team"));
+    makeAndSaveStockTeam(storage, QStringLiteral("starter-team"),
+                        QStringLiteral("Starter Team"), QStringLiteral("Seeded team"));
+
+    TeamsWidget widget(storage);
+
+    auto *deleteButton = widget.findChild<QPushButton *>(QStringLiteral("teamsWidget.deleteButton"));
+    QVERIFY2(deleteButton, "TeamsWidget has no delete button");
+    auto *deleteAction = widget.findChild<QAction *>(QStringLiteral("teamsWidget.deleteAction"));
+    QVERIFY2(deleteAction, "TeamsWidget has no delete action");
+
+    widget.selectTeamById(QStringLiteral("custom-team"));
+    QApplication::processEvents();
+    QVERIFY(deleteButton->isEnabled());
+    QVERIFY(deleteAction->isEnabled());
+
+    widget.selectTeamById(QStringLiteral("starter-team"));
+    QApplication::processEvents();
+    QVERIFY2(!deleteButton->isEnabled(), "delete button should be disabled for stock teams");
+    QVERIFY2(!deleteAction->isEnabled(), "delete key action should be disabled for stock teams");
+    QCOMPARE(deleteButton->toolTip(), QStringLiteral("Stock items cannot be deleted"));
 }
 
 void TestListFilter::trials_hidesNonMatchingRows_andPreservesIdForActions()

@@ -763,6 +763,12 @@ bool StorageManager::deleteRole(const QString &id) const
     return true;
 }
 
+bool StorageManager::isStockRole(const Role &role) const
+{
+    return role.metadata.value(QStringLiteral("stock")).toBool(false)
+        || role.metadata.value(QStringLiteral("native")).toBool(false);
+}
+
 // Specialists (PARADIGM entities)
 
 bool StorageManager::saveSpecialist(const Specialist &s) const
@@ -972,6 +978,14 @@ bool StorageManager::deleteTeam(const QString &id) const
     }
 
     return true;
+}
+
+bool StorageManager::isStockTeam(const Team &team) const
+{
+    return team.metadata.value(QStringLiteral("stock")).toBool(false)
+        || (team.id == QLatin1String("starter-team")
+            && team.metadata.value(QStringLiteral("default_agent")).toString()
+                   == QLatin1String("starter-build"));
 }
 
 // Trials (PARADIGM entities)
@@ -1447,6 +1461,7 @@ void StorageManager::seedDefaultsIfNeeded() const
                 role.mode = mode;
                 role.permissions = defaults.value(id);
                 QJsonObject meta;
+                meta.insert(QStringLiteral("stock"), true);
                 meta.insert(QStringLiteral("native"), true);
                 if (hidden) {
                     meta.insert(QStringLiteral("hidden"), true);
@@ -1724,6 +1739,7 @@ void StorageManager::seedStarterTeamStock(bool teamsEmpty) const
     // the Team::specialists map above resolves to the `build` Role
     // (and therefore the spec bound to `anthropic/claude-sonnet-4-6`).
     QJsonObject meta;
+    meta.insert(QStringLiteral("stock"), true);
     meta.insert(QStringLiteral("default_agent"),
                  QStringLiteral("starter-build"));
     starter.metadata = meta;

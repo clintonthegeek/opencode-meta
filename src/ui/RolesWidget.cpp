@@ -2,6 +2,7 @@
 
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QFont>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -89,6 +90,7 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_editButton = new QPushButton(tr("Edit"), this);
     m_duplicateButton = new QPushButton(tr("Duplicate"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
+    m_deleteButton->setObjectName(QStringLiteral("rolesWidget.deleteButton"));
     buttonRow->addWidget(m_createButton);
     buttonRow->addWidget(m_editButton);
     buttonRow->addWidget(m_duplicateButton);
@@ -126,6 +128,14 @@ void RolesWidget::refreshRoles()
         m_table->setItem(row, 0, idItem);
 
         auto *nameItem = new QTableWidgetItem(role.name);
+        if (m_storageManager.isStockRole(role)) {
+            const QString displayName = role.name.isEmpty() ? role.id : role.name;
+            nameItem->setText(QStringLiteral("%1 (%2)").arg(displayName, tr("stock")));
+            QFont font = nameItem->font();
+            font.setItalic(true);
+            nameItem->setFont(font);
+            nameItem->setToolTip(tr("Stock role"));
+        }
         m_table->setItem(row, 1, nameItem);
 
         auto *descItem = new QTableWidgetItem(role.description);
@@ -161,6 +171,15 @@ QString RolesWidget::selectedRoleId() const
     const QVariant userData = idItem->data(Qt::UserRole);
     const QString id = userData.isValid() ? userData.toString() : idItem->text();
     return id.trimmed();
+}
+
+bool RolesWidget::selectedRoleIsStock() const
+{
+    const QString id = selectedRoleId();
+    if (id.isEmpty()) {
+        return false;
+    }
+    return m_storageManager.isStockRole(m_storageManager.loadRole(id));
 }
 
 void RolesWidget::createRole()
@@ -264,6 +283,16 @@ void RolesWidget::deleteSelectedRole()
         return;
     }
 
+    const Role role = m_storageManager.loadRole(id);
+    if (role.id.isEmpty()) {
+        QMessageBox::warning(this, tr("Delete Role"), tr("Failed to load role."));
+        return;
+    }
+
+    if (m_storageManager.isStockRole(role)) {
+        return;
+    }
+
     const auto reply = QMessageBox::question(this,
                                              tr("Delete Role"),
                                              tr("Delete selected role?"));
@@ -284,6 +313,7 @@ void RolesWidget::deleteSelectedRole()
 void RolesWidget::onSelectionChanged()
 {
     const bool hasSelection = (m_table && m_table->currentRow() >= 0);
+    const bool stockSelection = hasSelection && selectedRoleIsStock();
 
     if (m_editButton) {
         m_editButton->setEnabled(hasSelection);
@@ -292,7 +322,10 @@ void RolesWidget::onSelectionChanged()
         m_duplicateButton->setEnabled(hasSelection);
     }
     if (m_deleteButton) {
-        m_deleteButton->setEnabled(hasSelection);
+        m_deleteButton->setEnabled(hasSelection && !stockSelection);
+        m_deleteButton->setToolTip(stockSelection
+                                        ? tr("Stock items cannot be deleted")
+                                        : tr("Delete the selected Role"));
     }
 }
 

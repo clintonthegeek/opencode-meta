@@ -51,22 +51,24 @@ public:
 
      // PARADIGM entities (see docs/PARADIGM.md)
 
-     // Roles
-     bool saveRole(const Role &role) const;        // roles/<id>.json
-     Role loadRole(const QString &id) const;       // returns empty Role on failure
-     QList<Role> listRoles() const;                // scans roles/ directory
-     bool deleteRole(const QString &id) const;     // removes roles/<id>.json; false if missing
+      // Roles
+      bool saveRole(const Role &role) const;        // roles/<id>.json
+      Role loadRole(const QString &id) const;       // returns empty Role on failure
+      QList<Role> listRoles() const;                // scans roles/ directory
+      bool deleteRole(const QString &id) const;     // removes roles/<id>.json; false if missing
+      bool isStockRole(const Role &role) const;
 
      // Specialists
      bool saveSpecialist(const Specialist &s) const;   // specialists/<id>.json
      Specialist loadSpecialist(const QString &id) const; // returns empty Specialist on failure
      QList<Specialist> listSpecialists() const;         // scans specialists/ directory
 
-      // Teams
-      bool saveTeam(const Team &team) const;        // teams/<id>.json
-      Team loadTeam(const QString &id) const;       // returns empty Team on failure
-      QList<Team> listTeams() const;                // scans teams/ directory
-      bool deleteTeam(const QString &id) const;     // removes teams/<id>.json; false if missing
+       // Teams
+       bool saveTeam(const Team &team) const;        // teams/<id>.json
+       Team loadTeam(const QString &id) const;       // returns empty Team on failure
+       QList<Team> listTeams() const;                // scans teams/ directory
+       bool deleteTeam(const QString &id) const;     // removes teams/<id>.json; false if missing
+       bool isStockTeam(const Team &team) const;
 
   // Trials
   bool saveTrial(const Trial &trial) const;     // trials/<id>.json

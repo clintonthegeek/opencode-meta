@@ -247,13 +247,11 @@ void RoleEditorDialog::setupUi()
     m_idLabel->setToolTip(tr("Stable id assigned when this role was first saved."));
     m_idLabel->setWhatsThis(tr("Stable identifier for this role in opencode.json — read-only here."));
 
-    // Phase D3-1 / D-10: built-in / stock Role badge sits next to
-    // the id label and lights up only when the loaded Role carries
-    // `metadata.native = true`. Default-hidden so user-authored
-    // Roles look exactly like before.
+    // Stock Role badge sits next to the id label and lights up only
+    // when the loaded Role comes from the seeded stock set.
     m_nativeBadge = new QLabel(this);
     m_nativeBadge->setObjectName(QStringLiteral("roleEditor.nativeBadge"));
-    m_nativeBadge->setText(tr("native (stock-defined)"));
+    m_nativeBadge->setText(tr("stock"));
     m_nativeBadge->setVisible(false);
     // Yellow background distinguishes the badge from neutrally tinted
     // labels. Padding + 4px border-radius read as "status pill"
@@ -266,18 +264,13 @@ void RoleEditorDialog::setupUi()
         m_nativeBadge->setAutoFillBackground(true);
     }
     m_nativeBadge->setToolTip(tr(
-        "This Role matches a stock opencode agent. The id, name, "
+        "Stock Role seeded from opencode defaults. The id, name, "
         "and mode are read-only. Clone to make a custom variant."));
     m_nativeBadge->setWhatsThis(tr(
-        "<b>Native (stock-defined)</b> Role &mdash; seeded from "
-        "<code>opencode-meta-qt/docs/plan/2026-06-29-stock-agent-fidelity.md</code> "
-        "to match stock opencode's <code>build/plan/general/explore/"
-        "compaction/title/summary</code> agents (see "
-        "<code>~/src/opencode/packages/opencode/src/agent/agent.ts:140</code>). "
-        "The id, name, and mode are locked so the stock display "
-        "string and tab-switch behaviour match what the runtime "
-        "expects. To make a variant, use the Roles widget's "
-        "<b>Clone</b> action."));
+        "<b>Stock</b> Role seeded from the bundled defaults. The id, "
+        "name, and mode are locked so the display string and tab-switch "
+        "behaviour stay aligned with the runtime. To make a variant, use "
+        "the Roles widget's <b>Clone</b> action."));
 
     // id row now carries [idLabel, nativeBadge] in a horizontal
     // sub-layout so the badge reads as an annotation on the id
@@ -1120,21 +1113,22 @@ void RoleEditorDialog::loadFromRole(const Role &role)
         m_modeCombo->setCurrentIndex(idx >= 0 ? idx : 0);
     }
 
-    // Phase D3-1 / D-10: native/stock Roles lock id, name, and mode
-    // (the badge paints with the same flag). The id is shown via a
-    // QLabel so it cannot be edited regardless of the flag; the
-    // name + mode toggles to setReadOnly / disabled here so the
-    // user sees the lock visually AND cannot mutate the field.
-    const bool isNative =
-        role.metadata.value(QStringLiteral("native")).toBool();
+    // Stock Roles lock id, name, and mode (the badge paints with the
+    // same flag). The id is shown via a QLabel so it cannot be edited
+    // regardless of the flag; the name + mode toggles to setReadOnly /
+    // disabled here so the user sees the lock visually AND cannot
+    // mutate the field.
+    const bool isStock =
+        role.metadata.value(QStringLiteral("stock")).toBool()
+        || role.metadata.value(QStringLiteral("native")).toBool();
     if (m_nativeBadge) {
-        m_nativeBadge->setVisible(isNative);
+        m_nativeBadge->setVisible(isStock);
     }
     if (m_nameEdit) {
-        m_nameEdit->setReadOnly(isNative);
+        m_nameEdit->setReadOnly(isStock);
     }
     if (m_modeCombo) {
-        m_modeCombo->setEnabled(!isNative);
+        m_modeCombo->setEnabled(!isStock);
     }
 
     // Phase C3-3 / D-5: readOnly checkbox reflects the loaded Role's
