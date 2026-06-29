@@ -10,6 +10,7 @@
 #include <QTableWidget>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QToolButton>
 #include <QTest>
 
 #include "models/Role.h"
@@ -26,6 +27,7 @@ private slots:
     void initTestCase();
     void revertButtonTracksDirtyStateAndEmitsSignal();
     void defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidden();
+    void makeDefaultActionUpdatesAgentAndEmitsStatusMessage();
     void resetToStockRestoresClonedTeamAndClearsParentLink();
 
 private:
@@ -48,6 +50,11 @@ void TestTeamEditorWidget::seedTeam(StorageManager &storage, const QString &team
     stockRole.metadata.insert(QStringLiteral("stock"), true);
     QVERIFY(storage.saveRole(stockRole));
 
+    Role reviewRole;
+    reviewRole.id = QStringLiteral("review");
+    reviewRole.name = QStringLiteral("Review");
+    QVERIFY(storage.saveRole(reviewRole));
+
     Specialist spec;
     spec.id = QStringLiteral("spec-build");
     spec.roleId = role.id;
@@ -62,6 +69,13 @@ void TestTeamEditorWidget::seedTeam(StorageManager &storage, const QString &team
     stockSpec.name = QStringLiteral("Stock Specialist");
     stockSpec.metadata.insert(QStringLiteral("stock"), true);
     QVERIFY(storage.saveSpecialist(stockSpec));
+
+    Specialist reviewSpec;
+    reviewSpec.id = QStringLiteral("spec-review");
+    reviewSpec.roleId = reviewRole.id;
+    reviewSpec.modelId = QStringLiteral("model-c");
+    reviewSpec.name = QStringLiteral("Review Specialist");
+    QVERIFY(storage.saveSpecialist(reviewSpec));
 
     Team team;
     team.id = teamId;
@@ -79,6 +93,11 @@ void TestTeamEditorWidget::seedTeam(StorageManager &storage, const QString &team
     stockBinding.roleId = stockRole.id;
     stockBinding.specialistId = stockSpec.id;
     team.specialists.append(stockBinding);
+
+    Team::SpecialistBinding reviewBinding;
+    reviewBinding.roleId = reviewRole.id;
+    reviewBinding.specialistId = reviewSpec.id;
+    team.specialists.append(reviewBinding);
     QVERIFY(storage.saveTeam(team));
 }
 
@@ -187,6 +206,70 @@ void TestTeamEditorWidget::defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidde
 
     widget.setShowStock(false);
     QCOMPARE(table->isRowHidden(stockRow), true);
+}
+
+void TestTeamEditorWidget::makeDefaultActionUpdatesAgentAndEmitsStatusMessage()
+{
+    StorageManager storage(m_storageRoot);
+    const QString teamId = QStringLiteral("team-editor-widget-make-default");
+    seedTeam(storage, teamId);
+
+    TeamEditorWidget widget(storage);
+    widget.setTeamId(teamId);
+
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int currentDefaultRow = findRowForId(QStringLiteral("spec-build"));
+    const int targetRow = findRowForId(QStringLiteral("spec-review"));
+    const int stockRow = findRowForId(QStringLiteral("spec-stock"));
+    QVERIFY(currentDefaultRow >= 0);
+    QVERIFY(targetRow >= 0);
+    QVERIFY(stockRow >= 0);
+
+    auto *button = qobject_cast<QToolButton *>(table->cellWidget(targetRow, 5));
+    QVERIFY(button);
+    QVERIFY(table->cellWidget(stockRow, 5) == nullptr);
+
+    QSignalSpy updatedSpy(&widget, &TeamEditorWidget::teamUpdated);
+    QSignalSpy statusSpy(&widget, &TeamEditorWidget::statusMessageRequested);
+    QVERIFY(updatedSpy.isValid());
+    QVERIFY(statusSpy.isValid());
+
+    QTest::mouseClick(button, Qt::LeftButton);
+
+    QTRY_COMPARE(updatedSpy.count(), 1);
+    QTRY_COMPARE(statusSpy.count(), 1);
+
+    const QList<QVariant> statusArgs = statusSpy.takeFirst();
+    QCOMPARE(statusArgs.at(0).toString(), QStringLiteral("Default agent set to Review Specialist"));
+
+    const Team saved = storage.loadTeam(teamId);
+    QCOMPARE(saved.metadata.value(QStringLiteral("default_agent")).toString(),
+             QStringLiteral("spec-review"));
+
+    auto *newDefaultCell = table->cellWidget(targetRow, 1);
+    QVERIFY(newDefaultCell);
+    const auto newBadges = newDefaultCell->findChildren<QLabel *>(QStringLiteral("defaultAgentBadge"));
+    QVERIFY(!newBadges.isEmpty());
+
+    QCOMPARE(table->cellWidget(currentDefaultRow, 1), nullptr);
 }
 
 void TestTeamEditorWidget::resetToStockRestoresClonedTeamAndClearsParentLink()

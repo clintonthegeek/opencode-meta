@@ -62,6 +62,10 @@ signals:
     void teamReverted(const QString &teamId,
                       const QString &snapshotId);
 
+    // Emitted when the widget wants to surface a brief success message
+    // through the host status bar.
+    void statusMessageRequested(const QString &message);
+
 public slots:
     // Load and display the Team with the given id. An empty id clears
     // the editor to its placeholder state.

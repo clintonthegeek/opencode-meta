@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QToolButton>
 #include <QSet>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -104,6 +105,17 @@ QWidget *makeDefaultAgentCell(const QString &name, QWidget *parent)
     layout->addWidget(badge);
     layout->addStretch(1);
     return cell;
+}
+
+QToolButton *makeMakeDefaultButton(QWidget *parent)
+{
+    auto *button = new QToolButton(parent);
+    button->setObjectName(QStringLiteral("teamEditor.makeDefaultButton"));
+    button->setAutoRaise(true);
+    button->setText(QObject::tr("★ Make default"));
+    button->setToolTip(QObject::tr("Set this Specialist as the team's default agent"));
+    button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    return button;
 }
 
 bool specialistIsStock(const Specialist &spec)
@@ -242,13 +254,14 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     layout->addWidget(titleLabel);
 
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(5);
+    m_table->setColumnCount(6);
     m_table->setHorizontalHeaderLabels({
         tr("Primary"),
         tr("Specialist"),
         tr("Role"),
         tr("Model"),
         tr("Cost / Tokens"),
+        tr("Default"),
     });
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -473,10 +486,40 @@ void TeamEditorWidget::refreshSpecialistsTable()
             }
         }
         nameItem->setToolTip(nameToolTip);
+        m_table->setCellWidget(row, 1, nullptr);
         if (binding.specialistId == m_team.metadata.value(QStringLiteral("default_agent")).toString()) {
             m_table->setCellWidget(row, 1, makeDefaultAgentCell(nameText, m_table));
         }
         m_table->setItem(row, 1, nameItem);
+
+        m_table->setCellWidget(row, 5, nullptr);
+        if (!stockSpecialist) {
+            auto *defaultButton = makeMakeDefaultButton(m_table);
+            connect(defaultButton, &QToolButton::clicked, this, [this, row, nameText]() {
+                if (!m_table || row < 0 || row >= m_team.specialists.size()) {
+                    return;
+                }
+
+                const QString specialistId = m_team.specialists.at(row).specialistId;
+                if (m_table) {
+                    m_table->setCurrentCell(row, 0);
+                }
+
+                m_team.metadata.insert(QStringLiteral("default_agent"), specialistId);
+                if (!m_storageManager.saveTeam(m_team)) {
+                    QMessageBox::warning(this,
+                                         tr("Team Editor"),
+                                         tr("Failed to save Team changes."));
+                    return;
+                }
+
+                emit teamUpdated(m_team.id);
+                emit statusMessageRequested(tr("Default agent set to %1").arg(nameText));
+                refreshSpecialistsTable();
+                updateActionButtons();
+            });
+            m_table->setCellWidget(row, 5, defaultButton);
+        }
 
         // Column 2: Role (display name + id).
         QString roleText = binding.roleId;

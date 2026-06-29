@@ -315,6 +315,9 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     connect(m_editor, &TeamEditorWidget::applyTeamRequested,
             this, &TeamsWidget::applyTeamRequested);
 
+    connect(m_editor, &TeamEditorWidget::statusMessageRequested,
+            this, &TeamsWidget::statusMessageRequested);
+
     layout->addLayout(contentLayout, 1);
 
     if (m_editor) {

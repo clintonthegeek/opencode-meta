@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QStatusBar>
 #include <QTabWidget>
 #include <QTimer>
 #include <QWhatsThis>
@@ -122,6 +123,11 @@ MainWindow::MainWindow(QWidget *parent)
                     dlg.setPreselectedTeamId(teamId);
                 }
                 dlg.exec();
+            });
+
+    connect(teamsWidget, &TeamsWidget::statusMessageRequested,
+            this, [this](const QString &message) {
+                statusBar()->showMessage(message, 2000);
             });
 
     // P0-1: Promote-winning-Team placeholder. The full duplication /

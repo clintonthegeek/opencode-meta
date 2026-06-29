@@ -67,6 +67,9 @@ signals:
     // TeamsDialog apply path.
     void applyTeamRequested(const QString &teamId);
 
+    // Forwarded brief status line requests from the Team editor.
+    void statusMessageRequested(const QString &message);
+
 private slots:
     void refreshTeams();
     void onSelectionChanged();
