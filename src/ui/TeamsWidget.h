@@ -17,6 +17,7 @@ class QSortFilterProxyModel;
 class FilterProxyModel;
 class QTableWidget;
 class QPushButton;
+class QTimer;
 class StorageManager;
 class TeamEditorWidget;
 
@@ -75,6 +76,7 @@ private slots:
     void onSelectionChanged();
     void onDeleteKeyPressedOnTable();
     void showAboutThisStockItem();
+    void showFirstStockVisibleToast();
     void updateStockVisibilityStatus();
     // ROADMAP P2-2: case-insensitive dynamic filtering on every column.
     void applyFilter(const QString &text);
@@ -94,6 +96,8 @@ private:
     QFrame *m_stockHiddenBanner = nullptr;
     QLabel *m_stockHiddenBannerLabel = nullptr;
     QLabel *m_stockStatusLabel = nullptr;
+    QLabel *m_stockToast = nullptr;
+    QTimer *m_stockToastTimer = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_newButton = nullptr;
     QPushButton *m_deleteButton = nullptr;

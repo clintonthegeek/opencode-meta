@@ -58,6 +58,7 @@ private slots:
     void roles_showStockShortcutUpdatesStatusText();
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
+    void teams_firstStockRevealShowsToastOnce();
     void teams_showStockShortcutUpdatesStatusText();
     void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
     void teams_cloneStockTeamSelectsEditableCopy();
@@ -80,6 +81,7 @@ void seedHomeAndStorageRoot(const QString &root)
 void resetShowStockSettings()
 {
     QSettings().remove(QStringLiteral("settings/teams_show_stock"));
+    QSettings().remove(QStringLiteral("settings/teams_show_stock_first_toast_shown"));
     QSettings().remove(QStringLiteral("settings/roles_show_stock"));
     QSettings().sync();
 }
@@ -530,6 +532,47 @@ void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
         QVERIFY(showStockReloaded);
         QCOMPARE(showStockReloaded->isChecked(), false);
     }
+}
+
+void TestListFilter::teams_firstStockRevealShowsToastOnce()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    resetShowStockSettings();
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    makeAndSaveTeam(storage, QStringLiteral("custom-team"),
+                    QStringLiteral("Custom Team"), QStringLiteral("User team"));
+    makeAndSaveStockTeam(storage, QStringLiteral("starter-team"),
+                         QStringLiteral("Starter Team"), QStringLiteral("Seeded team"));
+
+    TeamsWidget widget(storage);
+    widget.show();
+    QApplication::processEvents();
+
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+    QVERIFY(showStock);
+    auto *toast = widget.findChild<QLabel *>(QStringLiteral("teamsWidget.stockToast"));
+    QVERIFY(toast);
+
+    QCOMPARE(toast->isHidden(), true);
+    showStock->setChecked(true);
+    QApplication::processEvents();
+
+    QCOMPARE(toast->isHidden(), false);
+    QCOMPARE(toast->text(), QStringLiteral("Stock items are read-only seeds. Clone them to customize!"));
+
+    QTest::qWait(4200);
+    QCOMPARE(toast->isHidden(), true);
+
+    showStock->setChecked(false);
+    showStock->setChecked(true);
+    QApplication::processEvents();
+    QCOMPARE(toast->isHidden(), true);
 }
 
 void TestListFilter::teams_showStockShortcutUpdatesStatusText()

@@ -141,9 +141,19 @@ bool loadShowStockTeamsSetting()
     return QSettings().value(QStringLiteral("settings/teams_show_stock"), false).toBool();
 }
 
+bool loadFirstStockToastShownSetting()
+{
+    return QSettings().value(QStringLiteral("settings/teams_show_stock_first_toast_shown"), false).toBool();
+}
+
 void saveShowStockTeamsSetting(bool showStock)
 {
     QSettings().setValue(QStringLiteral("settings/teams_show_stock"), showStock);
+}
+
+void saveFirstStockToastShownSetting(bool shown)
+{
+    QSettings().setValue(QStringLiteral("settings/teams_show_stock_first_toast_shown"), shown);
 }
 
 QString stockVisibilityText(int hiddenCount, bool showStock)
@@ -275,12 +285,17 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     connect(filterBar, &FilterBar::filterChanged,
              this, &TeamsWidget::applyFilter);
     connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
-        saveShowStockTeamsSetting(m_showStockCheck && m_showStockCheck->isChecked());
+        const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
+        const bool wasHidden = !loadShowStockTeamsSetting();
+        saveShowStockTeamsSetting(showStock);
         if (m_editor) {
-            m_editor->setShowStock(m_showStockCheck && m_showStockCheck->isChecked());
+            m_editor->setShowStock(showStock);
         }
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
         updateStockVisibilityStatus();
+        if (showStock && wasHidden) {
+            showFirstStockVisibleToast();
+        }
     });
     connect(showThemButton, &QPushButton::clicked, this, [this]() {
         if (m_showStockCheck) {
@@ -377,6 +392,27 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     m_stockStatusLabel->setStyleSheet(QStringLiteral("font-size: 10px;"));
     footerRow->addWidget(m_stockStatusLabel);
     layout->addLayout(footerRow);
+
+    m_stockToast = new QLabel(this);
+    m_stockToast->setObjectName(QStringLiteral("teamsWidget.stockToast"));
+    m_stockToast->setVisible(false);
+    m_stockToast->setWordWrap(true);
+    m_stockToast->setAlignment(Qt::AlignCenter);
+    m_stockToast->setStyleSheet(QStringLiteral(
+        "background-color: rgba(17, 24, 39, 0.92);"
+        " color: white;"
+        " border-radius: 8px;"
+        " padding: 8px 12px;"
+        " font-size: 11px;"));
+    layout->addWidget(m_stockToast);
+
+    m_stockToastTimer = new QTimer(this);
+    m_stockToastTimer->setSingleShot(true);
+    connect(m_stockToastTimer, &QTimer::timeout, this, [this]() {
+        if (m_stockToast) {
+            m_stockToast->hide();
+        }
+    });
 
     refreshTeams();
     updateActionStates();
@@ -503,6 +539,27 @@ void TeamsWidget::refreshTeams()
     if (m_stockHiddenBanner) {
         const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
         m_stockHiddenBanner->setVisible(!showStock && stockCount > 0);
+    }
+}
+
+void TeamsWidget::showFirstStockVisibleToast()
+{
+    if (loadFirstStockToastShownSetting()) {
+        return;
+    }
+
+    saveFirstStockToastShownSetting(true);
+
+    if (!m_stockToast) {
+        return;
+    }
+
+    m_stockToast->setText(tr("Stock items are read-only seeds. Clone them to customize!"));
+    m_stockToast->show();
+    m_stockToast->raise();
+
+    if (m_stockToastTimer) {
+        m_stockToastTimer->start(4000);
     }
 }
 
