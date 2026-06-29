@@ -50,6 +50,17 @@ signals:
     // this to refresh their list and switch to the new variant.
     void teamVariantCreated(const QString &newTeamId);
 
+    // Emitted after a Team save completes successfully.
+    void teamUpdated(const QString &teamId);
+
+    // Emitted when a Specialist binding changes and the Team save
+    // succeeds.
+    void specialistUpdated(const QString &specialistId);
+
+    // Emitted when the current Team is discarded/reverted.
+    void teamReverted(const QString &teamId,
+                      const QString &snapshotId);
+
 public slots:
     // Load and display the Team with the given id. An empty id clears
     // the editor to its placeholder state.
@@ -86,8 +97,8 @@ private:
     QTableWidget *m_table = nullptr;
     QLabel *m_emptyLabel = nullptr;
 
-    // Button row under the Specialists table. Only Add Specialist is
-    // wired in Stage 3; the others are placeholders for later stages.
+    // Button row under the Specialists table. These actions are wired
+    // incrementally as the Team editor gains more save flows.
     QPushButton *m_addButton = nullptr;
     QPushButton *m_removeButton = nullptr;
     QPushButton *m_moveUpButton = nullptr;

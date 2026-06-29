@@ -503,11 +503,17 @@ QString TeamEditorWidget::specialistIdAtRow(int row) const
 
 void TeamEditorWidget::setTeamId(const QString &teamId)
 {
+    const QString previousTeamId = m_team.id;
+
     if (teamId.isEmpty()) {
         m_team = Team();
     } else {
         const Team loaded = m_storageManager.loadTeam(teamId);
         m_team = loaded.id.isEmpty() ? Team() : loaded;
+    }
+
+    if (!previousTeamId.isEmpty() && previousTeamId != m_team.id) {
+        emit teamReverted(previousTeamId, QString());
     }
 
     refreshSpecialistsTable();
@@ -549,7 +555,11 @@ void TeamEditorWidget::onPrimaryItemChanged(QTableWidgetItem *item)
         m_updatingTable = true;
         item->setCheckState(already ? Qt::Checked : Qt::Unchecked);
         m_updatingTable = false;
+        return;
     }
+
+    emit teamUpdated(m_team.id);
+    emit specialistUpdated(specialistId);
 }
 
 void TeamEditorWidget::onAddSpecialist()
@@ -679,6 +689,9 @@ void TeamEditorWidget::onAddSpecialist()
         return;
     }
 
+    emit teamUpdated(m_team.id);
+    emit specialistUpdated(spec.id);
+
     refreshSpecialistsTable();
     updateActionButtons();
     if (m_table) {
@@ -718,6 +731,9 @@ void TeamEditorWidget::onRemoveSpecialist()
         return;
     }
 
+    emit teamUpdated(m_team.id);
+    emit specialistUpdated(specialistId);
+
     refreshSpecialistsTable();
     if (m_table && m_table->rowCount() > 0) {
         const int newRow = qMin(row, m_table->rowCount() - 1);
@@ -736,6 +752,7 @@ void TeamEditorWidget::onMoveUp()
         return;
     }
 
+    const QString specialistId = m_team.specialists.at(row).specialistId;
     m_team.specialists.move(row, row - 1);
     if (!m_storageManager.saveTeam(m_team)) {
         QMessageBox::warning(this,
@@ -743,6 +760,9 @@ void TeamEditorWidget::onMoveUp()
                              tr("Failed to save Team changes."));
         return;
     }
+
+    emit teamUpdated(m_team.id);
+    emit specialistUpdated(specialistId);
 
     refreshSpecialistsTable();
     if (m_table) {
@@ -761,6 +781,7 @@ void TeamEditorWidget::onMoveDown()
         return;
     }
 
+    const QString specialistId = m_team.specialists.at(row).specialistId;
     m_team.specialists.move(row, row + 1);
     if (!m_storageManager.saveTeam(m_team)) {
         QMessageBox::warning(this,
@@ -768,6 +789,9 @@ void TeamEditorWidget::onMoveDown()
                              tr("Failed to save Team changes."));
         return;
     }
+
+    emit teamUpdated(m_team.id);
+    emit specialistUpdated(specialistId);
 
     refreshSpecialistsTable();
     if (m_table) {
@@ -807,6 +831,8 @@ void TeamEditorWidget::onDuplicateVariant()
                              tr("Failed to save the new Team variant."));
         return;
     }
+
+    emit teamUpdated(copy.id);
 
     emit teamVariantCreated(copy.id);
 }
