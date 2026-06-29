@@ -76,7 +76,29 @@ public:
 
   // Seed default PARADIGM entities on first run.
   // See docs/PARADIGM.md (built-in Roles build/plan/general and a starter Team).
+  //
+  // Phase D1 / D-9: the seed mirrors stock opencode's seven native
+  // agents (build/plan/general/explore/compaction/title/summary) instead
+  // of the v0 fiction approximation. Per-agent permission rulesets live
+  // in `kStockDefaults` (StorageManager.cpp anon-ns) and are sourced
+  // verbatim from `agent.ts:119-264`. Each seeded Role carries
+  // `metadata.native = true` so the editor can badge it (D-10); the three
+  // hidden Roles carry `metadata.hidden = true` in addition (D3-3
+  // filter chip). Existing user data is sacred — see seedDefaultsIfNeeded
+  // early-out (StorageManager.cpp:924) and D4-2.
   void seedDefaultsIfNeeded() const;
+
+  // Phase D1-2 / §3: track which seed generation is in place so future
+  // migrations can run without clobbering user data. The QSettings key
+  // lives under "storage/seed_version" so an empty / pre-D1 storage
+  // root seeded by the v0 fiction path reads as v0_legacyFiction and
+  // a freshly-seeded root reads as v1_stockFidelity.
+  enum class SeedVersion {
+    v0_legacyFiction = 0,
+    v1_stockFidelity = 1,
+  };
+  static SeedVersion readSeedVersion();
+  static void writeSeedVersion(SeedVersion v);
 
       // Apply a Team to a concrete project path by rendering it to a
       // project-local opencode.json and recording a minimal Trial +
@@ -94,4 +116,10 @@ private:
      // otherwise returns an empty string so callers can fall back silently
      // to the default (~/.opencode-meta).
      static QString readPreferencesOverride();
+
+     // Phase D1-5: helper that writes the v1 stock-aligned Starter
+     // Team + four Specialists when teams/ is empty. Called from
+     // seedDefaultsIfNeeded when the
+     // `settings/seed_stock_defaults` checkbox is on (default true).
+     void seedStarterTeamStock(bool teamsEmpty) const;
 };

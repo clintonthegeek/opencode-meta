@@ -55,6 +55,12 @@ add_test(NAME test_cross_view_smoke COMMAND test_cross_view_smoke)
    add_qt_test(test_trials_storage          test_trials_storage.cpp)
    add_qt_test(test_contract_checker        test_contract_checker.cpp)
    add_qt_test(test_provider_catalog        test_provider_catalog.cpp)
+   # Phase D1 / D-9: stock-fidelity seed (build/plan/general/explore
+   # + hidden compaction/title/summary, stockDefaults shapes, D-11
+   # metadata.default_agent on the Starter Team). Deliberately OUT
+   # of the smoke-trio regex until D1 exit gate is met per the plan
+   # §5 D1-6 explicit reversal; the regex update lands in D4-4.
+   add_qt_test(test_seed_stock_fidelity    test_seed_stock_fidelity.cpp)
    # Phase C5-1 / D-8: deferred per ROADMAP. Module + tests are
    # scaffolded so the toggle can be flipped in a follow-up. Not in
    # the smoke-trio regex on purpose.
