@@ -645,6 +645,27 @@ QList<Trial> StorageManager::listTrials() const
     return trials;
 }
 
+bool StorageManager::deleteTrial(const QString &id) const
+{
+    if (id.isEmpty()) {
+        qDebug() << "StorageManager::deleteTrial: empty id";
+        return false;
+    }
+
+    const QString filePath = rootPath() + QStringLiteral("/trials/%1.json").arg(id);
+    QFile file(filePath);
+    if (!file.exists()) {
+        qDebug() << "StorageManager::deleteTrial: file does not exist" << filePath;
+        return false;
+    }
+    if (!file.remove()) {
+        qDebug() << "StorageManager::deleteTrial: failed to remove" << filePath << file.errorString();
+        return false;
+    }
+
+    return true;
+}
+
 bool StorageManager::applyTeamToProject(const QString &projectPath,
                                         const QString &teamId) const
 {

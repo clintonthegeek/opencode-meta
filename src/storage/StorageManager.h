@@ -72,6 +72,7 @@ public:
   bool saveTrial(const Trial &trial) const;     // trials/<id>.json
   Trial loadTrial(const QString &id) const;     // returns empty Trial on failure
   QList<Trial> listTrials() const;              // scans trials/ directory
+  bool deleteTrial(const QString &id) const;    // removes trials/<id>.json; false if missing
 
   // Seed default PARADIGM entities on first run.
   // See docs/PARADIGM.md (built-in Roles build/plan/general and a starter Team).
