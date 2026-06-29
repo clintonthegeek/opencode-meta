@@ -1026,8 +1026,13 @@ Team StorageManager::cloneTeam(const QString &teamId) const
     Team copy = source;
     const QString originName = copy.name.isEmpty() ? copy.id : copy.name;
     copy.parentTeamId = source.id;
-    copy.id = generateUniqueTeamId(*this, originName + QStringLiteral(" copy"));
-    copy.name = originName + QStringLiteral(" (copy)");
+    if (isStockTeam(source)) {
+        copy.name = QStringLiteral("My ") + originName;
+        copy.id = generateUniqueTeamId(*this, copy.name);
+    } else {
+        copy.id = generateUniqueTeamId(*this, originName + QStringLiteral(" copy"));
+        copy.name = originName + QStringLiteral(" (copy)");
+    }
     copy.metadata.remove(QStringLiteral("stock"));
 
     if (!saveTeam(copy)) {

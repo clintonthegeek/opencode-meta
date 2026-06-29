@@ -14,6 +14,7 @@
 #include <QtTest/QTest>
 #include <QApplication>
 #include <QAction>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QHBoxLayout>
@@ -22,10 +23,12 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPushButton>
+#include <QSettings>
 #include <QString>
 #include <QStringList>
 #include <QTableWidget>
 #include <QTemporaryDir>
+#include <QTimer>
 
 #include "models/ProjectRecord.h"
 #include "models/Role.h"
@@ -33,6 +36,7 @@
 #include "models/Trial.h"
 #include "storage/StorageManager.h"
 #include "ui/FilterBar.h"
+#include "ui/RoleEditorDialog.h"
 #include "ui/ProjectsWidget.h"
 #include "ui/RolesWidget.h"
 #include "ui/TeamEditorWidget.h"
@@ -43,13 +47,17 @@ class TestListFilter : public QObject
 {
     Q_OBJECT
 
+    QTemporaryDir m_settingsRoot;
+
 private slots:
+    void initTestCase();
     void roles_filtersAcrossAllColumns_caseInsensitive();
     void roles_hidesStockByDefault_andToggleShowsIt();
     void teams_appliesOnIdAndName_clearsOnEscape();
     void teams_hidesStockByDefault_andToggleShowsIt();
     void teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists();
     void teams_cloneStockTeamSelectsEditableCopy();
+    void roles_duplicateStockRoleSelectsNameAndPrefixesMy();
     void teams_stockDeleteShowsFlashFeedback();
     void roles_stockDeleteShowsFlashFeedback();
     void trials_hidesNonMatchingRows_andPreservesIdForActions();
@@ -63,6 +71,13 @@ namespace {
 void seedHomeAndStorageRoot(const QString &root)
 {
     qputenv("HOME", root.toUtf8());
+}
+
+void resetShowStockSettings()
+{
+    QSettings().remove(QStringLiteral("settings/teams_show_stock"));
+    QSettings().remove(QStringLiteral("settings/roles_show_stock"));
+    QSettings().sync();
 }
 
 // Build a Role, returning the persisted record. Used by the Roles test.
@@ -147,6 +162,22 @@ void makeAndSaveTrial(StorageManager &storage,
 }
 
 } // namespace
+
+void TestListFilter::initTestCase()
+{
+    QVERIFY(m_settingsRoot.isValid());
+
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat,
+                       QSettings::UserScope,
+                       m_settingsRoot.path());
+
+    QCoreApplication::setOrganizationName(QStringLiteral("opencode-meta-tests"));
+    QCoreApplication::setOrganizationDomain(QStringLiteral("opencode-meta-tests.local"));
+    QCoreApplication::setApplicationName(QStringLiteral("list-filter-test"));
+
+    resetShowStockSettings();
+}
 
 void TestListFilter::roles_filtersAcrossAllColumns_caseInsensitive()
 {
@@ -235,6 +266,8 @@ void TestListFilter::roles_filtersAcrossAllColumns_caseInsensitive()
 
 void TestListFilter::roles_hidesStockByDefault_andToggleShowsIt()
 {
+    resetShowStockSettings();
+
     QTemporaryDir tmpRoot;
     QVERIFY(tmpRoot.isValid());
     seedHomeAndStorageRoot(tmpRoot.path());
@@ -275,14 +308,29 @@ void TestListFilter::roles_hidesStockByDefault_andToggleShowsIt()
         return -1;
     };
 
+    QCOMPARE(showStock->isChecked(), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("build"))), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), true);
 
     showStock->setChecked(true);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), false);
 
+    {
+        RolesWidget reloaded(storage);
+        auto *showStockReloaded = reloaded.findChild<QCheckBox *>(QStringLiteral("rolesWidget.showStock"));
+        QVERIFY(showStockReloaded);
+        QCOMPARE(showStockReloaded->isChecked(), true);
+    }
+
     showStock->setChecked(false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("stock-review"))), true);
+
+    {
+        RolesWidget reloaded(storage);
+        auto *showStockReloaded = reloaded.findChild<QCheckBox *>(QStringLiteral("rolesWidget.showStock"));
+        QVERIFY(showStockReloaded);
+        QCOMPARE(showStockReloaded->isChecked(), false);
+    }
 }
 
 void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
@@ -359,6 +407,8 @@ void TestListFilter::teams_appliesOnIdAndName_clearsOnEscape()
 
 void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
 {
+    resetShowStockSettings();
+
     QTemporaryDir tmpRoot;
     QVERIFY(tmpRoot.isValid());
     seedHomeAndStorageRoot(tmpRoot.path());
@@ -394,14 +444,29 @@ void TestListFilter::teams_hidesStockByDefault_andToggleShowsIt()
         return -1;
     };
 
+    QCOMPARE(showStock->isChecked(), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("custom-team"))), false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), true);
 
     showStock->setChecked(true);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), false);
 
+    {
+        TeamsWidget reloaded(storage);
+        auto *showStockReloaded = reloaded.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+        QVERIFY(showStockReloaded);
+        QCOMPARE(showStockReloaded->isChecked(), true);
+    }
+
     showStock->setChecked(false);
     QCOMPARE(table->isRowHidden(findRowForId(QStringLiteral("starter-team"))), true);
+
+    {
+        TeamsWidget reloaded(storage);
+        auto *showStockReloaded = reloaded.findChild<QCheckBox *>(QStringLiteral("teamsWidget.showStock"));
+        QVERIFY(showStockReloaded);
+        QCOMPARE(showStockReloaded->isChecked(), false);
+    }
 }
 
 void TestListFilter::teams_showStockToggleAlsoControlsEmbeddedEditorStockSpecialists()
@@ -525,6 +590,86 @@ void TestListFilter::teams_cloneStockTeamSelectsEditableCopy()
     QVERIFY(!cloned.id.isEmpty());
     QVERIFY(!storage.isStockTeam(cloned));
     QCOMPARE(cloned.parentTeamId, QStringLiteral("starter-team"));
+    QCOMPARE(cloned.name, QStringLiteral("My Starter Team"));
+}
+
+void TestListFilter::roles_duplicateStockRoleSelectsNameAndPrefixesMy()
+{
+    resetShowStockSettings();
+
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+    seedHomeAndStorageRoot(tmpRoot.path());
+
+    StorageManager storage(QDir::homePath() + QStringLiteral("/.opencode-meta"));
+    storage.ensureRoot();
+
+    Role stockRole;
+    stockRole.id = QStringLiteral("starter-role");
+    stockRole.name = QStringLiteral("Starter Role");
+    stockRole.description = QStringLiteral("Seeded role");
+    stockRole.mode = Role::Mode::Subagent;
+    stockRole.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY(storage.saveRole(stockRole));
+
+    RolesWidget widget(storage);
+
+    auto *duplicateButton = widget.findChild<QPushButton *>(QStringLiteral("rolesWidget.duplicateButton"));
+    QVERIFY(duplicateButton);
+    auto *showStock = widget.findChild<QCheckBox *>(QStringLiteral("rolesWidget.showStock"));
+    QVERIFY(showStock);
+    showStock->setChecked(true);
+
+    auto *table = widget.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    auto findRowForId = [&](const QString &expectedId) {
+        for (int row = 0; row < table->rowCount(); ++row) {
+            const auto *idItem = table->item(row, 0);
+            if (!idItem) {
+                continue;
+            }
+            const QString id = idItem->data(Qt::UserRole).isValid()
+                                   ? idItem->data(Qt::UserRole).toString()
+                                   : idItem->text();
+            if (id == expectedId) {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int stockRow = findRowForId(QStringLiteral("starter-role"));
+    QVERIFY(stockRow >= 0);
+    table->setCurrentCell(stockRow, 0);
+
+    QTimer::singleShot(0, qApp, [&]() {
+        auto *modal = qobject_cast<RoleEditorDialog *>(QApplication::activeModalWidget());
+        QVERIFY2(modal, "RoleEditorDialog did not open");
+        auto *nameEdit = modal->findChild<QLineEdit *>(QStringLiteral("roleEditor.nameEdit"));
+        QVERIFY2(nameEdit, "RoleEditorDialog has no name edit");
+        QCoreApplication::processEvents();
+        QCOMPARE(nameEdit->text(), QStringLiteral("My Starter Role"));
+        QVERIFY2(nameEdit->hasSelectedText(), "role name field was not selected");
+        QCOMPARE(nameEdit->selectedText(), nameEdit->text());
+        modal->accept();
+    });
+
+    duplicateButton->click();
+    QApplication::processEvents();
+
+    const QList<Role> roles = storage.listRoles();
+    Role cloned;
+    for (const Role &role : roles) {
+        if (role.id != QStringLiteral("starter-role") && role.name == QStringLiteral("My Starter Role")) {
+            cloned = role;
+            break;
+        }
+    }
+
+    QVERIFY2(!cloned.id.isEmpty(), "stock role clone was not saved");
+    QVERIFY2(!storage.isStockRole(cloned), "cloned role unexpectedly kept stock metadata");
+    QCOMPARE(cloned.name, QStringLiteral("My Starter Role"));
 }
 
 void TestListFilter::teams_stockDeleteShowsFlashFeedback()

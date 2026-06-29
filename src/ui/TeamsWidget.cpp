@@ -18,6 +18,7 @@
 #include <QStyle>
 #include <QShortcut>
 #include <QSortFilterProxyModel>
+#include <QSettings>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QTimer>
@@ -134,6 +135,16 @@ QString stockAboutText(const QString &itemKind)
         .arg(itemKind);
 }
 
+bool loadShowStockTeamsSetting()
+{
+    return QSettings().value(QStringLiteral("settings/teams_show_stock"), false).toBool();
+}
+
+void saveShowStockTeamsSetting(bool showStock)
+{
+    QSettings().setValue(QStringLiteral("settings/teams_show_stock"), showStock);
+}
+
 // Produce a unique Team id under the given storage root, starting from
 // the slugified base and appending "-N" as needed.
 QString generateUniqueTeamId(StorageManager &storage, const QString &base)
@@ -196,7 +207,7 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     filterRowLayout->addWidget(filterBar, 1);
     m_showStockCheck = new QCheckBox(tr("Show stock"), filterRow);
     m_showStockCheck->setObjectName(QStringLiteral("teamsWidget.showStock"));
-    m_showStockCheck->setChecked(false);
+    m_showStockCheck->setChecked(loadShowStockTeamsSetting());
     m_showStockCheck->setToolTip(tr("Show stock Teams in the list"));
     filterRowLayout->addWidget(m_showStockCheck);
     leftLayout->addWidget(filterRow);
@@ -234,6 +245,7 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     connect(filterBar, &FilterBar::filterChanged,
              this, &TeamsWidget::applyFilter);
     connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
+        saveShowStockTeamsSetting(m_showStockCheck && m_showStockCheck->isChecked());
         if (m_editor) {
             m_editor->setShowStock(m_showStockCheck && m_showStockCheck->isChecked());
         }

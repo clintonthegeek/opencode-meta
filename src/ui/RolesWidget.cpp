@@ -11,6 +11,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QSize>
+#include <QSettings>
 #include <QStyle>
 #include <QPushButton>
 #include <QSortFilterProxyModel>
@@ -130,6 +131,16 @@ QString stockAboutText(const QString &itemKind)
         .arg(itemKind);
 }
 
+bool loadShowStockRolesSetting()
+{
+    return QSettings().value(QStringLiteral("settings/roles_show_stock"), false).toBool();
+}
+
+void saveShowStockRolesSetting(bool showStock)
+{
+    QSettings().setValue(QStringLiteral("settings/roles_show_stock"), showStock);
+}
+
 QString generateUniqueRoleId(StorageManager &storage, const QString &base)
 {
     QString baseId = base.trimmed();
@@ -174,13 +185,14 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     filterRowLayout->addWidget(filterBar, 1);
     m_showStockCheck = new QCheckBox(tr("Show stock"), filterRow);
     m_showStockCheck->setObjectName(QStringLiteral("rolesWidget.showStock"));
-    m_showStockCheck->setChecked(false);
+    m_showStockCheck->setChecked(loadShowStockRolesSetting());
     m_showStockCheck->setToolTip(tr("Show stock Roles in the list"));
     filterRowLayout->addWidget(m_showStockCheck);
     layout->addWidget(filterRow);
     connect(filterBar, &FilterBar::filterChanged,
             this, &RolesWidget::applyFilter);
     connect(m_showStockCheck, &QCheckBox::toggled, this, [this]() {
+        saveShowStockRolesSetting(m_showStockCheck && m_showStockCheck->isChecked());
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
     });
 
@@ -216,6 +228,7 @@ RolesWidget::RolesWidget(StorageManager &storageManager, QWidget *parent)
     m_editButton = new QPushButton(tr("Edit"), this);
     m_duplicateButton = new QPushButton(tr("Duplicate"), this);
     m_deleteButton = new QPushButton(tr("Delete"), this);
+    m_duplicateButton->setObjectName(QStringLiteral("rolesWidget.duplicateButton"));
     m_deleteButton->setObjectName(QStringLiteral("rolesWidget.deleteButton"));
     buttonRow->addWidget(m_createButton);
     buttonRow->addWidget(m_editButton);
@@ -416,10 +429,25 @@ void RolesWidget::duplicateSelectedRole()
         return;
     }
 
+    const bool stockRole = m_storageManager.isStockRole(role);
+    const QString originName = role.name.isEmpty() ? id : role.name;
     role.id.clear();
-    role.name += QStringLiteral(" (copy)");
+    role.name = stockRole ? QStringLiteral("My ") + originName : originName + QStringLiteral(" (copy)");
+    if (stockRole) {
+        role.metadata.remove(QStringLiteral("stock"));
+        role.metadata.remove(QStringLiteral("native"));
+    }
 
     RoleEditorDialog dlg(role, this);
+    if (QLineEdit *nameEdit = dlg.findChild<QLineEdit *>(QStringLiteral("roleEditor.nameEdit"))) {
+        QTimer::singleShot(0, &dlg, [nameEdit]() {
+            if (!nameEdit) {
+                return;
+            }
+            nameEdit->setFocus();
+            nameEdit->selectAll();
+        });
+    }
     if (dlg.exec() != QDialog::Accepted) {
         return;
     }
