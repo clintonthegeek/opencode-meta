@@ -14,9 +14,11 @@
 #include "models/ModelInfo.h" // for ModelsCache
 
 class QLabel;
+class QFrame;
 class QTableWidget;
 class QTableWidgetItem;
 class QPushButton;
+class QToolButton;
 class StorageManager;
 
 class TeamEditorWidget : public QWidget
@@ -95,6 +97,7 @@ private slots:
 
 private:
     void refreshSpecialistsTable();
+    void refreshStockComparison();
     QString formatModelDisplay(const QString &modelId) const;
     QString formatCostBadge(const QString &modelId) const;
     bool rowIsStock(int row) const;
@@ -111,6 +114,7 @@ private:
     QTableWidget *m_table = nullptr;
     QLabel *m_emptyLabel = nullptr;
     QLabel *m_dirtyIndicator = nullptr;
+    QFrame *m_comparePopover = nullptr;
 
     // Button row under the Specialists table. These actions are wired
     // incrementally as the Team editor gains more save flows.
@@ -120,10 +124,13 @@ private:
     QPushButton *m_moveDownButton = nullptr;
     QPushButton *m_duplicateButton = nullptr;
     QPushButton *m_resetButton = nullptr;
-    QPushButton *m_compareButton = nullptr;
+    QToolButton *m_compareButton = nullptr;
     QPushButton *m_revertButton = nullptr;
     QPushButton *m_applyButton = nullptr; // F1 footer "Apply Team..."
 
+    QString m_stockCompareSummary;
+    QString m_stockCompareDetailsHtml;
+    bool m_hasStockComparison = false;
     bool m_showStockSpecialists = false;
     bool m_updatingTable = false; // guard to avoid feedback loops while populating
 };

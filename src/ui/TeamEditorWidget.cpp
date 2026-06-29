@@ -208,6 +208,103 @@ bool isResettableStockClone(const Team &team, StorageManager &storage)
     return !parent.id.isEmpty() && storage.isStockTeam(parent);
 }
 
+struct StockComparison {
+    bool hasComparison = false;
+    QString summary;
+    QString detailsHtml;
+};
+
+QString specialistDisplayName(const QString &specialistId, StorageManager &storage)
+{
+    const Specialist spec = storage.loadSpecialist(specialistId);
+    if (!spec.id.isEmpty() && !spec.name.isEmpty()) {
+        return spec.name;
+    }
+    return specialistId;
+}
+
+StockComparison compareWithStock(const Team &team, const Team &stock, StorageManager &storage)
+{
+    StockComparison comparison;
+
+    QHash<QString, int> stockIndex;
+    QSet<QString> teamIds;
+    QSet<QString> stockIds;
+    QStringList teamNames;
+    QStringList stockNames;
+
+    for (int i = 0; i < team.specialists.size(); ++i) {
+        const auto &binding = team.specialists.at(i);
+        teamIds.insert(binding.specialistId);
+        teamNames.append(specialistDisplayName(binding.specialistId, storage));
+    }
+    for (int i = 0; i < stock.specialists.size(); ++i) {
+        const auto &binding = stock.specialists.at(i);
+        stockIds.insert(binding.specialistId);
+        stockIndex.insert(binding.specialistId, i);
+        stockNames.append(specialistDisplayName(binding.specialistId, storage));
+    }
+
+    QStringList added;
+    QStringList removed;
+    QStringList reordered;
+
+    for (int i = 0; i < team.specialists.size(); ++i) {
+        const QString specialistId = team.specialists.at(i).specialistId;
+        if (!stockIds.contains(specialistId)) {
+            added.append(teamNames.at(i));
+            continue;
+        }
+        if (stockIndex.value(specialistId) != i) {
+            reordered.append(teamNames.at(i));
+        }
+    }
+
+    for (int i = 0; i < stock.specialists.size(); ++i) {
+        const QString specialistId = stock.specialists.at(i).specialistId;
+        if (!teamIds.contains(specialistId)) {
+            removed.append(stockNames.at(i));
+        }
+    }
+
+    const QString teamDefault = team.metadata.value(QStringLiteral("default_agent")).toString();
+    const QString stockDefault = stock.metadata.value(QStringLiteral("default_agent")).toString();
+    const bool defaultDiffers = (teamDefault != stockDefault);
+
+    int changeCount = added.size() + removed.size() + reordered.size();
+    if (defaultDiffers) {
+        ++changeCount;
+    }
+
+    comparison.hasComparison = true;
+    comparison.summary = (changeCount == 0)
+                             ? QObject::tr("No changes from stock")
+                             : QObject::tr("%1 changes from stock").arg(changeCount);
+
+    QStringList detailLines;
+    if (!added.isEmpty()) {
+        detailLines << QObject::tr("<b>Added specialists</b>: %1").arg(added.join(QStringLiteral(", ")));
+    }
+    if (!removed.isEmpty()) {
+        detailLines << QObject::tr("<b>Removed specialists</b>: %1").arg(removed.join(QStringLiteral(", ")));
+    }
+    if (!reordered.isEmpty()) {
+        detailLines << QObject::tr("<b>Reordered specialists</b>: %1").arg(reordered.join(QStringLiteral(", ")));
+    }
+    if (defaultDiffers) {
+        detailLines << QObject::tr("<b>default_agent</b>: %1 → %2")
+                          .arg(specialistDisplayName(stockDefault, storage),
+                               specialistDisplayName(teamDefault, storage));
+    }
+
+    if (detailLines.isEmpty()) {
+        detailLines << QObject::tr("No differences from the original stock Team.");
+    }
+
+    comparison.detailsHtml = QStringLiteral("<div>%1</div>").arg(detailLines.join(QStringLiteral("<br>")));
+    return comparison;
+}
+
 // F3: side-by-side diff highlighter. Identical shape to
 // ProjectsWidget::populateDiffEditor -- kept local and minimal so the
 // editor can launch a lightweight inline diff dialog without dragging
@@ -250,8 +347,19 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    auto *headerRow = new QHBoxLayout();
     auto *titleLabel = new QLabel(tr("Specialists in this Team:"), this);
-    layout->addWidget(titleLabel);
+    headerRow->addWidget(titleLabel);
+    headerRow->addStretch(1);
+
+    m_compareButton = new QToolButton(this);
+    m_compareButton->setObjectName(QStringLiteral("teamEditor.compareStockButton"));
+    m_compareButton->setAutoRaise(true);
+    m_compareButton->setText(tr("Compare with stock"));
+    m_compareButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_compareButton->setVisible(false);
+    headerRow->addWidget(m_compareButton);
+    layout->addLayout(headerRow);
 
     m_table = new QTableWidget(this);
     m_table->setColumnCount(6);
@@ -282,7 +390,6 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     m_moveDownButton = new QPushButton(tr("Move Down"), this);
     m_duplicateButton = new QPushButton(tr("Duplicate as Variant"), this);
     m_resetButton = new QPushButton(tr("Reset to stock"), this);
-    m_compareButton = new QPushButton(tr("Compare..."), this);
     m_revertButton = new QPushButton(tr("Revert changes"), this);
     m_applyButton = new QPushButton(tr("Apply Team..."), this);
 
@@ -308,7 +415,6 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     buttonRow->addWidget(m_duplicateButton);
     buttonRow->addWidget(m_resetButton);
     buttonRow->addStretch(1);
-    buttonRow->addWidget(m_compareButton);
     buttonRow->addWidget(m_dirtyIndicator);
     buttonRow->addWidget(m_revertButton);
     buttonRow->addWidget(m_applyButton);
@@ -326,7 +432,7 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
             this, &TeamEditorWidget::onDuplicateVariant);
     connect(m_resetButton, &QPushButton::clicked,
             this, &TeamEditorWidget::onResetToStock);
-    connect(m_compareButton, &QPushButton::clicked,
+    connect(m_compareButton, &QToolButton::clicked,
             this, &TeamEditorWidget::onCompare);
     connect(m_revertButton, &QPushButton::clicked,
             this, &TeamEditorWidget::onRevertChanges);
@@ -386,6 +492,7 @@ TeamEditorWidget::TeamEditorWidget(StorageManager &storageManager, QWidget *pare
     connect(resetAct, &QAction::triggered, this, &TeamEditorWidget::onResetToStock);
 
     refreshSpecialistsTable();
+    refreshStockComparison();
     updateActionButtons();
 }
 
@@ -398,6 +505,50 @@ void TeamEditorWidget::setShowStock(bool showStock)
     m_showStockSpecialists = showStock;
     refreshSpecialistsTable();
     updateActionButtons();
+}
+
+void TeamEditorWidget::refreshStockComparison()
+{
+    m_hasStockComparison = false;
+    m_stockCompareSummary.clear();
+    m_stockCompareDetailsHtml.clear();
+
+    if (m_comparePopover) {
+        m_comparePopover->close();
+    }
+
+    if (!isResettableStockClone(m_team, m_storageManager)) {
+        if (m_compareButton) {
+            m_compareButton->setVisible(false);
+            m_compareButton->setEnabled(false);
+            m_compareButton->setToolTip(QString());
+            m_compareButton->setStatusTip(QString());
+        }
+        return;
+    }
+
+    const Team stock = m_storageManager.loadTeam(m_team.parentTeamId);
+    if (stock.id.isEmpty()) {
+        if (m_compareButton) {
+            m_compareButton->setVisible(false);
+            m_compareButton->setEnabled(false);
+            m_compareButton->setToolTip(QString());
+            m_compareButton->setStatusTip(QString());
+        }
+        return;
+    }
+
+    const StockComparison comparison = compareWithStock(m_team, stock, m_storageManager);
+    m_hasStockComparison = comparison.hasComparison;
+    m_stockCompareSummary = comparison.summary;
+    m_stockCompareDetailsHtml = comparison.detailsHtml;
+
+    if (m_compareButton) {
+        m_compareButton->setVisible(true);
+        m_compareButton->setEnabled(true);
+        m_compareButton->setToolTip(m_stockCompareSummary);
+        m_compareButton->setStatusTip(m_stockCompareSummary);
+    }
 }
 
 void TeamEditorWidget::refreshSpecialistsTable()
@@ -649,7 +800,8 @@ void TeamEditorWidget::updateActionButtons()
         m_resetButton->setToolTip(tr("Reset this cloned Team back to its original stock source"));
     }
     if (m_compareButton) {
-        m_compareButton->setEnabled(hasTeam);
+        m_compareButton->setVisible(m_hasStockComparison);
+        m_compareButton->setEnabled(m_hasStockComparison);
     }
     if (m_dirtyIndicator) {
         m_dirtyIndicator->setVisible(hasTeam && dirty);
@@ -727,6 +879,7 @@ void TeamEditorWidget::setTeamId(const QString &teamId)
     }
 
     refreshSpecialistsTable();
+    refreshStockComparison();
     updateActionButtons();
 }
 
@@ -1104,6 +1257,7 @@ void TeamEditorWidget::onResetToStock()
 
     m_team = reset;
     refreshSpecialistsTable();
+    refreshStockComparison();
     updateActionButtons();
 
     emit teamUpdated(m_team.id);
@@ -1111,111 +1265,53 @@ void TeamEditorWidget::onResetToStock()
 
 void TeamEditorWidget::onCompare()
 {
-    if (m_team.id.isEmpty()) {
+    if (!m_hasStockComparison || m_stockCompareSummary.isEmpty() || m_stockCompareDetailsHtml.isEmpty()) {
         return;
     }
 
-    // F3: real Team-vs-Team rendered-config diff (chosen over a Trial-vs-Trial
-    // view for v1, per ROADMAP.md F3). Trial-vs-Trial stays deferred.
-    const QList<Team> teams = m_storageManager.listTeams();
-    if (teams.size() < 2) {
-        QMessageBox::information(
-            this,
-            tr("Compare"),
-            tr("At least two Teams are required to run a diff.\n"
-               "Create another Team first (Ctrl+N from the Teams menu or the "
-               "New Team button) and try again."));
-        return;
+    if (m_comparePopover) {
+        m_comparePopover->close();
     }
 
-    // Build the picker list, excluding the current Team so the user never
-    // accidentally diffs a Team against itself.
-    QStringList items;
-    QStringList ids;
-    for (int i = 0; i < teams.size(); ++i) {
-        const Team &team = teams.at(i);
-        if (team.id == m_team.id) {
-            continue;
-        }
-        items << QStringLiteral("%1 (%2)").arg(team.name.isEmpty() ? team.id : team.name, team.id);
-        ids << team.id;
+    auto *popover = new QFrame(this, Qt::Popup | Qt::FramelessWindowHint);
+    popover->setObjectName(QStringLiteral("teamEditor.stockComparePopover"));
+    popover->setAttribute(Qt::WA_DeleteOnClose);
+    popover->setFrameShape(QFrame::StyledPanel);
+    popover->setFrameShadow(QFrame::Plain);
+
+    auto *layout = new QVBoxLayout(popover);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(6);
+
+    auto *title = new QLabel(tr("<b>Compare with stock</b>"), popover);
+    title->setTextFormat(Qt::RichText);
+    title->setObjectName(QStringLiteral("teamEditor.stockCompareTitle"));
+    layout->addWidget(title);
+
+    auto *summary = new QLabel(m_stockCompareSummary, popover);
+    summary->setObjectName(QStringLiteral("teamEditor.stockCompareSummary"));
+    summary->setWordWrap(true);
+    layout->addWidget(summary);
+
+    auto *details = new QLabel(m_stockCompareDetailsHtml, popover);
+    details->setObjectName(QStringLiteral("teamEditor.stockCompareDetails"));
+    details->setTextFormat(Qt::RichText);
+    details->setWordWrap(true);
+    details->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(details);
+
+    popover->adjustSize();
+
+    if (m_compareButton) {
+        const QPoint pos = m_compareButton->mapToGlobal(QPoint(0, m_compareButton->height()));
+        popover->move(pos);
     }
 
-    if (items.isEmpty()) {
-        // Defensive: the early size<2 check covers this, but guard anyway.
-        return;
-    }
-
-    bool ok = false;
-    const QString chosen = QInputDialog::getItem(
-        this,
-        tr("Compare Team"),
-        tr("Select another Team to diff against '%1':")
-            .arg(m_team.name.isEmpty() ? m_team.id : m_team.name),
-        items,
-        0,
-        false,
-        &ok);
-
-    if (!ok || chosen.isEmpty()) {
-        return;
-    }
-
-    const int idx = items.indexOf(chosen);
-    if (idx < 0 || idx >= ids.size()) {
-        return;
-    }
-
-    const QString otherTeamId = ids.at(idx);
-    const Team otherTeam = m_storageManager.loadTeam(otherTeamId);
-    if (otherTeam.id.isEmpty()) {
-        QMessageBox::warning(this,
-                             tr("Compare"),
-                             tr("Failed to load the selected Team."));
-        return;
-    }
-
-    const QJsonObject leftConfig = renderTeamConfig(m_team, m_storageManager);
-    const QJsonObject rightConfig = renderTeamConfig(otherTeam, m_storageManager);
-
-    const QString leftText = QString::fromUtf8(
-        QJsonDocument(leftConfig).toJson(QJsonDocument::Indented));
-    const QString rightText = QString::fromUtf8(
-        QJsonDocument(rightConfig).toJson(QJsonDocument::Indented));
-
-    const QStringList leftLines = leftText.split(QLatin1Char('\n'));
-    const QStringList rightLines = rightText.split(QLatin1Char('\n'));
-    const int maxLines = qMax(leftLines.size(), rightLines.size());
-
-    QVector<bool> leftDiff(maxLines, false);
-    QVector<bool> rightDiff(maxLines, false);
-    for (int i = 0; i < maxLines; ++i) {
-        const QString left = (i < leftLines.size()) ? leftLines.at(i) : QString();
-        const QString right = (i < rightLines.size()) ? rightLines.at(i) : QString();
-        const bool differ = (left != right);
-        leftDiff[i] = differ;
-        rightDiff[i] = differ;
-    }
-
-    auto *dlg = new QDialog(this);
-    dlg->setAttribute(Qt::WA_DeleteOnClose);
-    dlg->setWindowTitle(tr("Team Diff: %1 vs %2")
-                            .arg(m_team.name.isEmpty() ? m_team.id : m_team.name,
-                                 otherTeam.name.isEmpty() ? otherTeam.id : otherTeam.name));
-
-    auto *layout = new QHBoxLayout(dlg);
-    auto *leftEdit = new QTextEdit(dlg);
-    auto *rightEdit = new QTextEdit(dlg);
-    leftEdit->setLineWrapMode(QTextEdit::NoWrap);
-    rightEdit->setLineWrapMode(QTextEdit::NoWrap);
-
-    populateDiffEditor(leftEdit, leftLines, leftDiff, QColor(255, 200, 200));
-    populateDiffEditor(rightEdit, rightLines, rightDiff, QColor(200, 255, 200));
-
-    layout->addWidget(leftEdit);
-    layout->addWidget(rightEdit);
-    dlg->resize(1000, 600);
-    dlg->exec();
+    connect(popover, &QObject::destroyed, this, [this]() {
+        m_comparePopover = nullptr;
+    });
+    m_comparePopover = popover;
+    popover->show();
 }
 
 void TeamEditorWidget::onApplyTeam()
@@ -1269,6 +1365,7 @@ void TeamEditorWidget::reloadTeamFromStorage()
 
     m_team = reloaded;
     refreshSpecialistsTable();
+    refreshStockComparison();
     updateActionButtons();
     emit teamReverted(id, QStringLiteral("user-discard"));
 }

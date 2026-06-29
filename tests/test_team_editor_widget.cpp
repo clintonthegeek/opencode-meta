@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalSpy>
+#include <QFrame>
 #include <QTableWidget>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -29,6 +30,7 @@ private slots:
     void defaultAgentBadgeIsShownAndStockSpecialistsCanBeHidden();
     void makeDefaultActionUpdatesAgentAndEmitsStatusMessage();
     void resetToStockRestoresClonedTeamAndClearsParentLink();
+    void compareWithStockButtonShowsCompactPopoverForClonedTeams();
 
 private:
     static void seedTeam(StorageManager &storage, const QString &teamId);
@@ -329,6 +331,91 @@ void TestTeamEditorWidget::resetToStockRestoresClonedTeamAndClearsParentLink()
     QVERIFY(!reset.metadata.contains(QStringLiteral("cloned_from_team_id")));
     QVERIFY(!reset.metadata.contains(QStringLiteral("stock")));
     QTRY_VERIFY(resetButton->isHidden());
+}
+
+void TestTeamEditorWidget::compareWithStockButtonShowsCompactPopoverForClonedTeams()
+{
+    StorageManager storage(m_storageRoot);
+    const QString stockTeamId = QStringLiteral("team-editor-widget-stock-compare");
+    seedTeam(storage, stockTeamId);
+
+    Team stock = storage.loadTeam(stockTeamId);
+    QVERIFY(!stock.id.isEmpty());
+    stock.metadata.insert(QStringLiteral("stock"), true);
+    QVERIFY(storage.saveTeam(stock));
+
+    const Team cloned = storage.cloneTeam(stockTeamId);
+    QVERIFY(!cloned.id.isEmpty());
+
+    Team editedClone = storage.loadTeam(cloned.id);
+    QVERIFY(!editedClone.id.isEmpty());
+    editedClone.primarySpecialistIds = QStringList{QStringLiteral("spec-review")};
+    editedClone.metadata.insert(QStringLiteral("default_agent"), QStringLiteral("spec-review"));
+
+    Team::SpecialistBinding buildBinding;
+    buildBinding.roleId = QStringLiteral("build");
+    buildBinding.specialistId = QStringLiteral("spec-build");
+    Team::SpecialistBinding reviewBinding;
+    reviewBinding.roleId = QStringLiteral("review");
+    reviewBinding.specialistId = QStringLiteral("spec-review");
+
+    Role qaRole;
+    qaRole.id = QStringLiteral("qa");
+    qaRole.name = QStringLiteral("QA");
+    QVERIFY(storage.saveRole(qaRole));
+
+    Specialist qaSpec;
+    qaSpec.id = QStringLiteral("spec-qa");
+    qaSpec.roleId = qaRole.id;
+    qaSpec.modelId = QStringLiteral("model-d");
+    qaSpec.name = QStringLiteral("QA Specialist");
+    QVERIFY(storage.saveSpecialist(qaSpec));
+
+    Team::SpecialistBinding qaBinding;
+    qaBinding.roleId = qaRole.id;
+    qaBinding.specialistId = qaSpec.id;
+
+    editedClone.specialists.clear();
+    editedClone.specialists.append(buildBinding);
+    editedClone.specialists.append(reviewBinding);
+    editedClone.specialists.append(qaBinding);
+    QVERIFY(storage.saveTeam(editedClone));
+
+    TeamEditorWidget widget(storage);
+    widget.setTeamId(cloned.id);
+
+    auto *compareButton = widget.findChild<QToolButton *>(QStringLiteral("teamEditor.compareStockButton"));
+    QVERIFY(compareButton);
+    QVERIFY(!compareButton->isHidden());
+    QCOMPARE(compareButton->toolTip(), QStringLiteral("4 changes from stock"));
+
+    QTest::mouseClick(compareButton, Qt::LeftButton);
+
+    QFrame *popover = nullptr;
+    QTRY_VERIFY([&]() -> bool {
+        popover = nullptr;
+        for (QWidget *topLevel : QApplication::topLevelWidgets()) {
+            auto *frame = qobject_cast<QFrame *>(topLevel);
+            if (frame && frame->objectName() == QStringLiteral("teamEditor.stockComparePopover")) {
+                popover = frame;
+                break;
+            }
+        }
+        return popover != nullptr;
+    }());
+
+    QVERIFY(popover);
+    auto *summary = popover->findChild<QLabel *>(QStringLiteral("teamEditor.stockCompareSummary"));
+    auto *details = popover->findChild<QLabel *>(QStringLiteral("teamEditor.stockCompareDetails"));
+    QVERIFY(summary);
+    QVERIFY(details);
+    QCOMPARE(summary->text(), QStringLiteral("4 changes from stock"));
+    QVERIFY(details->text().contains(QStringLiteral("Added specialists")));
+    QVERIFY(details->text().contains(QStringLiteral("Removed specialists")));
+    QVERIFY(details->text().contains(QStringLiteral("Reordered specialists")));
+    QVERIFY(details->text().contains(QStringLiteral("default_agent")));
+    QVERIFY(details->text().contains(QStringLiteral("QA Specialist")));
+    QVERIFY(details->text().contains(QStringLiteral("Stock Specialist")));
 }
 
 QTEST_MAIN(TestTeamEditorWidget)
