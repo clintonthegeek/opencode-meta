@@ -15,6 +15,7 @@
 #include "models/Team.h"
 #include "storage/StorageManager.h"
 #include "ui/RolesWidget.h"
+#include "ui/TeamsDialog.h"
 #include "ui/TeamsWidget.h"
 
 namespace {
@@ -27,6 +28,23 @@ int findStockRow(QTableWidget *table)
     for (int row = 0; row < table->rowCount(); ++row) {
         auto *item = table->item(row, 0);
         if (item && item->data(Qt::UserRole + 1).toBool()) {
+            return row;
+        }
+    }
+    return -1;
+}
+
+int findTeamRow(QTableWidget *table, const QString &teamId)
+{
+    for (int row = 0; row < table->rowCount(); ++row) {
+        auto *item = table->item(row, 0);
+        if (!item) {
+            continue;
+        }
+        const QString id = item->data(Qt::UserRole).toString().isEmpty()
+            ? item->text()
+            : item->data(Qt::UserRole).toString();
+        if (id == teamId) {
             return row;
         }
     }
@@ -109,6 +127,7 @@ private slots:
     void initTestCase();
     void rolesStockBadgeAndInfoAction();
     void teamsStockBadgeAndInfoAction();
+    void applyDialogShowsStockAndDefaultAgentHints();
 };
 
 void TestStockItemInfo::initTestCase()
@@ -154,6 +173,47 @@ void TestStockItemInfo::teamsStockBadgeAndInfoAction()
                               QStringLiteral("teamsWidget.showStock"),
                               QStringLiteral("teamsWidget.aboutStockItemAction"),
                               QStringLiteral("Team"));
+}
+
+void TestStockItemInfo::applyDialogShowsStockAndDefaultAgentHints()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+
+    StorageManager storage(tmpRoot.path());
+
+    Team stockTeam;
+    stockTeam.id = QStringLiteral("starter-team");
+    stockTeam.name = QStringLiteral("Starter Team");
+    stockTeam.metadata.insert(QStringLiteral("default_agent"), QStringLiteral("starter-build"));
+    QVERIFY(storage.saveTeam(stockTeam));
+
+    Team customTeam;
+    customTeam.id = QStringLiteral("custom-team");
+    customTeam.name = QStringLiteral("Custom Team");
+    customTeam.metadata.insert(QStringLiteral("default_agent"), QStringLiteral("custom-build"));
+    QVERIFY(storage.saveTeam(customTeam));
+
+    TeamsDialog dialog(storage);
+    dialog.show();
+    QApplication::processEvents();
+
+    auto *table = dialog.findChild<QTableWidget *>();
+    QVERIFY(table);
+
+    const int stockRow = findTeamRow(table, QStringLiteral("starter-team"));
+    QVERIFY(stockRow >= 0);
+    auto *stockNameCell = table->cellWidget(stockRow, 1);
+    QVERIFY(stockNameCell);
+    QVERIFY(stockNameCell->findChild<QLabel *>(QStringLiteral("stockBadge")));
+    QVERIFY(stockNameCell->findChild<QLabel *>(QStringLiteral("defaultAgentBadge")));
+
+    const int customRow = findTeamRow(table, QStringLiteral("custom-team"));
+    QVERIFY(customRow >= 0);
+    auto *customNameCell = table->cellWidget(customRow, 1);
+    QVERIFY(customNameCell);
+    QVERIFY(!customNameCell->findChild<QLabel *>(QStringLiteral("stockBadge")));
+    QVERIFY(customNameCell->findChild<QLabel *>(QStringLiteral("defaultAgentBadge")));
 }
 
 QTEST_MAIN(TestStockItemInfo)

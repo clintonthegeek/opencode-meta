@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QHeaderView>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
@@ -12,6 +13,61 @@
 
 #include "models/Team.h"
 #include "storage/StorageManager.h"
+
+namespace {
+
+QLabel *makeStockBadge(const QString &text, QWidget *parent)
+{
+    auto *badge = new QLabel(text, parent);
+    badge->setObjectName(QStringLiteral("stockBadge"));
+    badge->setAlignment(Qt::AlignCenter);
+    badge->setToolTip(QObject::tr("Stock seed item - cannot be modified or deleted. Created automatically for new users."));
+    badge->setStyleSheet(QStringLiteral(
+        "QLabel#stockBadge {"
+        " background-color: #eef2ff;"
+        " color: #4338ca;"
+        " border: 1px solid #c7d2fe;"
+        " border-radius: 8px;"
+        " padding: 1px 6px;"
+        " font-size: 10px;"
+        " font-weight: 600;"
+        " }"));
+    return badge;
+}
+
+QLabel *makeDefaultAgentBadge(QWidget *parent)
+{
+    auto *badge = new QLabel(QStringLiteral("★"), parent);
+    badge->setObjectName(QStringLiteral("defaultAgentBadge"));
+    badge->setToolTip(QObject::tr("Default agent"));
+    badge->setStyleSheet(QStringLiteral(
+        "QLabel#defaultAgentBadge { color: #d97706; font-weight: 700; }"));
+    return badge;
+}
+
+QWidget *makeTeamNameCell(const QString &name, bool stockTeam, bool defaultAgent, QWidget *parent)
+{
+    auto *cell = new QWidget(parent);
+    auto *layout = new QHBoxLayout(cell);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(6);
+
+    auto *nameLabel = new QLabel(name, cell);
+    layout->addWidget(nameLabel);
+
+    if (stockTeam) {
+        layout->addWidget(makeStockBadge(QObject::tr("Stock"), cell));
+    }
+
+    if (defaultAgent) {
+        layout->addWidget(makeDefaultAgentBadge(cell));
+    }
+
+    layout->addStretch(1);
+    return cell;
+}
+
+} // namespace
 
 TeamsDialog::TeamsDialog(StorageManager &storageManager, QWidget *parent)
     : QDialog(parent)
@@ -71,13 +127,39 @@ void TeamsDialog::refreshTeams()
 
     for (int row = 0; row < teams.size(); ++row) {
         const Team &team = teams.at(row);
+        const bool stockTeam = m_storageManager.isStockTeam(team);
+        const QString defaultAgentId = team.metadata.value(QStringLiteral("default_agent")).toString();
+        const bool defaultAgent = !defaultAgentId.isEmpty();
 
         auto *idItem = new QTableWidgetItem(team.id);
         // Store id redundantly in user data in case the text changes later.
         idItem->setData(Qt::UserRole, team.id);
+        idItem->setData(Qt::UserRole + 1, stockTeam);
         m_table->setItem(row, 0, idItem);
 
         auto *nameItem = new QTableWidgetItem(team.name);
+        if (stockTeam || defaultAgent) {
+            const QString displayName = team.name.isEmpty() ? team.id : team.name;
+            nameItem->setText(displayName);
+            QString tooltip;
+            if (stockTeam) {
+                tooltip = tr("Stock team");
+            }
+            if (defaultAgent) {
+                tooltip += tooltip.isEmpty()
+                    ? tr("Default agent: %1").arg(defaultAgentId)
+                    : tr("\nDefault agent: %1").arg(defaultAgentId);
+            }
+            if (!tooltip.isEmpty()) {
+                nameItem->setToolTip(tooltip);
+            }
+            m_table->setCellWidget(row,
+                                   1,
+                                   makeTeamNameCell(displayName,
+                                                    stockTeam,
+                                                    defaultAgent,
+                                                    m_table));
+        }
         m_table->setItem(row, 1, nameItem);
 
         auto *descItem = new QTableWidgetItem(team.description);
