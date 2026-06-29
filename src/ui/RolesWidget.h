@@ -4,6 +4,7 @@
 
 class FilterProxyModel;
 class QCheckBox;
+class QFrame;
 class QLineEdit;
 class QLabel;
 class QSortFilterProxyModel;
@@ -57,6 +58,8 @@ private:
     QTableWidget *m_table = nullptr;
     QLineEdit *m_filterEdit = nullptr;
     QCheckBox *m_showStockCheck = nullptr;
+    QFrame *m_stockHiddenBanner = nullptr;
+    QLabel *m_stockHiddenBannerLabel = nullptr;
     QLabel *m_stockStatusLabel = nullptr;
     FilterProxyModel *m_filterProxy = nullptr;
     QPushButton *m_createButton = nullptr;

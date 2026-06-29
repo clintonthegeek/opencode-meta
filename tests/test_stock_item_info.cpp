@@ -5,6 +5,8 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QMessageBox>
+#include <QSettings>
+#include <QPushButton>
 #include <QTableWidget>
 #include <QTemporaryDir>
 #include <QTest>
@@ -87,6 +89,30 @@ void verifyInfoAction(QAction *action, QWidget *widget, const QString &expectedK
 }
 
 template <typename WidgetT>
+void verifyHiddenStockBanner(WidgetT &widget,
+                              const QString &showStockBoxName,
+                              const QString &bannerName,
+                              const QString &buttonName)
+{
+    auto *showStock = widget.template findChild<QCheckBox *>(showStockBoxName);
+    QVERIFY(showStock);
+    QVERIFY(!showStock->isChecked());
+
+    auto *banner = widget.template findChild<QLabel *>(bannerName);
+    QVERIFY(banner);
+    QVERIFY(banner->isVisible());
+    QVERIFY(banner->text().contains(QStringLiteral("stock items are hidden")));
+
+    auto *button = widget.template findChild<QPushButton *>(buttonName);
+    QVERIFY(button);
+    QCOMPARE(button->text(), QStringLiteral("Show them"));
+
+    button->click();
+    QTRY_VERIFY(showStock->isChecked());
+    QTRY_VERIFY(!banner->isVisible());
+}
+
+template <typename WidgetT>
 void verifyStockBadgeAndAction(WidgetT &widget,
                                const QString &showStockBoxName,
                                const QString &actionName,
@@ -127,6 +153,8 @@ private slots:
     void initTestCase();
     void rolesStockBadgeAndInfoAction();
     void teamsStockBadgeAndInfoAction();
+    void rolesHiddenStockBanner();
+    void teamsHiddenStockBanner();
     void applyDialogShowsStockAndDefaultAgentHints();
 };
 
@@ -173,6 +201,56 @@ void TestStockItemInfo::teamsStockBadgeAndInfoAction()
                               QStringLiteral("teamsWidget.showStock"),
                               QStringLiteral("teamsWidget.aboutStockItemAction"),
                               QStringLiteral("Team"));
+}
+
+void TestStockItemInfo::rolesHiddenStockBanner()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+
+    QSettings().setValue(QStringLiteral("settings/roles_show_stock"), false);
+
+    StorageManager storage(tmpRoot.path());
+
+    Role role;
+    role.id = QStringLiteral("build");
+    role.name = QStringLiteral("Build");
+    role.metadata.insert(QStringLiteral("native"), true);
+    QVERIFY(storage.saveRole(role));
+
+    RolesWidget widget(storage);
+    widget.show();
+    QApplication::processEvents();
+
+    verifyHiddenStockBanner(widget,
+                            QStringLiteral("rolesWidget.showStock"),
+                            QStringLiteral("rolesWidget.stockHiddenBannerLabel"),
+                            QStringLiteral("rolesWidget.showHiddenStockButton"));
+}
+
+void TestStockItemInfo::teamsHiddenStockBanner()
+{
+    QTemporaryDir tmpRoot;
+    QVERIFY(tmpRoot.isValid());
+
+    QSettings().setValue(QStringLiteral("settings/teams_show_stock"), false);
+
+    StorageManager storage(tmpRoot.path());
+
+    Team team;
+    team.id = QStringLiteral("starter-team");
+    team.name = QStringLiteral("Starter Team");
+    team.metadata.insert(QStringLiteral("default_agent"), QStringLiteral("starter-build"));
+    QVERIFY(storage.saveTeam(team));
+
+    TeamsWidget widget(storage);
+    widget.show();
+    QApplication::processEvents();
+
+    verifyHiddenStockBanner(widget,
+                            QStringLiteral("teamsWidget.showStock"),
+                            QStringLiteral("teamsWidget.stockHiddenBannerLabel"),
+                            QStringLiteral("teamsWidget.showHiddenStockButton"));
 }
 
 void TestStockItemInfo::applyDialogShowsStockAndDefaultAgentHints()

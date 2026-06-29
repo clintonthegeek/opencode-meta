@@ -5,6 +5,7 @@
 #include <QBrush>
 #include <QCheckBox>
 #include <QColor>
+#include <QFrame>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QInputDialog>
@@ -154,6 +155,11 @@ QString stockVisibilityText(int hiddenCount, bool showStock)
     return QObject::tr("%1 stock items hidden").arg(hiddenCount);
 }
 
+QString stockHiddenBannerText(int hiddenCount)
+{
+    return QObject::tr("%1 stock items are hidden").arg(hiddenCount);
+}
+
 // Produce a unique Team id under the given storage root, starting from
 // the slugified base and appending "-N" as needed.
 QString generateUniqueTeamId(StorageManager &storage, const QString &base)
@@ -207,6 +213,21 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
     auto *leftColumn = new QWidget(this);
     auto *leftLayout = new QVBoxLayout(leftColumn);
     leftLayout->setContentsMargins(0, 0, 0, 0);
+    m_stockHiddenBanner = new QFrame(leftColumn);
+    m_stockHiddenBanner->setObjectName(QStringLiteral("teamsWidget.stockHiddenBanner"));
+    m_stockHiddenBanner->setFrameShape(QFrame::StyledPanel);
+    m_stockHiddenBanner->setFrameShadow(QFrame::Plain);
+    auto *bannerLayout = new QHBoxLayout(m_stockHiddenBanner);
+    bannerLayout->setContentsMargins(8, 4, 8, 4);
+    bannerLayout->setSpacing(8);
+    m_stockHiddenBannerLabel = new QLabel(m_stockHiddenBanner);
+    m_stockHiddenBannerLabel->setObjectName(QStringLiteral("teamsWidget.stockHiddenBannerLabel"));
+    bannerLayout->addWidget(m_stockHiddenBannerLabel, 1);
+    auto *showThemButton = new QPushButton(tr("Show them"), m_stockHiddenBanner);
+    showThemButton->setObjectName(QStringLiteral("teamsWidget.showHiddenStockButton"));
+    showThemButton->setFlat(true);
+    bannerLayout->addWidget(showThemButton, 0, Qt::AlignRight);
+    leftLayout->addWidget(m_stockHiddenBanner);
     auto *filterRow = new QWidget(leftColumn);
     auto *filterRowLayout = new QHBoxLayout(filterRow);
     filterRowLayout->setContentsMargins(0, 0, 0, 0);
@@ -260,6 +281,11 @@ TeamsWidget::TeamsWidget(StorageManager &storageManager, QWidget *parent)
         }
         applyFilter(m_filterEdit ? m_filterEdit->text() : QString());
         updateStockVisibilityStatus();
+    });
+    connect(showThemButton, &QPushButton::clicked, this, [this]() {
+        if (m_showStockCheck) {
+            m_showStockCheck->setChecked(true);
+        }
     });
 
     connect(m_editor,
@@ -467,6 +493,13 @@ void TeamsWidget::refreshTeams()
     if (m_stockStatusLabel) {
         m_stockStatusLabel->setText(stockVisibilityText(stockCount,
                                                         m_showStockCheck && m_showStockCheck->isChecked()));
+    }
+    if (m_stockHiddenBannerLabel) {
+        m_stockHiddenBannerLabel->setText(stockHiddenBannerText(stockCount));
+    }
+    if (m_stockHiddenBanner) {
+        const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
+        m_stockHiddenBanner->setVisible(!showStock && stockCount > 0);
     }
 }
 
@@ -755,6 +788,13 @@ void TeamsWidget::updateStockVisibilityStatus()
 
     m_stockStatusLabel->setText(stockVisibilityText(stockCount,
                                                     m_showStockCheck && m_showStockCheck->isChecked()));
+    if (m_stockHiddenBannerLabel) {
+        m_stockHiddenBannerLabel->setText(stockHiddenBannerText(stockCount));
+    }
+    if (m_stockHiddenBanner) {
+        const bool showStock = m_showStockCheck && m_showStockCheck->isChecked();
+        m_stockHiddenBanner->setVisible(!showStock && stockCount > 0);
+    }
 }
 
 void TeamsWidget::updateActionStates()

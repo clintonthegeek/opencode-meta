@@ -410,6 +410,9 @@ continuity.
     * 2026-06-29: TeamsWidget/TeamEditorWidget gained a minimal
       "Reset to stock" action for stock-cloned teams; covered by
       `test_team_editor_widget`.
+    * 2026-06-29: TeamsWidget and RolesWidget now show a compact
+      hidden-stock banner with one-click reveal; covered by
+      `test_stock_item_info`.
   These land in a later session without touching the data-model
   surface locked by D1–D4.
 
